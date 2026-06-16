@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手順書ナビ — マニュアル・手順書作成システム</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --ink:#1d2330; --muted:#6b7385;
+    --line:#e3e7ee; --brand:#2f6df0; --brand-d:#1f4fc4; --brand-soft:#eaf1ff;
+    --ok:#1f9d57; --warn:#d98a00; --danger:#d64545;
+    --shadow:0 1px 2px rgba(20,30,60,.06),0 6px 24px rgba(20,30,60,.06);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit}
+  .app{display:grid; grid-template-columns:320px 1fr; grid-template-rows:56px 1fr; height:100vh}
+
+  /* Top bar */
+  .topbar{
+    grid-column:1 / -1; display:flex; align-items:center; gap:14px;
+    background:var(--panel); border-bottom:1px solid var(--line); padding:0 18px; z-index:5;
+  }
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa2ff);
+    display:grid;place-items:center;color:#fff;font-size:15px}
+  .logo small{font-weight:600;color:var(--muted);font-size:12px}
+  .topbar .spacer{flex:1}
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 14px;
+    border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; white-space:nowrap;
+    transition:.12s; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{background:#f7f9fc; border-color:#d3d9e4}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff}
+  .btn.primary:hover{background:var(--brand-d)}
+  .btn.ghost{border-color:transparent;background:transparent}
+  .btn.ghost:hover{background:#eef1f6}
+  .btn.danger{color:var(--danger);border-color:#f0d2d2}
+  .btn.danger:hover{background:#fdf2f2}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Sidebar */
+  .sidebar{
+    background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:16px 14px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .search{position:relative}
+  .search input{
+    width:100%; padding:11px 12px 11px 36px; border:1px solid var(--line); border-radius:10px;
+    font-size:14px; background:#fbfcfe; outline:none;
+  }
+  .search input:focus{border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .ico{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted)}
+  .cats{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{
+    border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px;
+    padding:5px 11px; font-size:12.5px; cursor:pointer; transition:.12s; font-weight:600;
+  }
+  .chip:hover{border-color:#c9d2e0}
+  .chip.active{background:var(--brand-soft); border-color:#bcd2ff; color:var(--brand-d)}
+  .sec-title{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin:2px 4px}
+  .doclist{display:flex; flex-direction:column; gap:4px; flex:1}
+  .docgroup-label{font-size:11.5px;font-weight:700;color:var(--muted);margin:10px 4px 2px;display:flex;align-items:center;gap:6px}
+  .docgroup-label::before{content:"";width:8px;height:8px;border-radius:3px;background:var(--brand);opacity:.5}
+  .docitem{
+    text-align:left; border:1px solid transparent; background:transparent; border-radius:10px;
+    padding:9px 11px; cursor:pointer; transition:.1s; width:100%;
+  }
+  .docitem:hover{background:#f5f7fb}
+  .docitem.active{background:var(--brand-soft); border-color:#cfe0ff}
+  .docitem .t{font-weight:700; font-size:14px; display:block; color:var(--ink)}
+  .docitem .m{font-size:12px; color:var(--muted); margin-top:2px; display:block;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .docitem mark{background:#fff2a8; padding:0 1px; border-radius:2px}
+  .empty-list{color:var(--muted); font-size:13px; text-align:center; padding:30px 10px}
+
+  /* Main */
+  .main{overflow-y:auto; padding:0}
+  .reading{max-width:880px; margin:0 auto; padding:34px 40px 120px}
+
+  /* Document header */
+  .doc-head{margin-bottom:6px}
+  .doc-cat{display:inline-block; font-size:12px; font-weight:700; color:var(--brand-d);
+    background:var(--brand-soft); padding:4px 11px; border-radius:999px; margin-bottom:12px}
+  .doc-title{font-size:30px; font-weight:800; line-height:1.3; margin:0 0 8px; letter-spacing:.01em}
+  .doc-desc{font-size:15.5px; color:var(--muted); margin:0 0 14px}
+  .doc-meta{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--muted);
+    border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px}
+  .tags{display:flex; gap:6px; flex-wrap:wrap}
+  .tag{font-size:12px; color:#54607a; background:#eef1f6; border-radius:6px; padding:2px 9px}
+  .doc-actions{display:flex; gap:8px; margin-left:auto}
+
+  /* TOC */
+  .toc{background:#fbfcfe; border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:20px 0 26px}
+  .toc h4{margin:0 0 8px; font-size:12px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase}
+  .toc ol{margin:0; padding-left:20px}
+  .toc li{margin:3px 0}
+  .toc a{color:var(--brand-d); text-decoration:none; font-weight:600; font-size:14px}
+  .toc a:hover{text-decoration:underline}
+
+  /* Blocks */
+  .block{margin:0 0 16px}
+  .b-heading{font-size:21px; font-weight:800; margin:30px 0 12px; padding-top:6px; scroll-margin-top:70px;
+    border-top:1px dashed var(--line); padding-top:22px}
+  .b-heading:first-child{border-top:none;padding-top:0}
+  .b-text{font-size:16px; color:#2a3142}
+  .b-step{display:flex; gap:14px; align-items:flex-start; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); scroll-margin-top:70px}
+  .b-step .num{flex:none; width:30px; height:30px; border-radius:50%; background:var(--brand);
+    color:#fff; font-weight:800; display:grid; place-items:center; font-size:14px}
+  .b-step .body{flex:1; font-size:16px; padding-top:2px}
+  .b-step .body .step-h{font-weight:700; display:block; margin-bottom:2px}
+  .callout{border-radius:12px; padding:13px 16px 13px 46px; position:relative; font-size:15px}
+  .callout::before{position:absolute; left:15px; top:12px; font-size:18px; line-height:1}
+  .callout.info{background:#eef4ff; border:1px solid #d3e2ff; color:#27406e}
+  .callout.info::before{content:"ℹ️"}
+  .callout.tip{background:#ecfaf1; border:1px solid #c8ecd6; color:#1c5e39}
+  .callout.tip::before{content:"💡"}
+  .callout.warning{background:#fff6e6; border:1px solid #ffe1ad; color:#7a5200}
+  .callout.warning::before{content:"⚠️"}
+  .callout.danger{background:#fdeeee; border:1px solid #f6cccc; color:#8a2b2b}
+  .callout.danger::before{content:"🚫"}
+  .callout .lbl{font-weight:800; display:block; font-size:12.5px; margin-bottom:2px; opacity:.85}
+  .b-check{display:flex; gap:10px; align-items:flex-start; font-size:15.5px; padding:7px 12px;
+    background:#fff; border:1px solid var(--line); border-radius:9px}
+  .b-check input{margin-top:5px; width:17px; height:17px; accent-color:var(--ok); cursor:pointer}
+  .b-check.done .ck-text{color:var(--muted); text-decoration:line-through}
+  .b-img{margin:6px 0}
+  .b-img img{max-width:100%; border:1px solid var(--line); border-radius:10px; display:block}
+  .b-img figcaption{font-size:12.5px; color:var(--muted); margin-top:6px; text-align:center}
+  .b-code{background:#1c2230; color:#e6ebf5; border-radius:10px; padding:14px 16px; overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.6;
+    white-space:pre-wrap; word-break:break-word}
+
+  /* Welcome / empty state */
+  .welcome{max-width:620px; margin:8vh auto; text-align:center; padding:0 20px}
+  .welcome .big{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--brand),#7aa2ff);
+    display:grid;place-items:center;color:#fff;font-size:34px;margin:0 auto 20px}
+  .welcome h2{font-size:24px;margin:0 0 8px}
+  .welcome p{color:var(--muted);font-size:15px;margin:0 auto 24px;max-width:460px}
+  .welcome .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  /* Editor */
+  .editor{max-width:880px; margin:0 auto; padding:28px 40px 140px}
+  .ed-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+  .field{flex:1; min-width:200px; display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:12px; font-weight:700; color:var(--muted)}
+  .field input, .field textarea, .field select{
+    border:1px solid var(--line); border-radius:9px; padding:9px 11px; font-size:14px; font-family:inherit;
+    background:#fff; outline:none; width:100%;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
+  .ed-blocks{display:flex; flex-direction:column; gap:10px; margin-top:10px}
+  .ed-block{border:1px solid var(--line); border-radius:11px; background:#fff; padding:10px 12px}
+  .ed-block .bhead{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .ed-block .btype{font-size:12px; font-weight:800; color:var(--brand-d); background:var(--brand-soft);
+    padding:3px 9px; border-radius:6px}
+  .ed-block .bspacer{flex:1}
+  .ed-block .iconbtn{border:1px solid var(--line); background:#fff; border-radius:7px; width:30px; height:28px;
+    cursor:pointer; color:var(--muted); font-size:13px}
+  .ed-block .iconbtn:hover{background:#f5f7fb; color:var(--ink)}
+  .ed-block textarea{width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+    font-size:14px; font-family:inherit; resize:vertical; min-height:46px}
+  .ed-block textarea:focus{border-color:var(--brand); outline:none; box-shadow:0 0 0 3px var(--brand-soft)}
+  .ed-block .img-preview{max-width:160px; max-height:120px; border-radius:8px; border:1px solid var(--line); margin-top:8px; display:block}
+  .add-bar{display:flex; gap:7px; flex-wrap:wrap; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line)}
+  .add-bar .lbl{font-size:12px;font-weight:700;color:var(--muted);align-self:center;margin-right:4px}
+  .addbtn{border:1px dashed #c4cede; background:#fbfcff; color:var(--brand-d); border-radius:9px;
+    padding:7px 12px; font-size:13px; font-weight:700; cursor:pointer}
+  .addbtn:hover{background:var(--brand-soft); border-color:var(--brand)}
+  .ed-footer{position:sticky; bottom:0; background:linear-gradient(transparent,var(--bg) 24px);
+    padding:16px 0 0; display:flex; gap:10px; justify-content:flex-end; margin-top:18px}
+
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; padding:11px 20px; border-radius:10px; font-size:13.5px; font-weight:600;
+    opacity:0; pointer-events:none; transition:.25s; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:820px){
+    .app{grid-template-columns:1fr; grid-template-rows:56px auto 1fr}
+    .sidebar{max-height:38vh; border-right:none; border-bottom:1px solid var(--line)}
+    .reading,.editor{padding:24px 20px 100px}
+    .logo small{display:none}
+  }
+
+  /* Print */
+  @media print{
+    .topbar,.sidebar,.toc,.doc-actions{display:none !important}
+    .app{display:block;height:auto}
+    .main{overflow:visible}
+    .reading{max-width:none;padding:0}
+    .b-step,.b-check,.b-img img{box-shadow:none}
+    body{background:#fff}
+    .b-heading{page-break-after:avoid}
+    .b-step,.callout{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo"><span class="mark">📘</span><div>手順書ナビ<br><small>マニュアル・手順書作成システム</small></div></div>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="btnImport" title="JSONを読み込む">📥 読込</button>
+    <button class="btn ghost" id="btnExport" title="JSONに書き出す">📤 書出</button>
+    <button class="btn ghost" id="btnPrint" title="印刷 / PDF" disabled>🖨️ 印刷</button>
+    <button class="btn primary" id="btnNew">＋ 新規作成</button>
+  </header>
+
+  <aside class="sidebar">
+    <div class="search">
+      <span class="ico">🔍</span>
+      <input id="search" type="search" placeholder="キーワードで検索（本文も対象）">
+    </div>
+    <div>
+      <div class="sec-title">カテゴリ</div>
+      <div class="cats" id="cats"></div>
+    </div>
+    <div class="doclist" id="doclist"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<input type="file" id="fileInput" accept="application/json,.json" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+(function(){
+  const STORE_KEY = "tejunsho-navi-v1";
+  const BLOCK_TYPES = {
+    heading:  {label:"見出し",       icon:"H"},
+    text:     {label:"本文",         icon:"¶"},
+    step:     {label:"手順ステップ", icon:"1"},
+    callout:  {label:"注記/注意",    icon:"!"},
+    check:    {label:"チェック項目", icon:"☑"},
+    image:    {label:"画像",         icon:"🖼"},
+    code:     {label:"コード/コマンド", icon:"</>"}
+  };
+
+  /* ---------- State ---------- */
+  let docs = [];
+  let currentId = null;
+  let mode = "view";          // view | edit | welcome
+  let query = "";
+  let activeCat = "すべて";
+  let draft = null;           // editing copy
+
+  /* ---------- Persistence ---------- */
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw){ docs = JSON.parse(raw); return; }
+    }catch(e){ console.warn("load failed", e); }
+    docs = seedDocs();
+    save();
+  }
+  function save(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(docs)); }
+    catch(e){ toast("保存に失敗しました（容量超過の可能性）"); }
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+  /* ---------- Helpers ---------- */
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  function escHL(s){ // escape + highlight query
+    let out = esc(s);
+    if(query){
+      const q = query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      out = out.replace(new RegExp("("+q+")","gi"), "<mark>$1</mark>");
+    }
+    return out;
+  }
+  function nl2br(s){ return escHL(s).replace(/\n/g,"<br>"); }
+  function categories(){
+    const set = new Set(docs.map(d=>d.category).filter(Boolean));
+    return ["すべて", ...[...set].sort((a,b)=>a.localeCompare(b,"ja"))];
+  }
+  function docText(d){
+    return [d.title, d.description, d.category, (d.tags||[]).join(" "),
+      ...(d.blocks||[]).map(b => b.text || b.caption || "")].join(" ").toLowerCase();
+  }
+  function filteredDocs(){
+    return docs.filter(d=>{
+      if(activeCat!=="すべて" && d.category!==activeCat) return false;
+      if(query && !docText(d).includes(query.toLowerCase())) return false;
+      return true;
+    });
+  }
+
+  /* ---------- Render: sidebar ---------- */
+  function renderSidebar(){
+    // categories
+    const cats = categories();
+    document.getElementById("cats").innerHTML = cats.map(c=>
+      `<button class="chip ${c===activeCat?"active":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+
+    // doc list grouped by category
+    const list = filteredDocs();
+    const box = document.getElementById("doclist");
+    if(!list.length){
+      box.innerHTML = `<div class="empty-list">${query||activeCat!=="すべて"?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。"}</div>`;
+      return;
+    }
+    const groups = {};
+    list.forEach(d=>{ const c=d.category||"未分類"; (groups[c]=groups[c]||[]).push(d); });
+    let html = "";
+    Object.keys(groups).sort((a,b)=>a.localeCompare(b,"ja")).forEach(cat=>{
+      html += `<div class="docgroup-label">${esc(cat)}</div>`;
+      groups[cat].forEach(d=>{
+        const steps = (d.blocks||[]).filter(b=>b.type==="step").length;
+        const meta = [steps?`${steps}ステップ`:"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
+        html += `<button class="docitem ${d.id===currentId&&mode!=="welcome"?"active":""}" data-id="${d.id}">
+          <span class="t">${escHL(d.title||"（無題）")}</span>
+          <span class="m">${escHL(meta||d.description||"")}</span></button>`;
+      });
+    });
+    box.innerHTML = html;
+  }
+
+  /* ---------- Render: main ---------- */
+  function render(){
+    renderSidebar();
+    document.getElementById("btnPrint").disabled = !(mode==="view" && currentId);
+    const main = document.getElementById("main");
+    if(mode==="edit"){ main.innerHTML=""; main.appendChild(renderEditor()); return; }
+    const doc = docs.find(d=>d.id===currentId);
+    if(!doc || mode==="welcome"){ main.innerHTML = welcomeHTML(); return; }
+    main.innerHTML = renderViewer(doc);
+    bindViewer(doc);
+  }
+
+  function welcomeHTML(){
+    return `<div class="welcome">
+      <div class="big">📘</div>
+      <h2>手順書ナビへようこそ</h2>
+      <p>マニュアル・手順書・ワークフローを、誰でも見やすく作成・共有できるシステムです。
+      左の一覧から文書を選ぶか、新しく作成してください。</p>
+      <div class="actions">
+        <button class="btn primary" onclick="document.getElementById('btnNew').click()">＋ 最初の文書を作る</button>
+      </div>
+    </div>`;
+  }
+
+  function renderViewer(d){
+    const blocks = d.blocks||[];
+    // build TOC from headings + steps
+    const toc = [];
+    blocks.forEach((b,i)=>{
+      if(b.type==="heading") toc.push({i, text:b.text, kind:"h"});
+    });
+    let tocHTML = "";
+    if(toc.length>=2){
+      tocHTML = `<nav class="toc"><h4>目次</h4><ol>${
+        toc.map(t=>`<li><a href="#" data-jump="blk-${t.i}">${esc(t.text)}</a></li>`).join("")
+      }</ol></nav>`;
+    }
+    let stepNo = 0;
+    const body = blocks.map((b,i)=>{
+      switch(b.type){
+        case "heading":
+          return `<h3 class="block b-heading" id="blk-${i}">${escHL(b.text)}</h3>`;
+        case "text":
+          return `<p class="block b-text">${nl2br(b.text)}</p>`;
+        case "step":{
+          stepNo++;
+          return `<div class="block b-step" id="blk-${i}"><div class="num">${stepNo}</div>
+            <div class="body">${nl2br(b.text)}</div></div>`;
+        }
+        case "callout":{
+          const v = b.variant||"info";
+          const labels = {info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"};
+          return `<div class="block callout ${v}"><span class="lbl">${labels[v]||"メモ"}</span>${nl2br(b.text)}</div>`;
+        }
+        case "check":
+          return `<label class="block b-check" data-check="${i}"><input type="checkbox" ${b.done?"checked":""}>
+            <span class="ck-text">${nl2br(b.text)}</span></label>`;
+        case "image":
+          return b.data ? `<figure class="block b-img"><img src="${b.data}" alt="${esc(b.caption||"")}">
+            ${b.caption?`<figcaption>${escHL(b.caption)}</figcaption>`:""}</figure>` : "";
+        case "code":
+          return `<pre class="block b-code">${esc(b.text)}</pre>`;
+        default: return "";
+      }
+    }).join("");
+
+    const meta = [];
+    const upd = d.updated ? new Date(d.updated) : null;
+    if(upd) meta.push(`最終更新: ${upd.getFullYear()}/${(upd.getMonth()+1)}/${upd.getDate()}`);
+    const steps = blocks.filter(b=>b.type==="step").length;
+    if(steps) meta.push(`全${steps}ステップ`);
+
+    return `<article class="reading">
+      <header class="doc-head">
+        ${d.category?`<span class="doc-cat">${esc(d.category)}</span>`:""}
+        <h1 class="doc-title">${escHL(d.title||"（無題）")}</h1>
+        ${d.description?`<p class="doc-desc">${escHL(d.description)}</p>`:""}
+        <div class="doc-meta">
+          ${meta.map(m=>`<span>${esc(m)}</span>`).join("")}
+          <span class="tags">${(d.tags||[]).map(t=>`<span class="tag">#${esc(t)}</span>`).join("")}</span>
+          <span class="doc-actions">
+            <button class="btn" id="vEdit">✏️ 編集</button>
+            <button class="btn" id="vDup">⧉ 複製</button>
+            <button class="btn danger" id="vDel">🗑 削除</button>
+          </span>
+        </div>
+      </header>
+      ${tocHTML}
+      ${body || '<p class="b-text" style="color:var(--muted)">（本文がありません。「編集」から内容を追加してください）</p>'}
+    </article>`;
+  }
+
+  function bindViewer(d){
+    const main = document.getElementById("main");
+    main.querySelector("#vEdit").onclick = ()=> openEditor(d.id);
+    main.querySelector("#vDup").onclick = ()=> duplicateDoc(d.id);
+    main.querySelector("#vDel").onclick = ()=> deleteDoc(d.id);
+    main.querySelectorAll("[data-jump]").forEach(a=>{
+      a.onclick = e=>{ e.preventDefault();
+        const t = document.getElementById(a.dataset.jump);
+        if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
+      };
+    });
+    main.querySelectorAll("[data-check]").forEach(lbl=>{
+      const cb = lbl.querySelector("input");
+      cb.onchange = ()=>{
+        const idx = +lbl.dataset.check;
+        d.blocks[idx].done = cb.checked;
+        lbl.classList.toggle("done", cb.checked);
+        save();
+      };
+      if(cb.checked) lbl.classList.add("done");
+    });
+  }
+
+  /* ---------- Editor ---------- */
+  function openEditor(id){
+    const src = id ? docs.find(d=>d.id===id) : null;
+    draft = src ? JSON.parse(JSON.stringify(src)) : {
+      id:null, title:"", category:"", description:"", tags:[], blocks:[{type:"step",text:""}]
+    };
+    if(!draft.blocks) draft.blocks=[];
+    mode = "edit";
+    render();
+    const main = document.getElementById("main");
+    const ti = main.querySelector("#edTitle"); if(ti) ti.focus();
+  }
+
+  function renderEditor(){
+    const wrap = document.createElement("div");
+    wrap.className = "editor";
+    const catOptions = categories().filter(c=>c!=="すべて");
+    wrap.innerHTML = `
+      <h2 style="margin:0 0 18px">${draft.id?"文書を編集":"新しい文書"}</h2>
+      <div class="ed-row">
+        <div class="field" style="flex:2"><label>タイトル *</label>
+          <input id="edTitle" value="${esc(draft.title)}" placeholder="例）来客対応の手順"></div>
+      </div>
+      <div class="ed-row">
+        <div class="field"><label>カテゴリ</label>
+          <input id="edCat" list="catList" value="${esc(draft.category)}" placeholder="例）接客 / 経理 / システム操作">
+          <datalist id="catList">${catOptions.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div>
+        <div class="field"><label>タグ（カンマ区切り）</label>
+          <input id="edTags" value="${esc((draft.tags||[]).join(", "))}" placeholder="例）新人向け, 必須"></div>
+      </div>
+      <div class="ed-row">
+        <div class="field"><label>概要（一覧や検索に表示）</label>
+          <textarea id="edDesc" rows="2" placeholder="この手順書の目的を一言で">${esc(draft.description)}</textarea></div>
+      </div>
+      <div class="sec-title" style="margin:18px 4px 4px">本文ブロック</div>
+      <div class="ed-blocks" id="edBlocks"></div>
+      <div class="add-bar">
+        <span class="lbl">ブロックを追加:</span>
+        ${Object.keys(BLOCK_TYPES).map(t=>`<button class="addbtn" data-add="${t}">${BLOCK_TYPES[t].icon} ${BLOCK_TYPES[t].label}</button>`).join("")}
+      </div>
+      <div class="ed-footer">
+        <button class="btn" id="edCancel">キャンセル</button>
+        <button class="btn primary" id="edSave">💾 保存</button>
+      </div>`;
+
+    // sync field inputs into draft
+    const syncMeta = ()=>{
+      draft.title = wrap.querySelector("#edTitle").value;
+      draft.category = wrap.querySelector("#edCat").value.trim();
+      draft.description = wrap.querySelector("#edDesc").value;
+      draft.tags = wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean);
+    };
+    ["#edTitle","#edCat","#edDesc","#edTags"].forEach(s=> wrap.querySelector(s).addEventListener("input", syncMeta));
+
+    renderEdBlocks(wrap.querySelector("#edBlocks"));
+
+    wrap.querySelectorAll("[data-add]").forEach(b=>{
+      b.onclick = ()=>{
+        syncMeta();
+        const t = b.dataset.add;
+        const nb = {type:t, text:""};
+        if(t==="callout") nb.variant="info";
+        if(t==="image"){ nb.data=""; nb.caption=""; }
+        if(t==="check") nb.done=false;
+        draft.blocks.push(nb);
+        renderEdBlocks(wrap.querySelector("#edBlocks"));
+        const blocksEl = wrap.querySelector("#edBlocks");
+        const last = blocksEl.lastElementChild;
+        if(last){ const inp = last.querySelector("textarea,input"); if(inp) inp.focus(); }
+      };
+    });
+    wrap.querySelector("#edCancel").onclick = ()=>{ draft=null; mode = currentId?"view":"welcome"; render(); };
+    wrap.querySelector("#edSave").onclick = ()=>{ syncMeta(); saveDraft(); };
+    return wrap;
+  }
+
+  function renderEdBlocks(container){
+    if(!draft.blocks.length){
+      container.innerHTML = `<div class="empty-list">下のボタンからブロックを追加してください</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    draft.blocks.forEach((b,i)=>{
+      const el = document.createElement("div");
+      el.className = "ed-block";
+      let inner = `<div class="bhead">
+        <span class="btype">${BLOCK_TYPES[b.type]?BLOCK_TYPES[b.type].label:b.type}</span>`;
+      if(b.type==="callout"){
+        inner += `<select class="cl-variant" style="width:auto;padding:4px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">
+          ${[["info","メモ"],["tip","ヒント"],["warning","注意"],["danger","禁止/危険"]].map(([v,l])=>
+            `<option value="${v}" ${b.variant===v?"selected":""}>${l}</option>`).join("")}</select>`;
+      }
+      inner += `<span class="bspacer"></span>
+        <button class="iconbtn" data-mv="up" ${i===0?"disabled":""} title="上へ">▲</button>
+        <button class="iconbtn" data-mv="down" ${i===draft.blocks.length-1?"disabled":""} title="下へ">▼</button>
+        <button class="iconbtn" data-del="1" title="削除">✕</button>
+      </div>`;
+
+      if(b.type==="image"){
+        inner += `<input type="file" accept="image/*" class="img-file" style="font-size:13px">
+          ${b.data?`<img class="img-preview" src="${b.data}">`:""}
+          <textarea class="b-caption" rows="1" placeholder="キャプション（任意）">${esc(b.caption||"")}</textarea>`;
+      }else{
+        const ph = {heading:"見出しテキスト", text:"本文を入力", step:"このステップでやること",
+          callout:"注意書きの内容", check:"確認する項目", code:"コマンドやコードを貼り付け"}[b.type]||"";
+        inner += `<textarea class="b-text-in" rows="${b.type==="text"||b.type==="code"?3:2}" placeholder="${ph}">${esc(b.text||"")}</textarea>`;
+      }
+      el.innerHTML = inner;
+
+      const ta = el.querySelector(".b-text-in");
+      if(ta) ta.addEventListener("input", ()=>{ b.text = ta.value; });
+      const cap = el.querySelector(".b-caption");
+      if(cap) cap.addEventListener("input", ()=>{ b.caption = cap.value; });
+      const variant = el.querySelector(".cl-variant");
+      if(variant) variant.addEventListener("change", ()=>{ b.variant = variant.value; });
+      const file = el.querySelector(".img-file");
+      if(file) file.addEventListener("change", e=>{
+        const f = e.target.files[0]; if(!f) return;
+        if(f.size > 1.5*1024*1024){ toast("画像は1.5MB以下にしてください"); return; }
+        const r = new FileReader();
+        r.onload = ()=>{ b.data = r.result; renderEdBlocks(container); };
+        r.readAsDataURL(f);
+      });
+      el.querySelector('[data-mv="up"]').onclick = ()=>{ if(i>0){ [draft.blocks[i-1],draft.blocks[i]]=[draft.blocks[i],draft.blocks[i-1]]; renderEdBlocks(container); } };
+      el.querySelector('[data-mv="down"]').onclick = ()=>{ if(i<draft.blocks.length-1){ [draft.blocks[i+1],draft.blocks[i]]=[draft.blocks[i],draft.blocks[i+1]]; renderEdBlocks(container); } };
+      el.querySelector('[data-del="1"]').onclick = ()=>{ draft.blocks.splice(i,1); renderEdBlocks(container); };
+      container.appendChild(el);
+    });
+  }
+
+  function saveDraft(){
+    if(!draft.title.trim()){ toast("タイトルを入力してください");
+      const t=document.getElementById("edTitle"); if(t) t.focus(); return; }
+    // drop empty text blocks (keep images)
+    draft.blocks = draft.blocks.filter(b=> b.type==="image" ? b.data : (b.text||"").trim()!=="" );
+    draft.updated = Date.now();
+    if(draft.id){
+      const idx = docs.findIndex(d=>d.id===draft.id);
+      if(idx>=0) docs[idx] = draft;
+    }else{
+      draft.id = uid();
+      draft.created = Date.now();
+      docs.unshift(draft);
+    }
+    currentId = draft.id;
+    save();
+    mode = "view";
+    draft = null;
+    render();
+    toast("保存しました");
+  }
+
+  /* ---------- Doc actions ---------- */
+  function duplicateDoc(id){
+    const src = docs.find(d=>d.id===id); if(!src) return;
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid(); copy.title = src.title+"（コピー）"; copy.created=copy.updated=Date.now();
+    docs.unshift(copy); currentId = copy.id; save(); render(); toast("複製しました");
+  }
+  function deleteDoc(id){
+    const d = docs.find(x=>x.id===id); if(!d) return;
+    if(!confirm(`「${d.title}」を削除しますか？この操作は取り消せません。`)) return;
+    docs = docs.filter(x=>x.id!==id);
+    if(currentId===id){ currentId=null; mode="welcome"; }
+    save(); render(); toast("削除しました");
+  }
+
+  /* ---------- Import / Export ---------- */
+  function exportJSON(){
+    const blob = new Blob([JSON.stringify(docs,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const ds = new Date().toISOString().slice(0,10);
+    a.href=url; a.download=`手順書データ_${ds}.json`; a.click();
+    URL.revokeObjectURL(url);
+    toast("JSONを書き出しました");
+  }
+  function importJSON(file){
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const data = JSON.parse(r.result);
+        if(!Array.isArray(data)) throw new Error("形式が不正です");
+        const mode2 = docs.length ? (confirm("既存データに「追加」しますか？\n[OK]=追加 / [キャンセル]=すべて置き換え") ? "merge":"replace") : "replace";
+        const incoming = data.map(d=>({...d, id: d.id||uid()}));
+        if(mode2==="replace") docs = incoming;
+        else{
+          const ids = new Set(docs.map(d=>d.id));
+          incoming.forEach(d=>{ if(ids.has(d.id)) d.id=uid(); docs.push(d); });
+        }
+        save(); mode="welcome"; currentId=null; render();
+        toast(`${incoming.length}件を読み込みました`);
+      }catch(e){ toast("読み込み失敗: "+e.message); }
+    };
+    r.readAsText(file);
+  }
+
+  /* ---------- Toast ---------- */
+  let toastTimer=null;
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+
+  /* ---------- Events ---------- */
+  function bindGlobal(){
+    document.getElementById("search").addEventListener("input", e=>{ query=e.target.value; renderSidebar(); });
+    document.getElementById("cats").addEventListener("click", e=>{
+      const c = e.target.closest("[data-cat]"); if(!c) return;
+      activeCat = c.dataset.cat; renderSidebar();
+    });
+    document.getElementById("doclist").addEventListener("click", e=>{
+      const it = e.target.closest("[data-id]"); if(!it) return;
+      currentId = it.dataset.id; mode="view"; render();
+      document.getElementById("main").scrollTop = 0;
+    });
+    document.getElementById("btnNew").onclick = ()=> openEditor(null);
+    document.getElementById("btnExport").onclick = exportJSON;
+    document.getElementById("btnPrint").onclick = ()=> window.print();
+    document.getElementById("btnImport").onclick = ()=> document.getElementById("fileInput").click();
+    document.getElementById("fileInput").addEventListener("change", e=>{
+      const f = e.target.files[0]; if(f) importJSON(f); e.target.value="";
+    });
+  }
+
+  /* ---------- Seed data (sample docs) ---------- */
+  function seedDocs(){
+    const now = Date.now();
+    return [
+      {
+        id:uid(), category:"はじめに", title:"この手順書ナビの使い方",
+        description:"新しく配属された方がまず読むためのガイドです。",
+        tags:["新人向け","必読"], created:now, updated:now,
+        blocks:[
+          {type:"text", text:"このシステムは、業務マニュアル・手順書・ワークフローを誰でも見やすく作成・閲覧できるツールです。インストール不要で、このHTMLファイルを開くだけで使えます。"},
+          {type:"heading", text:"閲覧する"},
+          {type:"step", text:"左のサイドバーから読みたい文書をクリックします。"},
+          {type:"step", text:"上部の検索ボックスにキーワードを入れると、本文も含めて絞り込めます。"},
+          {type:"step", text:"「カテゴリ」のボタンで分類ごとに絞り込めます。"},
+          {type:"callout", variant:"tip", text:"手順の長い文書には自動で「目次」が表示され、クリックでジャンプできます。"},
+          {type:"heading", text:"作成・編集する"},
+          {type:"step", text:"右上の「＋ 新規作成」を押します。"},
+          {type:"step", text:"タイトル・カテゴリを入れ、「ブロックを追加」で本文を組み立てます。"},
+          {type:"step", text:"「保存」を押すと一覧に追加されます。"},
+          {type:"callout", variant:"warning", text:"データはお使いのブラウザ内に保存されます。他の人と共有したり、バックアップする場合は右上「📤 書出」でJSONに保存し、相手は「📥 読込」で取り込んでください。"},
+          {type:"heading", text:"印刷・PDF化"},
+          {type:"text", text:"文書を開いた状態で右上の「🖨️ 印刷」を押すと、サイドバーなどを除いた読みやすいレイアウトで印刷・PDF保存できます。"}
+        ]
+      },
+      {
+        id:uid(), category:"接客", title:"来客対応の基本手順",
+        description:"受付でお客様をお迎えするときの標準フローです。",
+        tags:["新人向け","接客","必須"], created:now, updated:now,
+        blocks:[
+          {type:"callout", variant:"info", text:"対応の合言葉は「笑顔・正確・迅速」。迷ったら先輩に確認しましょう。"},
+          {type:"step", text:"お客様が来られたら、立ち上がって「いらっしゃいませ」と挨拶する。"},
+          {type:"step", text:"ご用件とお名前、お約束の有無を伺う。"},
+          {type:"step", text:"担当者へ内線で取り次ぐ（内線表は受付デスク右側）。"},
+          {type:"step", text:"応接室へご案内し、お茶をお出しする。"},
+          {type:"heading", text:"確認チェックリスト"},
+          {type:"check", text:"来客記録ノートに日時・氏名・用件を記入したか", done:false},
+          {type:"check", text:"応接室の予約状況を確認したか", done:false},
+          {type:"callout", variant:"danger", text:"アポイントのない営業訪問は、担当者の許可なく取り次がないこと。"}
+        ]
+      },
+      {
+        id:uid(), category:"システム操作", title:"勤怠システムの打刻方法",
+        description:"出退勤の打刻と修正申請のやり方。",
+        tags:["全員","必須"], created:now, updated:now,
+        blocks:[
+          {type:"heading", text:"出勤・退勤の打刻"},
+          {type:"step", text:"社内ポータルにログインする。"},
+          {type:"step", text:"トップ画面右上の「打刻」ボタンを押す。"},
+          {type:"step", text:"「出勤」または「退勤」を選択して確定する。"},
+          {type:"callout", variant:"tip", text:"スマホアプリからも打刻できます。社外勤務時はアプリを使ってください。"},
+          {type:"heading", text:"打刻を忘れた場合"},
+          {type:"step", text:"「勤怠修正申請」メニューを開く。"},
+          {type:"step", text:"対象日・時刻・理由を入力して申請する。"},
+          {type:"step", text:"上長の承認後に反映される。"},
+          {type:"code", text:"ログインURL: https://portal.example.local/kintai\nヘルプデスク内線: 1234"}
+        ]
+      }
+    ];
+  }
+
+  /* ---------- Init ---------- */
+  load();
+  bindGlobal();
+  mode = docs.length ? "welcome" : "welcome";
+  render();
+})();
+</script>
+</body>
+</html>
