@@ -23,22 +23,13 @@
   a{color:var(--brand-d)}
   .app{display:grid; grid-template-columns:320px 1fr; grid-template-rows:56px 1fr; height:100vh}
 
-  /* Top bar */
-  .topbar{
-    grid-column:1 / -1; display:flex; align-items:center; gap:10px;
-    background:var(--panel); border-bottom:1px solid var(--line); padding:0 14px; z-index:20;
-  }
+  .topbar{grid-column:1 / -1; display:flex; align-items:center; gap:10px; background:var(--panel); border-bottom:1px solid var(--line); padding:0 14px; z-index:20}
   .hamb{display:none; border:1px solid var(--line); background:#fff; border-radius:9px; width:38px; height:38px; font-size:18px; cursor:pointer}
   .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
-  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa2ff);
-    display:grid;place-items:center;color:#fff;font-size:15px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa2ff); display:grid;place-items:center;color:#fff;font-size:15px}
   .logo small{font-weight:600;color:var(--muted);font-size:12px}
   .topbar .spacer{flex:1}
-  .btn{
-    border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 13px;
-    border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; white-space:nowrap;
-    transition:.12s; display:inline-flex; align-items:center; gap:6px;
-  }
+  .btn{border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 13px; border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; white-space:nowrap; transition:.12s; display:inline-flex; align-items:center; gap:6px}
   .btn:hover{background:#f7f9fc; border-color:#d3d9e4}
   .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff}
   .btn.primary:hover{background:var(--brand-d)}
@@ -49,63 +40,61 @@
   .btn:disabled{opacity:.45;cursor:not-allowed}
   .btn .lbl-full{display:inline}
 
-  /* Sidebar */
-  .sidebar{
-    background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:16px 14px;
-    display:flex; flex-direction:column; gap:14px;
-  }
+  .sidebar{background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:14px 14px; display:flex; flex-direction:column; gap:13px}
   .scrim{display:none}
+  .navseg{display:flex;gap:6px;background:#eef1f6;padding:4px;border-radius:10px}
+  .navseg button{flex:1;border:none;background:transparent;padding:8px;border-radius:7px;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer}
+  .navseg button.active{background:#fff;color:var(--brand-d);box-shadow:var(--shadow)}
   .search{position:relative}
-  .search input{
-    width:100%; padding:11px 12px 11px 36px; border:1px solid var(--line); border-radius:10px;
-    font-size:15px; background:#fbfcfe; outline:none;
-  }
+  .search input{width:100%; padding:11px 12px 11px 36px; border:1px solid var(--line); border-radius:10px; font-size:15px; background:#fbfcfe; outline:none}
   .search input:focus{border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px var(--brand-soft)}
   .search .ico{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted)}
   .filters{display:flex; flex-wrap:wrap; gap:6px}
-  .chip{
-    border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px;
-    padding:5px 11px; font-size:12.5px; cursor:pointer; transition:.12s; font-weight:600;
-  }
+  .chip{border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:5px 11px; font-size:12.5px; cursor:pointer; transition:.12s; font-weight:600}
   .chip:hover{border-color:#c9d2e0}
   .chip.active{background:var(--brand-soft); border-color:#bcd2ff; color:var(--brand-d)}
   .sec-title{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin:2px 4px}
   .doclist{display:flex; flex-direction:column; gap:4px; flex:1}
   .docgroup-label{font-size:11.5px;font-weight:700;color:var(--muted);margin:10px 4px 2px;display:flex;align-items:center;gap:6px}
-  .docitem{
-    text-align:left; border:1px solid transparent; background:transparent; border-radius:10px;
-    padding:9px 11px; cursor:pointer; transition:.1s; width:100%; display:flex; gap:9px; align-items:flex-start;
-  }
+  .docitem{text-align:left; border:1px solid transparent; background:transparent; border-radius:10px; padding:9px 11px; cursor:pointer; transition:.1s; width:100%; display:flex; gap:9px; align-items:flex-start}
   .docitem:hover{background:#f5f7fb}
   .docitem.active{background:var(--brand-soft); border-color:#cfe0ff}
   .docitem .di-ic{font-size:16px; line-height:1.5; flex:none}
   .docitem .di-body{min-width:0; flex:1}
   .docitem .t{font-weight:700; font-size:14px; display:block; color:var(--ink)}
-  .docitem .m{font-size:12px; color:var(--muted); margin-top:2px; display:block;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .docitem .m{font-size:12px; color:var(--muted); margin-top:2px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .docitem mark{background:#fff2a8; padding:0 1px; border-radius:2px}
   .empty-list{color:var(--muted); font-size:13px; text-align:center; padding:30px 10px}
 
-  /* Main */
   .main{overflow-y:auto; padding:0; position:relative}
   .reading{max-width:880px; margin:0 auto; padding:34px 40px 120px}
 
-  /* Document header */
+  .breadcrumb{max-width:880px;margin:14px auto -8px;padding:0 40px}
+  .breadcrumb button{border:none;background:none;color:var(--brand-d);font-weight:700;font-size:13.5px;cursor:pointer;padding:0}
+  .breadcrumb button:hover{text-decoration:underline}
+
   .doc-head{margin-bottom:6px}
   .doc-badges{display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap}
-  .doc-type{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
-    color:var(--ink); background:#eef1f6; padding:4px 11px; border-radius:999px}
-  .doc-cat{display:inline-block; font-size:12px; font-weight:700; color:var(--brand-d);
-    background:var(--brand-soft); padding:4px 11px; border-radius:999px}
+  .doc-type{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:var(--ink); background:#eef1f6; padding:4px 11px; border-radius:999px}
+  .doc-cat{display:inline-block; font-size:12px; font-weight:700; color:var(--brand-d); background:var(--brand-soft); padding:4px 11px; border-radius:999px}
   .doc-title{font-size:30px; font-weight:800; line-height:1.3; margin:0 0 8px; letter-spacing:.01em}
   .doc-desc{font-size:15.5px; color:var(--muted); margin:0 0 14px}
-  .doc-meta{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--muted);
-    border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px}
+  .doc-meta{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px}
   .tags{display:flex; gap:6px; flex-wrap:wrap}
   .tag{font-size:12px; color:#54607a; background:#eef1f6; border-radius:6px; padding:2px 9px}
   .doc-actions{display:flex; gap:8px; margin-left:auto}
 
-  /* TOC */
+  /* Checklist runner */
+  .runner{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0 22px}
+  .rn-top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px}
+  .pbar{height:9px;background:#e7ecf3;border-radius:6px;overflow:hidden}
+  .pbar-fill{height:100%;background:linear-gradient(90deg,var(--ok),#3ec97a);transition:width .25s;width:0}
+  .rn-actions{display:flex;gap:8px;margin-top:11px}
+  .rn-hist{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  .rn-hist-t{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .rn-rec{display:flex;gap:12px;font-size:12.5px;color:#54607a;padding:3px 0}
+  .rn-rec span:first-child{flex:1;font-weight:600;color:var(--ink)}
+
   .toc{background:#fbfcfe; border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:20px 0 26px}
   .toc h4{margin:0 0 8px; font-size:12px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase}
   .toc ul{margin:0; padding:0; list-style:none}
@@ -114,7 +103,6 @@
   .toc a{color:var(--brand-d); text-decoration:none; font-weight:600; font-size:14px; cursor:pointer}
   .toc a:hover{text-decoration:underline}
 
-  /* Blocks (shared by viewer + preview) */
   .block{margin:0 0 16px}
   .doc-body .p{display:block}
   .doc-body ul,.doc-body ol{margin:6px 0; padding-left:24px}
@@ -125,10 +113,8 @@
   .b-heading.lvl1{font-size:22px}
   .b-heading.lvl2{font-size:18px; border-top:none; padding-top:6px; margin-top:18px; color:#33405c}
   .b-text{font-size:16px; color:#2a3142}
-  .b-step{display:flex; gap:14px; align-items:flex-start; background:#fff; border:1px solid var(--line);
-    border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); scroll-margin-top:70px}
-  .b-step .num{flex:none; width:30px; height:30px; border-radius:50%; background:var(--brand);
-    color:#fff; font-weight:800; display:grid; place-items:center; font-size:14px}
+  .b-step{display:flex; gap:14px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); scroll-margin-top:70px}
+  .b-step .num{flex:none; width:30px; height:30px; border-radius:50%; background:var(--brand); color:#fff; font-weight:800; display:grid; place-items:center; font-size:14px}
   .b-step .body{flex:1; font-size:16px; padding-top:2px; min-width:0}
   .callout{border-radius:12px; padding:13px 16px 13px 46px; position:relative; font-size:15px}
   .callout::before{position:absolute; left:15px; top:12px; font-size:18px; line-height:1}
@@ -141,17 +127,15 @@
   .callout.danger{background:#fdeeee; border:1px solid #f6cccc; color:#8a2b2b}
   .callout.danger::before{content:"\1F6AB"}
   .callout .lbl{font-weight:800; display:block; font-size:12.5px; margin-bottom:2px; opacity:.85}
-  .b-check{display:flex; gap:10px; align-items:flex-start; font-size:15.5px; padding:7px 12px;
-    background:#fff; border:1px solid var(--line); border-radius:9px}
+  .b-check{display:flex; gap:10px; align-items:flex-start; font-size:15.5px; padding:7px 12px; background:#fff; border:1px solid var(--line); border-radius:9px}
   .b-check input{margin-top:5px; width:18px; height:18px; accent-color:var(--ok); cursor:pointer}
+  .b-check.done{background:#f6fbf8;border-color:#cde9d8}
   .b-check.done .ck-text{color:var(--muted); text-decoration:line-through}
   .b-img{margin:6px 0}
   .b-img img{max-width:100%; border:1px solid var(--line); border-radius:10px; display:block}
   .b-img figcaption{font-size:12.5px; color:var(--muted); margin-top:6px; text-align:center}
-  .b-code{background:#1c2230; color:#e6ebf5; border-radius:10px; padding:14px 16px; overflow-x:auto;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.6;
-    white-space:pre-wrap; word-break:break-word}
-  .b-table{width:100%; border-collapse:collapse; font-size:14.5px; overflow:hidden; border-radius:10px; border:1px solid var(--line)}
+  .b-code{background:#1c2230; color:#e6ebf5; border-radius:10px; padding:14px 16px; overflow-x:auto; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:pre-wrap; word-break:break-word}
+  .b-table{width:100%; border-collapse:collapse; font-size:14.5px; border-radius:10px; border:1px solid var(--line)}
   .b-table th,.b-table td{border:1px solid var(--line); padding:9px 12px; text-align:left}
   .b-table th{background:#f1f4f9; font-weight:700}
   .b-table tr:nth-child(even) td{background:#fafbfd}
@@ -160,7 +144,7 @@
   .b-qa .q::before{content:"Q"; position:absolute; left:15px; font-weight:800}
   .b-qa .a{padding:12px 16px 12px 40px; position:relative; font-size:15.5px}
   .b-qa .a::before{content:"A"; position:absolute; left:15px; font-weight:800; color:var(--muted)}
-  .b-term{display:grid; grid-template-columns:170px 1fr; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .b-term{display:grid; grid-template-columns:170px 1fr; border:1px solid var(--line); border-radius:10px; overflow:hidden}
   .b-term dt{background:#f6f8fb; font-weight:700; padding:11px 14px; margin:0; border-right:1px solid var(--line)}
   .b-term dd{padding:11px 14px; margin:0; font-size:15px}
   .b-branch{border:1px solid #d9c9f0; background:#f8f4ff; border-radius:12px; padding:14px 16px}
@@ -172,56 +156,66 @@
   .b-branch .arrow{color:#9b7fce; font-weight:800}
   .b-branch .act{flex:1; min-width:120px}
 
-  /* Welcome */
   .welcome{max-width:640px; margin:7vh auto; text-align:center; padding:0 20px}
-  .welcome .big{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--brand),#7aa2ff);
-    display:grid;place-items:center;color:#fff;font-size:34px;margin:0 auto 20px}
+  .welcome .big{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--brand),#7aa2ff); display:grid;place-items:center;color:#fff;font-size:34px;margin:0 auto 20px}
   .welcome h2{font-size:24px;margin:0 0 8px}
   .welcome p{color:var(--muted);font-size:15px;margin:0 auto 24px;max-width:480px}
   .welcome .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-  /* Draft restore banner */
-  .restore-banner{max-width:880px; margin:18px auto 0; background:#fff8e6; border:1px solid #ffe1ad; color:#7a5200;
-    border-radius:11px; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .restore-banner{max-width:880px; margin:18px auto 0; background:#fff8e6; border:1px solid #ffe1ad; color:#7a5200; border-radius:11px; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
   .restore-banner .rb-msg{flex:1; font-size:14px; font-weight:600}
 
-  /* Type picker (new doc) */
   .typepick{max-width:760px; margin:6vh auto; padding:0 20px}
   .typepick h2{font-size:22px; margin:0 0 4px}
   .typepick p{color:var(--muted); margin:0 0 22px}
   .type-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px}
-  .type-card{border:1px solid var(--line); background:#fff; border-radius:14px; padding:18px 16px; cursor:pointer;
-    text-align:left; transition:.12s}
+  .type-card{border:1px solid var(--line); background:#fff; border-radius:14px; padding:18px 16px; cursor:pointer; text-align:left; transition:.12s}
   .type-card:hover{border-color:var(--brand); box-shadow:var(--shadow); transform:translateY(-2px)}
   .type-card .tc-ic{font-size:26px}
   .type-card .tc-name{font-weight:800; margin-top:8px; font-size:15px}
   .type-card .tc-desc{font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.5}
 
-  /* Editor */
+  /* Course view */
+  .course-progress{margin:14px 0 22px}
+  .course-progress .cp-top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px;font-weight:600}
+  .course-item{display:flex; gap:13px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:10px}
+  .course-item.done{background:#f6fbf8; border-color:#cde9d8}
+  .course-item .ci-no{flex:none; width:28px; height:28px; border-radius:50%; background:var(--brand-soft); color:var(--brand-d); font-weight:800; display:grid; place-items:center; font-size:13px}
+  .course-item.done .ci-no{background:var(--ok); color:#fff}
+  .course-item .ci-main{flex:1; min-width:0}
+  .course-item .open{font-weight:700; color:var(--ink); cursor:pointer; text-align:left; background:none; border:none; font-size:16px; padding:0}
+  .course-item .open:hover{color:var(--brand-d)}
+  .course-item .ci-ic{font-size:15px}
+  .course-item .note{font-size:13px; color:var(--muted); margin-top:3px}
+  .course-item .chk{flex:none; display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted); cursor:pointer; white-space:nowrap}
+  .course-item .chk input{width:20px;height:20px;accent-color:var(--ok);cursor:pointer}
+
+  /* Course editor */
+  .ci-item{display:flex; gap:10px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px}
+  .ci-item .ci-no{flex:none; width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand-d);font-weight:800;display:grid;place-items:center;font-size:12px}
+  .ci-item .ci-main{flex:1; min-width:0}
+  .ci-item .ci-title{font-weight:700; font-size:14.5px}
+  .ci-item .ci-note{width:100%; border:1px solid var(--line); border-radius:7px; padding:6px 9px; font-size:13px; margin-top:5px; font-family:inherit}
+  .ci-item .iconbtn{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:34px; height:32px; cursor:pointer; color:var(--muted)}
+  .ci-item .iconbtn:disabled{opacity:.35}
+  .ci-add{display:flex; gap:8px; margin-top:12px}
+  .ci-add select{flex:1; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:14px; font-family:inherit}
+
   .editor-tabs{display:none; gap:6px; padding:10px 16px 0; position:sticky; top:0; background:var(--bg); z-index:6}
-  .editor-tabs button{flex:1; border:1px solid var(--line); background:#fff; padding:10px; border-radius:10px 10px 0 0;
-    font-weight:700; font-size:14px; cursor:pointer; color:var(--muted)}
+  .editor-tabs button{flex:1; border:1px solid var(--line); background:#fff; padding:10px; border-radius:10px 10px 0 0; font-weight:700; font-size:14px; cursor:pointer; color:var(--muted)}
   .editor-tabs button.active{background:var(--panel); color:var(--brand-d); border-bottom-color:var(--panel)}
   .editor-cols{display:flex; gap:0; align-items:stretch; min-height:calc(100vh - 56px)}
   .ed-pane{flex:1 1 50%; min-width:0; padding:22px 28px 140px; overflow-y:auto}
   .pv-pane{flex:1 1 50%; min-width:0; border-left:1px solid var(--line); background:#fbfcfe; overflow-y:auto}
   .pv-pane .reading{padding:26px 30px 80px; max-width:none}
   .pv-empty{color:var(--muted); text-align:center; padding:60px 20px; font-size:14px}
-
-  .ed-toolbar{position:sticky; top:0; background:rgba(255,255,255,.92); backdrop-filter:blur(4px);
-    display:flex; gap:6px; padding:8px 0; margin-bottom:6px; flex-wrap:wrap; z-index:4; border-bottom:1px solid var(--line)}
-  .ed-toolbar button{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:38px; height:34px;
-    padding:0 10px; cursor:pointer; font-size:14px; font-weight:700}
+  .ed-toolbar{position:sticky; top:0; background:rgba(255,255,255,.92); backdrop-filter:blur(4px); display:flex; gap:6px; padding:8px 0; margin-bottom:6px; flex-wrap:wrap; z-index:4; border-bottom:1px solid var(--line)}
+  .ed-toolbar button{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:38px; height:34px; padding:0 10px; cursor:pointer; font-size:14px; font-weight:700}
   .ed-toolbar button:hover{background:#f3f6fb}
   .ed-toolbar .sep{width:1px; background:var(--line); margin:2px 4px}
-
   .ed-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:13px}
   .field{flex:1; min-width:180px; display:flex; flex-direction:column; gap:5px}
   .field label{font-size:12px; font-weight:700; color:var(--muted)}
-  .field input, .field textarea, .field select{
-    border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:15px; font-family:inherit;
-    background:#fff; outline:none; width:100%;
-  }
+  .field input, .field textarea, .field select{border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:15px; font-family:inherit; background:#fff; outline:none; width:100%}
   .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
   .ed-blocks{display:flex; flex-direction:column; gap:12px; margin-top:8px}
   .ed-block{border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px; transition:box-shadow .12s}
@@ -229,15 +223,12 @@
   .ed-block.drag-over{box-shadow:0 0 0 2px var(--brand)}
   .ed-block .bhead{display:flex; align-items:center; gap:8px; margin-bottom:9px}
   .ed-block .drag-h{cursor:grab; color:#b8c0cf; font-size:15px; user-select:none; padding:0 2px}
-  .ed-block .btype{font-size:12px; font-weight:800; color:var(--brand-d); background:var(--brand-soft);
-    padding:3px 9px; border-radius:6px}
+  .ed-block .btype{font-size:12px; font-weight:800; color:var(--brand-d); background:var(--brand-soft); padding:3px 9px; border-radius:6px}
   .ed-block .bspacer{flex:1}
-  .ed-block .iconbtn{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:36px; height:34px;
-    cursor:pointer; color:var(--muted); font-size:14px; font-weight:700}
+  .ed-block .iconbtn{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:36px; height:34px; cursor:pointer; color:var(--muted); font-size:14px; font-weight:700}
   .ed-block .iconbtn:hover{background:#f5f7fb; color:var(--ink)}
   .ed-block .iconbtn:disabled{opacity:.35}
-  .ed-block textarea, .ed-block input[type=text]{width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 11px;
-    font-size:15px; font-family:inherit; resize:vertical; min-height:46px}
+  .ed-block textarea, .ed-block input[type=text]{width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 11px; font-size:15px; font-family:inherit; resize:vertical; min-height:46px}
   .ed-block textarea:focus, .ed-block input[type=text]:focus{border-color:var(--brand); outline:none; box-shadow:0 0 0 3px var(--brand-soft)}
   .ed-block .row2{display:flex; gap:8px; margin-bottom:8px}
   .ed-block .mini{font-size:11.5px; color:var(--muted); margin:2px 0 6px}
@@ -247,31 +238,26 @@
   .branch-opt .c{flex:0 0 38%}
   .branch-opt .a{flex:1}
   .branch-opt .rm{flex:none; border:1px solid var(--line); background:#fff; border-radius:8px; width:38px; height:40px; cursor:pointer; color:var(--muted)}
-
   .add-bar{margin-top:16px; padding-top:14px; border-top:1px dashed var(--line)}
   .add-bar .lbl{font-size:12px;font-weight:700;color:var(--muted); display:block; margin-bottom:8px}
   .add-grid{display:flex; gap:7px; flex-wrap:wrap}
-  .addbtn{border:1px dashed #c4cede; background:#fbfcff; color:var(--brand-d); border-radius:9px;
-    padding:9px 13px; font-size:13.5px; font-weight:700; cursor:pointer}
+  .addbtn{border:1px dashed #c4cede; background:#fbfcff; color:var(--brand-d); border-radius:9px; padding:9px 13px; font-size:13.5px; font-weight:700; cursor:pointer}
   .addbtn:hover{background:var(--brand-soft); border-color:var(--brand)}
-  .ed-footer{position:sticky; bottom:0; background:linear-gradient(transparent,var(--panel) 22px,var(--panel));
-    padding:14px 0 8px; display:flex; gap:10px; justify-content:flex-end; margin-top:14px; align-items:center}
+  .ed-footer{position:sticky; bottom:0; background:linear-gradient(transparent,var(--panel) 22px,var(--panel)); padding:14px 0 8px; display:flex; gap:10px; justify-content:flex-end; margin-top:14px; align-items:center}
   .ed-footer .save-state{margin-right:auto; font-size:12px; color:var(--muted)}
 
-  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--ink); color:#fff; padding:11px 20px; border-radius:10px; font-size:13.5px; font-weight:600;
-    opacity:0; pointer-events:none; transition:.25s; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:10px; font-size:13.5px; font-weight:600; opacity:0; pointer-events:none; transition:.25s; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.25)}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
   @media (max-width:900px){
     .app{grid-template-columns:1fr}
     .hamb{display:block}
     .logo small{display:none}
-    .sidebar{position:fixed; top:56px; left:0; bottom:0; width:84%; max-width:330px; z-index:30;
-      transform:translateX(-105%); transition:transform .22s; box-shadow:0 10px 40px rgba(0,0,0,.18)}
+    .sidebar{position:fixed; top:56px; left:0; bottom:0; width:84%; max-width:330px; z-index:30; transform:translateX(-105%); transition:transform .22s; box-shadow:0 10px 40px rgba(0,0,0,.18)}
     .app.nav-open .sidebar{transform:translateX(0)}
     .app.nav-open .scrim{display:block; position:fixed; inset:56px 0 0 0; background:rgba(15,20,35,.4); z-index:25}
     .reading{padding:22px 18px 90px}
+    .breadcrumb{padding:0 18px}
     .editor-tabs{display:flex}
     .editor-cols{display:block; min-height:0}
     .ed-pane, .pv-pane{padding:16px 16px 120px; border-left:none}
@@ -281,9 +267,8 @@
     .doc-actions{width:100%; margin-left:0}
     .btn .lbl-full{display:none}
   }
-
   @media print{
-    .topbar,.sidebar,.scrim,.toc,.doc-actions,.editor-tabs,.ed-pane,.ed-toolbar{display:none !important}
+    .topbar,.sidebar,.scrim,.toc,.doc-actions,.editor-tabs,.ed-pane,.ed-toolbar,.runner,.breadcrumb{display:none !important}
     .app{display:block;height:auto}
     .main{overflow:visible}
     .reading{max-width:none;padding:0}
@@ -309,17 +294,14 @@
   <div class="scrim" id="scrim"></div>
 
   <aside class="sidebar" id="sidebar">
-    <div class="search">
-      <span class="ico">🔍</span>
-      <input id="search" type="search" placeholder="キーワードで検索（本文も対象）">
+    <div class="navseg" id="navseg">
+      <button data-nav="docs" class="active">📄 文書</button>
+      <button data-nav="courses">🎓 コース</button>
     </div>
-    <div>
-      <div class="sec-title">種類</div>
-      <div class="filters" id="typeFilters"></div>
-    </div>
-    <div>
-      <div class="sec-title">カテゴリ</div>
-      <div class="filters" id="cats"></div>
+    <div id="docFilters">
+      <div class="search" style="margin-bottom:13px"><span class="ico">🔍</span><input id="search" type="search" placeholder="キーワードで検索（本文も対象）"></div>
+      <div style="margin-bottom:13px"><div class="sec-title">種類</div><div class="filters" id="typeFilters"></div></div>
+      <div><div class="sec-title">カテゴリ</div><div class="filters" id="cats"></div></div>
     </div>
     <div class="doclist" id="doclist"></div>
   </aside>
@@ -334,6 +316,7 @@
 "use strict";
 (function(){
   const STORE_KEY = "tejunsho-navi-v1";
+  const LOCAL_KEY = "tejunsho-navi-local-v1";
   const DRAFT_KEY = "tejunsho-navi-draft-v2";
 
   const DOC_TYPES = {
@@ -346,652 +329,516 @@
     general:  {label:"一般文書",     icon:"📄", desc:"自由形式のメモ・案内。"}
   };
   const BLOCK_TYPES = {
-    heading:{label:"見出し",  icon:"H"},
-    text:   {label:"本文",    icon:"¶"},
-    step:   {label:"手順ステップ", icon:"1."},
-    callout:{label:"注記/注意", icon:"!"},
-    check:  {label:"チェック項目", icon:"☑"},
-    branch: {label:"分岐", icon:"🔀"},
-    qa:     {label:"Q&A", icon:"Q"},
-    term:   {label:"用語", icon:"語"},
-    table:  {label:"表", icon:"⊞"},
-    image:  {label:"画像", icon:"🖼"},
-    code:   {label:"コード/コマンド", icon:"</>"}
+    heading:{label:"見出し",  icon:"H"}, text:{label:"本文", icon:"¶"}, step:{label:"手順ステップ", icon:"1."},
+    callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"}, branch:{label:"分岐", icon:"🔀"},
+    qa:{label:"Q&A", icon:"Q"}, term:{label:"用語", icon:"語"}, table:{label:"表", icon:"⊞"},
+    image:{label:"画像", icon:"🖼"}, code:{label:"コード/コマンド", icon:"</>"}
   };
 
   /* ---------- State ---------- */
-  let docs = [];
-  let currentId = null;
-  let mode = "welcome";       // welcome | view | edit | typepick
-  let query = "";
-  let activeCat = "すべて";
-  let activeType = "すべて";
-  let draft = null;
-  let lastFocused = null;     // last focused textarea/input for toolbar
-  let saveTimer = null;
+  let docs = [], courses = [];
+  let currentId = null, currentCourseId = null, viewFromCourse = null;
+  let mode = "welcome";       // welcome | view | edit | typepick | course | courseEdit
+  let navView = "docs";       // docs | courses
+  let query = "", activeCat = "すべて", activeType = "すべて";
+  let draft = null, courseDraft = null, lastFocused = null;
+
+  /* local per-user state (checks / records / course progress) */
+  let local = {checks:{}, records:{}, course:{}, viewerName:""};
 
   /* ---------- Persistence ---------- */
-  function load(){
-    try{
-      const raw = localStorage.getItem(STORE_KEY);
-      if(raw){ docs = JSON.parse(raw); return; }
-    }catch(e){ console.warn("load failed", e); }
-    docs = seedDocs(); save();
-  }
-  function save(){
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(docs)); }
-    catch(e){ toast("保存に失敗（容量超過の可能性）。画像を減らすか書出でバックアップを"); }
-  }
-  function saveDraftAuto(){
-    if(!draft) return;
-    try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({draft, t:Date.now()})); }catch(e){}
-    const st = document.querySelector(".save-state"); if(st) st.textContent = "下書き自動保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
-  }
-  function clearDraftAuto(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
-  function getStoredDraft(){
-    try{ const r = localStorage.getItem(DRAFT_KEY); return r? JSON.parse(r):null; }catch(e){ return null; }
-  }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  function ensureBids(blocks){ (blocks||[]).forEach(b=>{ if(!b.bid) b.bid=uid(); }); }
+  function load(){
+    let parsed=null;
+    try{ const raw=localStorage.getItem(STORE_KEY); if(raw) parsed=JSON.parse(raw); }catch(e){ console.warn(e); }
+    if(parsed){
+      if(Array.isArray(parsed)){ docs=parsed; courses=[]; } else { docs=parsed.docs||[]; courses=parsed.courses||[]; }
+    } else {
+      docs = seedDocs();
+      courses = [{ id:uid(), title:"新人オンボーディング（配属初日）",
+        description:"配属初日に、上から順に読んでください。読み終えたら「完了」を押すと進み具合が分かります。",
+        items: ["この手順書ナビの使い方","来客対応の基本手順","電話の取り次ぎフロー","開店前チェックリスト"]
+          .map(t=>{ const d=docs.find(x=>x.title===t); return d?{docId:d.id,note:""}:null; }).filter(Boolean) }];
+    }
+    docs.forEach(d=>ensureBids(d.blocks));
+    loadLocal();
+    if(!parsed) save();
+  }
+  function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({docs,courses})); }
+    catch(e){ toast("保存に失敗（容量超過の可能性）。画像を減らすか書出でバックアップを"); } }
+  function loadLocal(){ try{ const r=localStorage.getItem(LOCAL_KEY); if(r) local=Object.assign(local,JSON.parse(r)); }catch(e){} }
+  function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(local)); }catch(e){} }
 
-  /* ---------- Text helpers + markdown-lite ---------- */
+  function saveDraftAuto(){ if(!draft) return;
+    try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({draft,t:Date.now()})); }catch(e){}
+    const st=document.querySelector(".save-state"); if(st) st.textContent="下書き自動保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}); }
+  function clearDraftAuto(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+  function getStoredDraft(){ try{ const r=localStorage.getItem(DRAFT_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+
+  /* check / record / course-progress helpers (per-user, local) */
+  function getCheck(docId,bid){ return !!(local.checks[docId] && local.checks[docId][bid]); }
+  function setCheck(docId,bid,v){ (local.checks[docId]=local.checks[docId]||{})[bid]=v; saveLocal(); }
+  function resetChecks(docId){ delete local.checks[docId]; saveLocal(); }
+  function checkStats(d){ const ids=(d.blocks||[]).filter(b=>b.type==="check").map(b=>b.bid);
+    return {total:ids.length, done:ids.filter(id=>getCheck(d.id,id)).length}; }
+  function addRecord(docId,rec){ (local.records[docId]=local.records[docId]||[]).unshift(rec); saveLocal(); }
+  function getRecords(docId){ return local.records[docId]||[]; }
+  function courseDone(cid,docId){ return !!(local.course[cid] && local.course[cid][docId]); }
+  function setCourseDone(cid,docId,v){ (local.course[cid]=local.course[cid]||{})[docId]=v; saveLocal(); }
+
+  /* ---------- Text + markdown-lite ---------- */
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
-  function inlineMd(s){ // s already escaped
-    s = s.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
-    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>");
-    s = s.replace(/`([^`\n]+)`/g,'<code class="ic">$1</code>');
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  function inlineMd(s){
+    s=s.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
+    s=s.replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>");
+    s=s.replace(/`([^`\n]+)`/g,'<code class="ic">$1</code>');
+    s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
     return s;
   }
-  function fmt(text){ // escape + markdown-lite (lists, bold, links...) -> HTML
-    const lines = esc(text).split(/\n/);
-    let html=""; let i=0;
-    while(i<lines.length){
-      const ln = lines[i];
-      if(/^\s*[-・]\s+/.test(ln)){
-        const items=[]; while(i<lines.length && /^\s*[-・]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-・]\s+/,"")); i++; }
-        html += "<ul>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ul>";
-      } else if(/^\s*\d+[.)]\s+/.test(ln)){
-        const items=[]; while(i<lines.length && /^\s*\d+[.)]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+[.)]\s+/,"")); i++; }
-        html += "<ol>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ol>";
-      } else {
-        const para=[]; while(i<lines.length && lines[i].trim()!=="" && !/^\s*[-・]\s+/.test(lines[i]) && !/^\s*\d+[.)]\s+/.test(lines[i])){ para.push(lines[i]); i++; }
-        if(para.length) html += '<span class="p">'+para.map(inlineMd).join("<br>")+"</span>"; else i++;
-      }
+  function fmt(text){
+    const lines=esc(text).split(/\n/); let html=""; let i=0;
+    while(i<lines.length){ const ln=lines[i];
+      if(/^\s*[-・]\s+/.test(ln)){ const items=[]; while(i<lines.length&&/^\s*[-・]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-・]\s+/,"")); i++; } html+="<ul>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ul>"; }
+      else if(/^\s*\d+[.)]\s+/.test(ln)){ const items=[]; while(i<lines.length&&/^\s*\d+[.)]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+[.)]\s+/,"")); i++; } html+="<ol>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ol>"; }
+      else { const para=[]; while(i<lines.length&&lines[i].trim()!==""&&!/^\s*[-・]\s+/.test(lines[i])&&!/^\s*\d+[.)]\s+/.test(lines[i])){ para.push(lines[i]); i++; } if(para.length) html+='<span class="p">'+para.map(inlineMd).join("<br>")+"</span>"; else i++; }
     }
     return html;
   }
-  function hl(html){ // highlight query inside HTML text nodes (skip tags)
-    if(!query) return html;
-    const re = new RegExp("("+escapeReg(esc(query))+")","gi");
-    return html.split(/(<[^>]+>)/).map(seg=> seg.charAt(0)==="<" ? seg : seg.replace(re,"<mark>$1</mark>")).join("");
-  }
+  function hl(html){ if(!query) return html; const re=new RegExp("("+escapeReg(esc(query))+")","gi");
+    return html.split(/(<[^>]+>)/).map(seg=> seg.charAt(0)==="<"?seg:seg.replace(re,"<mark>$1</mark>")).join(""); }
   const fmtHL = t => hl(fmt(t));
 
   /* ---------- Derived ---------- */
-  function categories(){
-    const set = new Set(docs.map(d=>d.category).filter(Boolean));
-    return ["すべて", ...[...set].sort((a,b)=>a.localeCompare(b,"ja"))];
-  }
-  function docText(d){
-    const parts = [d.title,d.description,d.category,(d.tags||[]).join(" ")];
-    (d.blocks||[]).forEach(b=>{ parts.push(b.text,b.caption,b.q,b.a,b.term,b.desc);
-      (b.options||[]).forEach(o=>parts.push(o.c,o.a)); });
-    return parts.filter(Boolean).join(" ").toLowerCase();
-  }
-  function filteredDocs(){
-    return docs.filter(d=>{
-      if(activeCat!=="すべて" && d.category!==activeCat) return false;
-      if(activeType!=="すべて" && (d.type||"general")!==activeType) return false;
-      if(query && !docText(d).includes(query.toLowerCase())) return false;
-      return true;
-    });
-  }
+  function categories(){ const set=new Set(docs.map(d=>d.category).filter(Boolean));
+    return ["すべて", ...[...set].sort((a,b)=>a.localeCompare(b,"ja"))]; }
+  function docText(d){ const parts=[d.title,d.description,d.category,(d.tags||[]).join(" ")];
+    (d.blocks||[]).forEach(b=>{ parts.push(b.text,b.caption,b.q,b.a,b.term,b.desc); (b.options||[]).forEach(o=>parts.push(o.c,o.a)); });
+    return parts.filter(Boolean).join(" ").toLowerCase(); }
+  function filteredDocs(){ return docs.filter(d=>{
+    if(activeCat!=="すべて"&&d.category!==activeCat) return false;
+    if(activeType!=="すべて"&&(d.type||"general")!==activeType) return false;
+    if(query&&!docText(d).includes(query.toLowerCase())) return false; return true; }); }
 
   /* ---------- Sidebar ---------- */
   function renderSidebar(){
-    const usedTypes = new Set(docs.map(d=>d.type||"general"));
-    const typeBox = document.getElementById("typeFilters");
-    typeBox.innerHTML = ['<button class="chip '+(activeType==="すべて"?"active":"")+'" data-type="すべて">すべて</button>']
+    document.querySelectorAll("#navseg button").forEach(b=>b.classList.toggle("active",b.dataset.nav===navView));
+    document.getElementById("docFilters").style.display = navView==="docs"?"":"none";
+    const box=document.getElementById("doclist");
+    if(navView==="courses"){ renderCourseList(box); return; }
+
+    const usedTypes=new Set(docs.map(d=>d.type||"general"));
+    document.getElementById("typeFilters").innerHTML =
+      ['<button class="chip '+(activeType==="すべて"?"active":"")+'" data-type="すべて">すべて</button>']
       .concat(Object.keys(DOC_TYPES).filter(t=>usedTypes.has(t)).map(t=>
         '<button class="chip '+(activeType===t?"active":"")+'" data-type="'+t+'">'+DOC_TYPES[t].icon+" "+DOC_TYPES[t].label+"</button>")).join("");
-
-    const cats = categories();
-    document.getElementById("cats").innerHTML = cats.map(c=>
+    document.getElementById("cats").innerHTML = categories().map(c=>
       '<button class="chip '+(c===activeCat?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>").join("");
 
-    const list = filteredDocs();
-    const box = document.getElementById("doclist");
-    if(!list.length){
-      box.innerHTML = '<div class="empty-list">'+((query||activeCat!=="すべて"||activeType!=="すべて")?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。")+"</div>";
-      return;
-    }
-    const groups = {};
-    list.forEach(d=>{ const c=d.category||"未分類"; (groups[c]=groups[c]||[]).push(d); });
-    let html = "";
+    const list=filteredDocs();
+    if(!list.length){ box.innerHTML='<div class="empty-list">'+((query||activeCat!=="すべて"||activeType!=="すべて")?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。")+"</div>"; return; }
+    const groups={}; list.forEach(d=>{ const c=d.category||"未分類"; (groups[c]=groups[c]||[]).push(d); });
+    let html="";
     Object.keys(groups).sort((a,b)=>a.localeCompare(b,"ja")).forEach(cat=>{
-      html += '<div class="docgroup-label">'+esc(cat)+"</div>";
-      groups[cat].forEach(d=>{
-        const tdef = DOC_TYPES[d.type||"general"];
-        const steps = (d.blocks||[]).filter(b=>b.type==="step").length;
-        const meta = [tdef?tdef.label:"", steps?steps+"ステップ":"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
-        html += '<button class="docitem '+(d.id===currentId&&mode==="view"?"active":"")+'" data-id="'+d.id+'">'
-          + '<span class="di-ic">'+(tdef?tdef.icon:"📄")+'</span>'
-          + '<span class="di-body"><span class="t">'+hl(esc(d.title||"（無題）"))+'</span>'
-          + '<span class="m">'+hl(esc(meta||d.description||""))+'</span></span></button>';
-      });
+      html+='<div class="docgroup-label">'+esc(cat)+"</div>";
+      groups[cat].forEach(d=>{ const tdef=DOC_TYPES[d.type||"general"]; const steps=(d.blocks||[]).filter(b=>b.type==="step").length;
+        const meta=[tdef?tdef.label:"", steps?steps+"ステップ":"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
+        html+='<button class="docitem '+(d.id===currentId&&mode==="view"?"active":"")+'" data-id="'+d.id+'"><span class="di-ic">'+(tdef?tdef.icon:"📄")+'</span><span class="di-body"><span class="t">'+hl(esc(d.title||"（無題）"))+'</span><span class="m">'+hl(esc(meta||d.description||""))+"</span></span></button>"; });
     });
-    box.innerHTML = html;
+    box.innerHTML=html;
+  }
+  function renderCourseList(box){
+    let html='<button class="btn primary" id="newCourse" style="width:100%;margin-bottom:10px">＋ 新しいコース</button>';
+    if(!courses.length) html+='<div class="empty-list">コースがありません。<br>「配属初日に読むセット」のような<br>読む順・必読リストを作れます。</div>';
+    else html+=courses.map(c=>{ const items=c.items||[]; const done=items.filter(it=>courseDone(c.id,it.docId)).length;
+      return '<button class="docitem '+(c.id===currentCourseId&&mode==="course"?"active":"")+'" data-cid="'+c.id+'"><span class="di-ic">🎓</span><span class="di-body"><span class="t">'+hl(esc(c.title))+'</span><span class="m">'+done+" / "+items.length+" 完了</span></span></button>"; }).join("");
+    box.innerHTML=html;
+    const nc=document.getElementById("newCourse"); if(nc) nc.onclick=()=>{ closeNav(); openCourseEditor(null); };
   }
 
-  /* ---------- Shared body renderer (viewer + preview) ---------- */
+  /* ---------- Shared body renderer ---------- */
   function buildToc(blocks){
     const hs=[]; blocks.forEach((b,i)=>{ if(b.type==="heading"&&(b.text||"").trim()) hs.push({i,level:b.level||1,text:b.text}); });
     if(hs.length<2) return "";
-    return '<nav class="toc"><h4>目次</h4><ul>'+hs.map(h=>
-      '<li class="lvl'+(h.level||1)+'"><a data-jump="blk-'+h.i+'">'+esc(h.text)+"</a></li>").join("")+"</ul></nav>";
+    return '<nav class="toc"><h4>目次</h4><ul>'+hs.map(h=>'<li class="lvl'+(h.level||1)+'"><a data-jump="blk-'+h.i+'">'+esc(h.text)+"</a></li>").join("")+"</ul></nav>";
   }
-  function renderBlocks(blocks){
+  function renderBlocks(blocks, ctx){
     let stepNo=0;
-    return blocks.map((b,i)=>{
-      switch(b.type){
-        case "heading":{ const lv=b.level||1; const tag=lv===2?"h4":"h3";
-          return "<"+tag+' class="block b-heading lvl'+lv+'" id="blk-'+i+'">'+hl(inlineMd(esc(b.text)))+"</"+tag+">"; }
-        case "text": return '<div class="block b-text">'+fmtHL(b.text)+"</div>";
-        case "step":{ stepNo++; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
-        case "callout":{ const v=b.variant||"info"; const L={info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"};
-          return '<div class="block callout '+v+'"><span class="lbl">'+L[v]+"</span>"+fmtHL(b.text)+"</div>"; }
-        case "check": return '<label class="block b-check'+(b.done?" done":"")+'" data-check="'+i+'"><input type="checkbox" '+(b.done?"checked":"")+'><span class="ck-text">'+fmtHL(b.text)+"</span></label>";
-        case "branch":{
-          const opts=(b.options||[]).filter(o=>(o.c||o.a));
-          return '<div class="block b-branch"><div class="bq">'+hl(esc(b.text||"条件を選んでください"))+'</div><ul class="branches">'
-            + opts.map(o=>'<li><span class="cond">'+hl(esc(o.c||""))+'</span><span class="arrow">→</span><span class="act">'+fmtHL(o.a||"")+"</span></li>").join("")
-            + "</ul></div>"; }
-        case "qa": return '<div class="block b-qa"><div class="q">'+fmtHL(b.q||"")+'</div><div class="a">'+fmtHL(b.a||"")+"</div></div>";
-        case "term": return '<dl class="block b-term"><dt>'+hl(esc(b.term||""))+"</dt><dd>"+fmtHL(b.desc||"")+"</dd></dl>";
-        case "table": return renderTable(b.text);
-        case "image": return b.data?'<figure class="block b-img"><img src="'+b.data+'" alt="'+esc(b.caption||"")+'">'+(b.caption?'<figcaption>'+hl(esc(b.caption))+"</figcaption>":"")+"</figure>":"";
-        case "code": return '<pre class="block b-code">'+esc(b.text)+"</pre>";
-        default: return "";
-      }
-    }).join("");
+    return blocks.map((b,i)=>{ switch(b.type){
+      case "heading":{ const lv=b.level||1; const tag=lv===2?"h4":"h3"; return "<"+tag+' class="block b-heading lvl'+lv+'" id="blk-'+i+'">'+hl(inlineMd(esc(b.text)))+"</"+tag+">"; }
+      case "text": return '<div class="block b-text">'+fmtHL(b.text)+"</div>";
+      case "step":{ stepNo++; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
+      case "callout":{ const v=b.variant||"info"; const L={info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"}; return '<div class="block callout '+v+'"><span class="lbl">'+L[v]+"</span>"+fmtHL(b.text)+"</div>"; }
+      case "check":{ const checked = ctx&&ctx.docId ? getCheck(ctx.docId,b.bid) : false;
+        return '<label class="block b-check'+(checked?" done":"")+'" data-bid="'+(b.bid||"")+'"><input type="checkbox" '+(checked?"checked":"")+'><span class="ck-text">'+fmtHL(b.text)+"</span></label>"; }
+      case "branch":{ const opts=(b.options||[]).filter(o=>(o.c||o.a));
+        return '<div class="block b-branch"><div class="bq">'+hl(esc(b.text||"条件を選んでください"))+'</div><ul class="branches">'+opts.map(o=>'<li><span class="cond">'+hl(esc(o.c||""))+'</span><span class="arrow">→</span><span class="act">'+fmtHL(o.a||"")+"</span></li>").join("")+"</ul></div>"; }
+      case "qa": return '<div class="block b-qa"><div class="q">'+fmtHL(b.q||"")+'</div><div class="a">'+fmtHL(b.a||"")+"</div></div>";
+      case "term": return '<dl class="block b-term"><dt>'+hl(esc(b.term||""))+"</dt><dd>"+fmtHL(b.desc||"")+"</dd></dl>";
+      case "table": return renderTable(b.text);
+      case "image": return b.data?'<figure class="block b-img"><img src="'+b.data+'" alt="'+esc(b.caption||"")+'">'+(b.caption?'<figcaption>'+hl(esc(b.caption))+"</figcaption>":"")+"</figure>":"";
+      case "code": return '<pre class="block b-code">'+esc(b.text)+"</pre>";
+      default: return "";
+    } }).join("");
   }
   function renderTable(text){
-    const rows = String(text||"").split(/\n/).map(r=>r.trim()).filter(Boolean).map(r=>r.split("|").map(c=>c.trim()));
+    const rows=String(text||"").split(/\n/).map(r=>r.trim()).filter(Boolean).map(r=>r.split("|").map(c=>c.trim()));
     if(!rows.length) return "";
-    const head = rows[0], body = rows.slice(1);
+    const head=rows[0], body=rows.slice(1);
     let h='<table class="block b-table"><thead><tr>'+head.map(c=>"<th>"+hl(inlineMd(esc(c)))+"</th>").join("")+"</tr></thead>";
     if(body.length) h+="<tbody>"+body.map(r=>"<tr>"+r.map(c=>"<td>"+hl(inlineMd(esc(c)))+"</td>").join("")+"</tr>").join("")+"</tbody>";
     return h+"</table>";
   }
-  function docBodyHTML(d){
-    const body = renderBlocks(d.blocks||[]);
-    return buildToc(d.blocks||[]) + '<div class="doc-body">'+(body||'<p class="b-text" style="color:var(--muted)">（本文がありません）</p>')+"</div>";
-  }
+  function docBodyHTML(d, ctx){ const body=renderBlocks(d.blocks||[], ctx);
+    return buildToc(d.blocks||[]) + '<div class="doc-body">'+(body||'<p class="b-text" style="color:var(--muted)">（本文がありません）</p>')+"</div>"; }
 
   /* ---------- Main render ---------- */
   function render(){
     renderSidebar();
     document.getElementById("btnPrint").disabled = !(mode==="view" && currentId);
-    const main = document.getElementById("main");
+    const main=document.getElementById("main");
     if(mode==="edit"){ main.innerHTML=""; main.appendChild(renderEditor()); return; }
-    if(mode==="typepick"){ main.innerHTML = typePickHTML(); bindTypePick(); return; }
-    const doc = docs.find(d=>d.id===currentId);
-    if(!doc || mode==="welcome"){ main.innerHTML = welcomeHTML(); bindWelcome(); return; }
-    main.innerHTML = renderViewer(doc); bindViewer(doc);
+    if(mode==="courseEdit"){ main.innerHTML=""; main.appendChild(renderCourseEditor()); return; }
+    if(mode==="typepick"){ main.innerHTML=typePickHTML(); bindTypePick(); return; }
+    if(mode==="course"){ const c=courses.find(x=>x.id===currentCourseId); if(c){ main.innerHTML=renderCourseView(c); bindCourseView(c); return; } mode="welcome"; }
+    const doc=docs.find(d=>d.id===currentId);
+    if(!doc||mode==="welcome"){ main.innerHTML=welcomeHTML(); bindWelcome(); return; }
+    main.innerHTML=renderViewer(doc); bindViewer(doc);
   }
 
-  function restoreBannerHTML(){
-    const sd = getStoredDraft();
-    if(!sd || !sd.draft) return "";
-    const t = sd.draft.title ? "「"+esc(sd.draft.title)+"」" : "無題の文書";
-    return '<div class="restore-banner"><span class="rb-msg">📝 前回の下書き'+t+'が残っています。編集を再開しますか？</span>'
-      + '<button class="btn primary" id="rbResume">再開する</button><button class="btn" id="rbDiscard">破棄</button></div>';
-  }
-  function welcomeHTML(){
-    return restoreBannerHTML() + '<div class="welcome"><div class="big">📘</div><h2>手順書ナビへようこそ</h2>'
-      + "<p>マニュアル・手順書・ワークフロー・チェックリストなどを、誰でも見やすく作成・閲覧できます。左の一覧から選ぶか、新しく作成してください。</p>"
-      + '<div class="actions"><button class="btn primary" id="wNew">＋ 新しい文書を作る</button></div></div>';
-  }
-  function bindWelcome(){
-    const n=document.getElementById("wNew"); if(n) n.onclick=()=>startNew();
-    bindRestore();
-  }
-  function bindRestore(){
-    const r=document.getElementById("rbResume"), d=document.getElementById("rbDiscard");
+  function restoreBannerHTML(){ const sd=getStoredDraft(); if(!sd||!sd.draft) return "";
+    const t=sd.draft.title?"「"+esc(sd.draft.title)+"」":"無題の文書";
+    return '<div class="restore-banner"><span class="rb-msg">📝 前回の下書き'+t+'が残っています。編集を再開しますか？</span><button class="btn primary" id="rbResume">再開する</button><button class="btn" id="rbDiscard">破棄</button></div>'; }
+  function welcomeHTML(){ return restoreBannerHTML()+'<div class="welcome"><div class="big">📘</div><h2>手順書ナビへようこそ</h2><p>マニュアル・手順書・ワークフロー・チェックリストなどを、誰でも見やすく作成・閲覧できます。新人の方は左上「🎓 コース」から読む順を確認できます。</p><div class="actions"><button class="btn primary" id="wNew">＋ 新しい文書を作る</button><button class="btn" id="wCourse">🎓 コースを見る</button></div></div>'; }
+  function bindWelcome(){ const n=document.getElementById("wNew"); if(n) n.onclick=()=>startNew();
+    const c=document.getElementById("wCourse"); if(c) c.onclick=()=>{ navView="courses"; const f=courses[0]; if(f){ currentCourseId=f.id; mode="course"; } render(); };
+    const r=document.getElementById("rbResume"),d=document.getElementById("rbDiscard");
     if(r) r.onclick=()=>{ const sd=getStoredDraft(); if(sd&&sd.draft){ draft=sd.draft; mode="edit"; render(); } };
-    if(d) d.onclick=()=>{ clearDraftAuto(); render(); toast("下書きを破棄しました"); };
-  }
+    if(d) d.onclick=()=>{ clearDraftAuto(); render(); toast("下書きを破棄しました"); }; }
 
+  /* ---------- Document viewer ---------- */
+  function runnerHTML(d){
+    const s=checkStats(d); if(!s.total) return "";
+    const pct=s.total?Math.round(s.done/s.total*100):0; const recs=getRecords(d.id).slice(0,5);
+    return '<div class="runner"><div class="rn-top"><strong>✅ チェックの進捗</strong><span id="rnText">'+s.done+" / "+s.total+' 完了</span></div><div class="pbar"><div class="pbar-fill" id="rnFill" style="width:'+pct+'%"></div></div><div class="rn-actions"><button class="btn primary" id="rnRecord">✓ 完了を記録</button><button class="btn" id="rnReset">チェックをリセット</button></div>'
+      + (recs.length?'<div class="rn-hist"><div class="rn-hist-t">実施履歴（この端末）</div>'+recs.map(r=>'<div class="rn-rec"><span>'+esc(r.name||"匿名")+"</span><span>"+r.done+"/"+r.total+"</span><span>"+new Date(r.at).toLocaleString("ja-JP")+"</span></div>").join("")+"</div>":"")
+      + "</div>";
+  }
   function renderViewer(d){
-    const tdef = DOC_TYPES[d.type||"general"];
-    const meta=[]; const upd = d.updated?new Date(d.updated):null;
+    const tdef=DOC_TYPES[d.type||"general"]; const meta=[]; const upd=d.updated?new Date(d.updated):null;
     if(upd) meta.push("最終更新: "+upd.getFullYear()+"/"+(upd.getMonth()+1)+"/"+upd.getDate());
     const steps=(d.blocks||[]).filter(b=>b.type==="step").length; if(steps) meta.push("全"+steps+"ステップ");
-    return '<article class="reading"><header class="doc-head"><div class="doc-badges">'
+    let crumb=""; if(viewFromCourse){ const c=courses.find(x=>x.id===viewFromCourse); if(c) crumb='<div class="breadcrumb"><button id="vBack">← 🎓 '+esc(c.title)+" に戻る</button></div>"; }
+    return crumb + '<article class="reading"><header class="doc-head"><div class="doc-badges">'
       + (tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")
-      + (d.category?'<span class="doc-cat">'+esc(d.category)+"</span>":"")
-      + "</div>"
+      + (d.category?'<span class="doc-cat">'+esc(d.category)+"</span>":"") + "</div>"
       + '<h1 class="doc-title">'+hl(esc(d.title||"（無題）"))+"</h1>"
       + (d.description?'<p class="doc-desc">'+hl(esc(d.description))+"</p>":"")
       + '<div class="doc-meta">'+meta.map(m=>"<span>"+esc(m)+"</span>").join("")
       + '<span class="tags">'+(d.tags||[]).map(t=>'<span class="tag">#'+esc(t)+"</span>").join("")+"</span>"
       + '<span class="doc-actions"><button class="btn" id="vEdit">✏️ 編集</button><button class="btn" id="vDup">⧉ 複製</button><button class="btn danger" id="vDel">🗑 削除</button></span>'
-      + "</div></header>" + docBodyHTML(d) + "</article>";
+      + "</div></header>" + runnerHTML(d) + docBodyHTML(d,{docId:d.id}) + "</article>";
   }
   function bindViewer(d){
     const main=document.getElementById("main");
+    const back=main.querySelector("#vBack"); if(back) back.onclick=()=>{ currentCourseId=viewFromCourse; mode="course"; navView="courses"; render(); main.scrollTop=0; };
     main.querySelector("#vEdit").onclick=()=>openEditor(d.id);
     main.querySelector("#vDup").onclick=()=>duplicateDoc(d.id);
     main.querySelector("#vDel").onclick=()=>deleteDoc(d.id);
+    const rec=main.querySelector("#rnRecord"); if(rec) rec.onclick=()=>recordChecklist(d);
+    const rs=main.querySelector("#rnReset"); if(rs) rs.onclick=()=>{ if(confirm("この端末のチェックをすべて外しますか？")){ resetChecks(d.id); render(); } };
     bindBodyInteractions(main, d, true);
   }
   function bindBodyInteractions(root, d, persist){
-    root.querySelectorAll("[data-jump]").forEach(a=>{ a.onclick=e=>{ e.preventDefault();
-      const t=root.querySelector("#"+a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); }; });
-    root.querySelectorAll("[data-check]").forEach(lbl=>{
-      const cb=lbl.querySelector("input");
-      if(!persist){ cb.disabled=true; return; }
-      cb.onchange=()=>{ d.blocks[+lbl.dataset.check].done=cb.checked; lbl.classList.toggle("done",cb.checked); save(); };
-    });
+    root.querySelectorAll("[data-jump]").forEach(a=>{ a.onclick=e=>{ e.preventDefault(); const t=root.querySelector("#"+a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); }; });
+    root.querySelectorAll(".b-check").forEach(lbl=>{ const cb=lbl.querySelector("input");
+      if(!persist||!d){ cb.disabled=true; return; }
+      cb.onchange=()=>{ setCheck(d.id, lbl.dataset.bid, cb.checked); lbl.classList.toggle("done",cb.checked); updateRunner(d); }; });
+  }
+  function updateRunner(d){ const s=checkStats(d); const fill=document.getElementById("rnFill"); const txt=document.getElementById("rnText");
+    if(fill) fill.style.width=(s.total?Math.round(s.done/s.total*100):0)+"%"; if(txt) txt.textContent=s.done+" / "+s.total+" 完了"; }
+  function recordChecklist(d){ const s=checkStats(d);
+    const name=prompt("実施者名を入力してください（記録に残ります）", local.viewerName||""); if(name===null) return;
+    local.viewerName=name; saveLocal(); addRecord(d.id,{name:name.trim(),at:Date.now(),done:s.done,total:s.total}); render(); toast("実施を記録しました"); }
+
+  /* ---------- Course view ---------- */
+  function renderCourseView(c){
+    const items=(c.items||[]); const done=items.filter(it=>courseDone(c.id,it.docId)).length;
+    const pct=items.length?Math.round(done/items.length*100):0;
+    let rows=items.map((it,i)=>{ const d=docs.find(x=>x.id===it.docId); const tdef=d?DOC_TYPES[d.type||"general"]:null; const dn=courseDone(c.id,it.docId);
+      return '<div class="course-item'+(dn?" done":"")+'"><span class="ci-no">'+(dn?"✓":(i+1))+'</span><div class="ci-main">'
+        + (d?'<button class="open" data-open="'+d.id+'"><span class="ci-ic">'+(tdef?tdef.icon:"📄")+'</span> '+esc(d.title)+"</button>":'<div class="open" style="color:var(--danger)">（削除された文書）</div>')
+        + (it.note?'<div class="note">'+esc(it.note)+"</div>":"")
+        + '</div><label class="chk"><input type="checkbox" data-cdone="'+it.docId+'" '+(dn?"checked":"")+">完了</label></div>"; }).join("");
+    if(!items.length) rows='<div class="empty-list">このコースにはまだ文書がありません。「コースを編集」から追加してください。</div>';
+    return '<article class="reading"><header class="doc-head"><div class="doc-badges"><span class="doc-type">🎓 オンボーディングコース</span></div>'
+      + '<h1 class="doc-title">'+esc(c.title)+"</h1>" + (c.description?'<p class="doc-desc">'+esc(c.description)+"</p>":"")
+      + '<div class="doc-meta"><span class="doc-actions" style="margin-left:0"><button class="btn" id="cEdit">✏️ コースを編集</button><button class="btn danger" id="cDel">🗑 削除</button></span></div></header>'
+      + '<div class="course-progress"><div class="cp-top"><span>進み具合</span><span>'+done+" / "+items.length+" 完了（"+pct+'%）</span></div><div class="pbar"><div class="pbar-fill" style="width:'+pct+'%"></div></div></div>'
+      + (items.length?'<div style="margin-bottom:14px"><button class="btn primary" id="cNext">▶ 次の未読を開く</button></div>':"")
+      + rows + "</article>";
+  }
+  function bindCourseView(c){
+    const main=document.getElementById("main");
+    main.querySelectorAll("[data-open]").forEach(b=> b.onclick=()=>{ currentId=b.dataset.open; viewFromCourse=c.id; mode="view"; render(); main.scrollTop=0; });
+    main.querySelectorAll("[data-cdone]").forEach(cb=> cb.onchange=()=>{ setCourseDone(c.id, cb.dataset.cdone, cb.checked); render(); });
+    const e=main.querySelector("#cEdit"); if(e) e.onclick=()=>openCourseEditor(c.id);
+    const del=main.querySelector("#cDel"); if(del) del.onclick=()=>{ if(confirm("コース「"+c.title+"」を削除しますか？（中の文書は消えません）")){ courses=courses.filter(x=>x.id!==c.id); currentCourseId=null; mode="welcome"; navView="docs"; save(); render(); toast("コースを削除しました"); } };
+    const nx=main.querySelector("#cNext"); if(nx) nx.onclick=()=>{ const next=(c.items||[]).find(it=>!courseDone(c.id,it.docId)); if(!next){ toast("すべて完了しています！🎉"); return; } currentId=next.docId; viewFromCourse=c.id; mode="view"; render(); main.scrollTop=0; };
+  }
+
+  /* ---------- Course editor ---------- */
+  function openCourseEditor(id){ const src=id?courses.find(c=>c.id===id):null;
+    courseDraft = src?JSON.parse(JSON.stringify(src)):{id:null,title:"",description:"",items:[]};
+    if(!courseDraft.items) courseDraft.items=[]; mode="courseEdit"; render();
+    const t=document.querySelector("#ceTitle"); if(t) t.focus(); }
+  function renderCourseEditor(){
+    const wrap=document.createElement("div"); wrap.className="reading"; const c=courseDraft;
+    wrap.innerHTML='<h2 style="margin:0 0 16px">'+(c.id?"コースを編集":"新しいコース")+"</h2>"
+      + '<div class="ed-row"><div class="field"><label>コース名 *</label><input type="text" id="ceTitle" value="'+esc(c.title)+'" placeholder="例）新人オンボーディング（配属初日）"></div></div>'
+      + '<div class="ed-row"><div class="field"><label>説明</label><textarea id="ceDesc" rows="2" placeholder="このコースの目的・対象者など">'+esc(c.description)+"</textarea></div></div>"
+      + '<div class="sec-title" style="margin:14px 4px 8px">読む順に並べる</div><div id="ceItems"></div>'
+      + '<div class="ci-add"><select id="ceAdd"></select></div>'
+      + '<div class="ed-footer" style="background:none"><button class="btn" id="ceCancel">キャンセル</button><button class="btn primary" id="ceSave">💾 保存</button></div>';
+
+    const syncMeta=()=>{ c.title=wrap.querySelector("#ceTitle").value; c.description=wrap.querySelector("#ceDesc").value; };
+    wrap.querySelector("#ceTitle").addEventListener("input",syncMeta);
+    wrap.querySelector("#ceDesc").addEventListener("input",syncMeta);
+
+    const itemsBox=wrap.querySelector("#ceItems"); const addSel=wrap.querySelector("#ceAdd");
+    const refreshAdd=()=>{ const used=new Set(c.items.map(it=>it.docId));
+      const opts=docs.filter(d=>!used.has(d.id));
+      addSel.innerHTML='<option value="">＋ 文書を追加…</option>'+opts.map(d=>'<option value="'+d.id+'">'+(DOC_TYPES[d.type||"general"].icon)+" "+esc(d.title)+"</option>").join("");
+      addSel.disabled=!opts.length; if(!opts.length) addSel.innerHTML='<option>追加できる文書がありません</option>'; };
+    const drawItems=()=>{ if(!c.items.length){ itemsBox.innerHTML='<div class="empty-list">下のメニューから文書を追加してください</div>'; return; }
+      itemsBox.innerHTML=""; c.items.forEach((it,i)=>{ const d=docs.find(x=>x.id===it.docId); const tdef=d?DOC_TYPES[d.type||"general"]:null;
+        const row=document.createElement("div"); row.className="ci-item";
+        row.innerHTML='<span class="ci-no">'+(i+1)+'</span><div class="ci-main"><div class="ci-title">'+(tdef?tdef.icon+" ":"")+esc(d?d.title:"（削除された文書）")+'</div><input type="text" class="ci-note" placeholder="補足メモ（任意・読者に表示）" value="'+esc(it.note||"")+'"></div>'
+          + '<button class="iconbtn" data-mv="up" '+(i===0?"disabled":"")+'>▲</button><button class="iconbtn" data-mv="down" '+(i===c.items.length-1?"disabled":"")+'>▼</button><button class="iconbtn" data-rm="1">✕</button>';
+        row.querySelector(".ci-note").addEventListener("input",e=>{ it.note=e.target.value; });
+        row.querySelector('[data-mv="up"]').onclick=()=>{ if(i>0){ const t=c.items[i-1]; c.items[i-1]=c.items[i]; c.items[i]=t; drawItems(); } };
+        row.querySelector('[data-mv="down"]').onclick=()=>{ if(i<c.items.length-1){ const t=c.items[i+1]; c.items[i+1]=c.items[i]; c.items[i]=t; drawItems(); } };
+        row.querySelector('[data-rm="1"]').onclick=()=>{ c.items.splice(i,1); drawItems(); refreshAdd(); };
+        itemsBox.appendChild(row); }); };
+    addSel.addEventListener("change",()=>{ if(addSel.value){ c.items.push({docId:addSel.value,note:""}); drawItems(); refreshAdd(); } });
+    drawItems(); refreshAdd();
+
+    wrap.querySelector("#ceCancel").onclick=()=>{ courseDraft=null; mode=currentCourseId?"course":"welcome"; navView="courses"; render(); };
+    wrap.querySelector("#ceSave").onclick=()=>{ syncMeta(); if(!c.title.trim()){ toast("コース名を入力してください"); return; }
+      if(c.id){ const i=courses.findIndex(x=>x.id===c.id); if(i>=0) courses[i]=c; } else { c.id=uid(); courses.unshift(c); }
+      currentCourseId=c.id; save(); mode="course"; navView="courses"; courseDraft=null; render(); toast("コースを保存しました"); };
+    return wrap;
   }
 
   /* ---------- Type picker ---------- */
-  function startNew(){ mode="typepick"; render(); }
-  function typePickHTML(){
-    return '<div class="typepick"><h2>どんな文書を作りますか？</h2><p>種類を選ぶと、その形式に合った雛形が入ります（あとから自由に変更できます）。</p><div class="type-grid">'
-      + Object.keys(DOC_TYPES).map(t=>{ const x=DOC_TYPES[t];
-        return '<button class="type-card" data-newtype="'+t+'"><div class="tc-ic">'+x.icon+'</div><div class="tc-name">'+x.label+'</div><div class="tc-desc">'+x.desc+"</div></button>"; }).join("")
-      + '</div><div style="margin-top:22px"><button class="btn" id="tpCancel">← 戻る</button></div></div>';
-  }
-  function bindTypePick(){
-    const main=document.getElementById("main");
-    main.querySelectorAll("[data-newtype]").forEach(b=> b.onclick=()=> openEditor(null, b.dataset.newtype));
-    main.querySelector("#tpCancel").onclick=()=>{ mode = currentId?"view":"welcome"; render(); };
-  }
+  function startNew(){ closeNav(); mode="typepick"; render(); }
+  function typePickHTML(){ return '<div class="typepick"><h2>どんな文書を作りますか？</h2><p>種類を選ぶと、その形式に合った雛形が入ります（あとから自由に変更できます）。</p><div class="type-grid">'
+    + Object.keys(DOC_TYPES).map(t=>{ const x=DOC_TYPES[t]; return '<button class="type-card" data-newtype="'+t+'"><div class="tc-ic">'+x.icon+'</div><div class="tc-name">'+x.label+'</div><div class="tc-desc">'+x.desc+"</div></button>"; }).join("")
+    + '</div><div style="margin-top:22px"><button class="btn" id="tpCancel">← 戻る</button></div></div>'; }
+  function bindTypePick(){ const main=document.getElementById("main");
+    main.querySelectorAll("[data-newtype]").forEach(b=>b.onclick=()=>openEditor(null,b.dataset.newtype));
+    main.querySelector("#tpCancel").onclick=()=>{ mode=currentId?"view":"welcome"; render(); }; }
 
   /* ---------- Templates ---------- */
-  function templateFor(type){
-    switch(type){
-      case "procedure": return [
-        {type:"callout",variant:"info",text:"この手順の目的・前提をここに書きます。"},
-        {type:"step",text:""},{type:"step",text:""},{type:"step",text:""},
-        {type:"heading",text:"確認チェック",level:1},{type:"check",text:"",done:false}];
-      case "workflow": return [
-        {type:"heading",text:"全体の流れ",level:1},{type:"step",text:""},
-        {type:"branch",text:"〇〇の場合は？",options:[{c:"はい",a:""},{c:"いいえ",a:""}]},{type:"step",text:""}];
-      case "manual": return [
-        {type:"heading",text:"第1章 概要",level:1},{type:"text",text:""},
-        {type:"heading",text:"1-1 ポイント",level:2},{type:"text",text:""},
-        {type:"heading",text:"第2章 ",level:1},{type:"text",text:""}];
-      case "checklist": return [
-        {type:"text",text:"作業前に上から順に確認してください。"},
-        {type:"check",text:"",done:false},{type:"check",text:"",done:false},{type:"check",text:"",done:false}];
-      case "faq": return [
-        {type:"qa",q:"",a:""},{type:"qa",q:"",a:""}];
-      case "glossary": return [
-        {type:"term",term:"",desc:""},{type:"term",term:"",desc:""}];
-      default: return [{type:"heading",text:"",level:1},{type:"text",text:""}];
-    }
-  }
+  function templateFor(type){ switch(type){
+    case "procedure": return [{type:"callout",variant:"info",text:"この手順の目的・前提をここに書きます。"},{type:"step",text:""},{type:"step",text:""},{type:"step",text:""},{type:"heading",text:"確認チェック",level:1},{type:"check",text:""}];
+    case "workflow": return [{type:"heading",text:"全体の流れ",level:1},{type:"step",text:""},{type:"branch",text:"〇〇の場合は？",options:[{c:"はい",a:""},{c:"いいえ",a:""}]},{type:"step",text:""}];
+    case "manual": return [{type:"heading",text:"第1章 概要",level:1},{type:"text",text:""},{type:"heading",text:"1-1 ポイント",level:2},{type:"text",text:""},{type:"heading",text:"第2章 ",level:1},{type:"text",text:""}];
+    case "checklist": return [{type:"text",text:"作業前に上から順に確認してください。"},{type:"check",text:""},{type:"check",text:""},{type:"check",text:""}];
+    case "faq": return [{type:"qa",q:"",a:""},{type:"qa",q:"",a:""}];
+    case "glossary": return [{type:"term",term:"",desc:""},{type:"term",term:"",desc:""}];
+    default: return [{type:"heading",text:"",level:1},{type:"text",text:""}];
+  } }
 
-  /* ---------- Editor ---------- */
-  function openEditor(id, newType){
-    const src = id ? docs.find(d=>d.id===id) : null;
-    draft = src ? JSON.parse(JSON.stringify(src)) : {
-      id:null, type:newType||"general", title:"", category:"", description:"", tags:[],
-      blocks: templateFor(newType||"general")
-    };
-    if(!draft.blocks) draft.blocks=[];
-    if(!draft.type) draft.type="general";
-    mode="edit"; render();
-    const ti=document.querySelector("#edTitle"); if(ti) ti.focus();
-    saveDraftAuto();
-  }
+  /* ---------- Document editor ---------- */
+  function openEditor(id, newType){ const src=id?docs.find(d=>d.id===id):null;
+    draft = src?JSON.parse(JSON.stringify(src)):{id:null,type:newType||"general",title:"",category:"",description:"",tags:[],blocks:templateFor(newType||"general")};
+    if(!draft.blocks) draft.blocks=[]; if(!draft.type) draft.type="general"; ensureBids(draft.blocks);
+    viewFromCourse=null; mode="edit"; render(); const ti=document.querySelector("#edTitle"); if(ti) ti.focus(); saveDraftAuto(); }
 
   function renderEditor(){
     const wrap=document.createElement("div"); wrap.className="editor-wrap"; wrap.dataset.tab="edit";
     const catOptions=categories().filter(c=>c!=="すべて");
     const typeOpts=Object.keys(DOC_TYPES).map(t=>'<option value="'+t+'" '+(draft.type===t?"selected":"")+">"+DOC_TYPES[t].icon+" "+DOC_TYPES[t].label+"</option>").join("");
-
-    wrap.innerHTML =
-      '<div class="editor-tabs"><button data-tab="edit" class="active">✏️ 編集</button><button data-tab="preview">👁 プレビュー</button></div>'
+    wrap.innerHTML='<div class="editor-tabs"><button data-tab="edit" class="active">✏️ 編集</button><button data-tab="preview">👁 プレビュー</button></div>'
       + '<div class="editor-cols"><div class="ed-pane">'
-      + '<div class="ed-toolbar">'
-        + '<button data-md="bold" title="太字"><b>B</b></button>'
-        + '<button data-md="italic" title="斜体"><i>I</i></button>'
-        + '<button data-md="code" title="コード">&lt;/&gt;</button>'
-        + '<button data-md="link" title="リンク">🔗</button>'
-        + '<span class="sep"></span>'
-        + '<button data-md="ul" title="箇条書き">• 一覧</button>'
-        + '<button data-md="ol" title="番号リスト">1. 番号</button>'
-      + "</div>"
+      + '<div class="ed-toolbar"><button data-md="bold" title="太字"><b>B</b></button><button data-md="italic" title="斜体"><i>I</i></button><button data-md="code" title="コード">&lt;/&gt;</button><button data-md="link" title="リンク">🔗</button><span class="sep"></span><button data-md="ul" title="箇条書き">• 一覧</button><button data-md="ol" title="番号リスト">1. 番号</button></div>'
       + '<h2 style="margin:4px 0 16px">'+(draft.id?"文書を編集":"新しい文書")+"</h2>"
-      + '<div class="ed-row"><div class="field" style="flex:2"><label>タイトル *</label><input type="text" id="edTitle" value="'+esc(draft.title)+'" placeholder="例）来客対応の手順"></div>'
-        + '<div class="field"><label>種類</label><select id="edType">'+typeOpts+"</select></div></div>"
-      + '<div class="ed-row"><div class="field"><label>カテゴリ</label><input type="text" id="edCat" list="catList" value="'+esc(draft.category)+'" placeholder="例）接客 / 経理 / システム操作"><datalist id="catList">'+catOptions.map(c=>'<option value="'+esc(c)+'">').join("")+"</datalist></div>"
-        + '<div class="field"><label>タグ（カンマ区切り）</label><input type="text" id="edTags" value="'+esc((draft.tags||[]).join(", "))+'" placeholder="例）新人向け, 必須"></div></div>'
+      + '<div class="ed-row"><div class="field" style="flex:2"><label>タイトル *</label><input type="text" id="edTitle" value="'+esc(draft.title)+'" placeholder="例）来客対応の手順"></div><div class="field"><label>種類</label><select id="edType">'+typeOpts+"</select></div></div>"
+      + '<div class="ed-row"><div class="field"><label>カテゴリ</label><input type="text" id="edCat" list="catList" value="'+esc(draft.category)+'" placeholder="例）接客 / 経理 / システム操作"><datalist id="catList">'+catOptions.map(c=>'<option value="'+esc(c)+'">').join("")+'</datalist></div><div class="field"><label>タグ（カンマ区切り）</label><input type="text" id="edTags" value="'+esc((draft.tags||[]).join(", "))+'" placeholder="例）新人向け, 必須"></div></div>'
       + '<div class="ed-row"><div class="field"><label>概要（一覧・検索に表示）</label><textarea id="edDesc" rows="2" placeholder="この文書の目的を一言で">'+esc(draft.description)+"</textarea></div></div>"
       + '<div class="sec-title" style="margin:16px 4px 4px">本文ブロック</div><div class="ed-blocks" id="edBlocks"></div>'
-      + '<div class="add-bar"><span class="lbl">ブロックを追加</span><div class="add-grid">'
-        + Object.keys(BLOCK_TYPES).map(t=>'<button class="addbtn" data-add="'+t+'">'+BLOCK_TYPES[t].icon+" "+BLOCK_TYPES[t].label+"</button>").join("")
-      + "</div></div>"
-      + '<div class="ed-footer"><span class="save-state"></span><button class="btn" id="edCancel">キャンセル</button><button class="btn primary" id="edSave">💾 保存</button></div>'
-      + "</div>"
-      + '<div class="pv-pane"><div class="reading" id="previewBody"></div></div>'
-      + "</div>";
+      + '<div class="add-bar"><span class="lbl">ブロックを追加</span><div class="add-grid">'+Object.keys(BLOCK_TYPES).map(t=>'<button class="addbtn" data-add="'+t+'">'+BLOCK_TYPES[t].icon+" "+BLOCK_TYPES[t].label+"</button>").join("")+"</div></div>"
+      + '<div class="ed-footer"><span class="save-state"></span><button class="btn" id="edCancel">キャンセル</button><button class="btn primary" id="edSave">💾 保存</button></div></div>'
+      + '<div class="pv-pane"><div class="reading" id="previewBody"></div></div></div>';
 
-    // tabs (mobile)
-    wrap.querySelectorAll(".editor-tabs button").forEach(btn=> btn.onclick=()=>{
-      wrap.dataset.tab=btn.dataset.tab;
-      wrap.querySelectorAll(".editor-tabs button").forEach(b=>b.classList.toggle("active",b===btn));
-      if(btn.dataset.tab==="preview") updatePreview();
-    });
-
-    const syncMeta=()=>{
-      draft.title=wrap.querySelector("#edTitle").value;
-      draft.type=wrap.querySelector("#edType").value;
-      draft.category=wrap.querySelector("#edCat").value.trim();
-      draft.description=wrap.querySelector("#edDesc").value;
-      draft.tags=wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean);
-      schedulePreview();
-    };
-    ["#edTitle","#edType","#edCat","#edDesc","#edTags"].forEach(s=> wrap.querySelector(s).addEventListener("input",syncMeta));
-
-    // toolbar markdown
-    wrap.querySelectorAll("[data-md]").forEach(b=> b.onmousedown=e=>{ e.preventDefault(); applyMd(b.dataset.md); });
-
+    wrap.querySelectorAll(".editor-tabs button").forEach(btn=>btn.onclick=()=>{ wrap.dataset.tab=btn.dataset.tab; wrap.querySelectorAll(".editor-tabs button").forEach(b=>b.classList.toggle("active",b===btn)); if(btn.dataset.tab==="preview") updatePreview(); });
+    const syncMeta=()=>{ draft.title=wrap.querySelector("#edTitle").value; draft.type=wrap.querySelector("#edType").value; draft.category=wrap.querySelector("#edCat").value.trim(); draft.description=wrap.querySelector("#edDesc").value; draft.tags=wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean); schedulePreview(); };
+    ["#edTitle","#edType","#edCat","#edDesc","#edTags"].forEach(s=>wrap.querySelector(s).addEventListener("input",syncMeta));
+    wrap.querySelectorAll("[data-md]").forEach(b=>b.onmousedown=e=>{ e.preventDefault(); applyMd(b.dataset.md); });
     renderEdBlocks(wrap.querySelector("#edBlocks"));
-
-    wrap.querySelectorAll("[data-add]").forEach(b=> b.onclick=()=>{ syncMeta(); addBlock(b.dataset.add, wrap.querySelector("#edBlocks")); });
+    wrap.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ syncMeta(); addBlock(b.dataset.add, wrap.querySelector("#edBlocks")); });
     wrap.querySelector("#edCancel").onclick=()=>{ clearDraftAuto(); draft=null; mode=currentId?"view":"welcome"; render(); };
     wrap.querySelector("#edSave").onclick=()=>{ syncMeta(); saveDraft(); };
-
     setTimeout(updatePreview,0);
     return wrap;
   }
-
-  function addBlock(t, container){
-    const nb={type:t,text:""};
-    if(t==="callout") nb.variant="info";
-    if(t==="heading") nb.level=1;
-    if(t==="image"){ nb.data=""; nb.caption=""; }
-    if(t==="check") nb.done=false;
-    if(t==="qa"){ nb.q=""; nb.a=""; delete nb.text; }
-    if(t==="term"){ nb.term=""; nb.desc=""; delete nb.text; }
+  function addBlock(t, container){ const nb={type:t,text:""};
+    if(t==="callout") nb.variant="info"; if(t==="heading") nb.level=1; if(t==="image"){ nb.data=""; nb.caption=""; }
+    if(t==="qa"){ nb.q=""; nb.a=""; delete nb.text; } if(t==="term"){ nb.term=""; nb.desc=""; delete nb.text; }
     if(t==="branch"){ nb.text=""; nb.options=[{c:"",a:""},{c:"",a:""}]; }
-    draft.blocks.push(nb);
-    renderEdBlocks(container); saveDraftAuto(); schedulePreview();
-    const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); }
-  }
-
-  function renderEdBlocks(container){
-    if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; return; }
-    container.innerHTML="";
-    draft.blocks.forEach((b,i)=> container.appendChild(renderEdBlock(b,i,container)));
-  }
-
+    ensureBids([nb]); draft.blocks.push(nb); renderEdBlocks(container); saveDraftAuto(); schedulePreview();
+    const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); } }
+  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; return; }
+    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); }
   function renderEdBlock(b,i,container){
-    const el=document.createElement("div"); el.className="ed-block"; el.draggable=true; el.dataset.idx=i;
-    const total=draft.blocks.length;
+    const el=document.createElement("div"); el.className="ed-block"; el.draggable=true; el.dataset.idx=i; const total=draft.blocks.length;
     let head='<div class="bhead"><span class="drag-h" title="ドラッグで移動">⠿</span><span class="btype">'+(BLOCK_TYPES[b.type]?BLOCK_TYPES[b.type].label:b.type)+"</span>";
-    if(b.type==="heading"){
-      head+='<select class="h-level" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">'
-        +'<option value="1" '+((b.level||1)===1?"selected":"")+">大見出し</option><option value=\"2\" "+(b.level===2?"selected":"")+">小見出し</option></select>";
-    }
-    if(b.type==="callout"){
-      head+='<select class="cl-variant" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">'
-        +[["info","メモ"],["tip","ヒント"],["warning","注意"],["danger","禁止/危険"]].map(([v,l])=>'<option value="'+v+'" '+(b.variant===v?"selected":"")+">"+l+"</option>").join("")+"</select>";
-    }
-    head+='<span class="bspacer"></span>'
-      +'<button class="iconbtn" data-mv="up" '+(i===0?"disabled":"")+' title="上へ">▲</button>'
-      +'<button class="iconbtn" data-mv="down" '+(i===total-1?"disabled":"")+' title="下へ">▼</button>'
-      +'<button class="iconbtn" data-del="1" title="削除">✕</button></div>';
-
+    if(b.type==="heading") head+='<select class="h-level" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px"><option value="1" '+((b.level||1)===1?"selected":"")+'>大見出し</option><option value="2" '+(b.level===2?"selected":"")+">小見出し</option></select>";
+    if(b.type==="callout") head+='<select class="cl-variant" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">'+[["info","メモ"],["tip","ヒント"],["warning","注意"],["danger","禁止/危険"]].map(([v,l])=>'<option value="'+v+'" '+(b.variant===v?"selected":"")+">"+l+"</option>").join("")+"</select>";
+    head+='<span class="bspacer"></span><button class="iconbtn" data-mv="up" '+(i===0?"disabled":"")+' title="上へ">▲</button><button class="iconbtn" data-mv="down" '+(i===total-1?"disabled":"")+' title="下へ">▼</button><button class="iconbtn" data-del="1" title="削除">✕</button></div>';
     let bodyHTML="";
-    if(b.type==="image"){
-      bodyHTML='<input type="file" accept="image/*" class="img-file" style="font-size:13px">'
-        +(b.data?'<img class="img-preview" src="'+b.data+'">':"")
-        +'<input type="text" class="b-caption" placeholder="キャプション（任意）" value="'+esc(b.caption||"")+'" style="margin-top:8px">';
-    } else if(b.type==="qa"){
-      bodyHTML='<input type="text" class="qa-q" placeholder="質問（例：パスワードを忘れたら？）" value="'+esc(b.q||"")+'" style="margin-bottom:8px">'
-        +'<textarea class="qa-a" rows="3" placeholder="回答">'+esc(b.a||"")+"</textarea>";
-    } else if(b.type==="term"){
-      bodyHTML='<div class="row2"><input type="text" class="tm-term c" placeholder="用語" value="'+esc(b.term||"")+'" style="flex:0 0 38%"><input type="text" class="tm-desc a" placeholder="意味・説明" value="'+esc(b.desc||"")+'" style="flex:1"></div>';
-    } else if(b.type==="table"){
-      bodyHTML='<div class="mini">1行＝1行、セルは縦棒 | で区切ります。1行目が見出しになります。</div>'
-        +'<textarea class="b-text-in" rows="4" placeholder="項目 | 説明&#10;受付 | お客様対応&#10;電話 | 内線1234">'+esc(b.text||"")+"</textarea>";
-    } else if(b.type==="branch"){
-      bodyHTML='<input type="text" class="br-q" placeholder="問い（例：在庫はありますか？）" value="'+esc(b.text||"")+'" style="margin-bottom:8px">'
-        +'<div class="mini">条件ごとの分かれ道を書きます。</div><div class="br-opts"></div>'
-        +'<button class="addbtn br-add" style="margin-top:4px">＋ 分岐を追加</button>';
-    } else {
-      const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||"";
-      const rows=(b.type==="text"||b.type==="code")?3:2;
-      bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>";
-    }
+    if(b.type==="image") bodyHTML='<input type="file" accept="image/*" class="img-file" style="font-size:13px">'+(b.data?'<img class="img-preview" src="'+b.data+'">':"")+'<input type="text" class="b-caption" placeholder="キャプション（任意）" value="'+esc(b.caption||"")+'" style="margin-top:8px">';
+    else if(b.type==="qa") bodyHTML='<input type="text" class="qa-q" placeholder="質問（例：パスワードを忘れたら？）" value="'+esc(b.q||"")+'" style="margin-bottom:8px"><textarea class="qa-a" rows="3" placeholder="回答">'+esc(b.a||"")+"</textarea>";
+    else if(b.type==="term") bodyHTML='<div class="row2"><input type="text" class="tm-term" placeholder="用語" value="'+esc(b.term||"")+'" style="flex:0 0 38%"><input type="text" class="tm-desc" placeholder="意味・説明" value="'+esc(b.desc||"")+'" style="flex:1"></div>';
+    else if(b.type==="table") bodyHTML='<div class="mini">1行＝1行、セルは縦棒 | で区切ります。1行目が見出しになります。</div><textarea class="b-text-in" rows="4" placeholder="項目 | 説明&#10;受付 | お客様対応&#10;電話 | 内線1234">'+esc(b.text||"")+"</textarea>";
+    else if(b.type==="branch") bodyHTML='<input type="text" class="br-q" placeholder="問い（例：在庫はありますか？）" value="'+esc(b.text||"")+'" style="margin-bottom:8px"><div class="mini">条件ごとの分かれ道を書きます。</div><div class="br-opts"></div><button class="addbtn br-add" style="margin-top:4px">＋ 分岐を追加</button>';
+    else { const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||""; const rows=(b.type==="text"||b.type==="code")?3:2; bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>"; }
     el.innerHTML=head+bodyHTML;
-
-    // bind inputs
     const bindText=(sel,key)=>{ const x=el.querySelector(sel); if(x) x.addEventListener("input",()=>{ b[key]=x.value; schedulePreview(); saveDraftAuto(); }); };
-    bindText(".b-text-in","text"); bindText(".b-caption","caption");
-    bindText(".qa-q","q"); bindText(".qa-a","a");
-    bindText(".tm-term","term"); bindText(".tm-desc","desc");
-    bindText(".br-q","text");
+    bindText(".b-text-in","text"); bindText(".b-caption","caption"); bindText(".qa-q","q"); bindText(".qa-a","a"); bindText(".tm-term","term"); bindText(".tm-desc","desc"); bindText(".br-q","text");
     const hlv=el.querySelector(".h-level"); if(hlv) hlv.addEventListener("change",()=>{ b.level=+hlv.value; schedulePreview(); saveDraftAuto(); });
     const clv=el.querySelector(".cl-variant"); if(clv) clv.addEventListener("change",()=>{ b.variant=clv.value; schedulePreview(); saveDraftAuto(); });
     const file=el.querySelector(".img-file"); if(file) file.addEventListener("change",e=>handleImage(e,b,container));
-
-    // branch options
-    if(b.type==="branch"){
-      const optBox=el.querySelector(".br-opts");
-      const drawOpts=()=>{ optBox.innerHTML="";
-        (b.options||[]).forEach((o,oi)=>{ const row=document.createElement("div"); row.className="branch-opt";
-          row.innerHTML='<input type="text" class="c" placeholder="条件（例：はい）" value="'+esc(o.c||"")+'"><input type="text" class="a" placeholder="そのときどうする" value="'+esc(o.a||"")+'"><button class="rm" title="削除">✕</button>';
-          row.querySelector(".c").addEventListener("input",ev=>{ o.c=ev.target.value; schedulePreview(); saveDraftAuto(); });
-          row.querySelector(".a").addEventListener("input",ev=>{ o.a=ev.target.value; schedulePreview(); saveDraftAuto(); });
-          row.querySelector(".rm").onclick=()=>{ b.options.splice(oi,1); drawOpts(); schedulePreview(); saveDraftAuto(); };
-          optBox.appendChild(row); });
-      };
-      drawOpts();
-      el.querySelector(".br-add").onclick=()=>{ (b.options=b.options||[]).push({c:"",a:""}); drawOpts(); saveDraftAuto(); };
-    }
-
-    // move / delete
+    if(b.type==="branch"){ const optBox=el.querySelector(".br-opts");
+      const drawOpts=()=>{ optBox.innerHTML=""; (b.options||[]).forEach((o,oi)=>{ const row=document.createElement("div"); row.className="branch-opt";
+        row.innerHTML='<input type="text" class="c" placeholder="条件（例：はい）" value="'+esc(o.c||"")+'"><input type="text" class="a" placeholder="そのときどうする" value="'+esc(o.a||"")+'"><button class="rm" title="削除">✕</button>';
+        row.querySelector(".c").addEventListener("input",ev=>{ o.c=ev.target.value; schedulePreview(); saveDraftAuto(); });
+        row.querySelector(".a").addEventListener("input",ev=>{ o.a=ev.target.value; schedulePreview(); saveDraftAuto(); });
+        row.querySelector(".rm").onclick=()=>{ b.options.splice(oi,1); drawOpts(); schedulePreview(); saveDraftAuto(); }; optBox.appendChild(row); }); };
+      drawOpts(); el.querySelector(".br-add").onclick=()=>{ (b.options=b.options||[]).push({c:"",a:""}); drawOpts(); saveDraftAuto(); }; }
     el.querySelector('[data-mv="up"]').onclick=()=>{ if(i>0){ swap(i,i-1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
     el.querySelector('[data-mv="down"]').onclick=()=>{ if(i<total-1){ swap(i,i+1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
     el.querySelector('[data-del="1"]').onclick=()=>{ draft.blocks.splice(i,1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); };
-
-    // drag & drop (desktop)
     el.addEventListener("dragstart",e=>{ el.classList.add("dragging"); e.dataTransfer.setData("text/plain",i); e.dataTransfer.effectAllowed="move"; });
     el.addEventListener("dragend",()=>{ el.classList.remove("dragging"); container.querySelectorAll(".ed-block").forEach(x=>x.classList.remove("drag-over")); });
     el.addEventListener("dragover",e=>{ e.preventDefault(); el.classList.add("drag-over"); });
-    el.addEventListener("dragleave",()=> el.classList.remove("drag-over"));
-    el.addEventListener("drop",e=>{ e.preventDefault(); const from=+e.dataTransfer.getData("text/plain"); const to=i;
-      if(from!==to && !isNaN(from)){ const m=draft.blocks.splice(from,1)[0]; draft.blocks.splice(to,0,m); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } });
-
+    el.addEventListener("dragleave",()=>el.classList.remove("drag-over"));
+    el.addEventListener("drop",e=>{ e.preventDefault(); const from=+e.dataTransfer.getData("text/plain"); const to=i; if(from!==to&&!isNaN(from)){ const m=draft.blocks.splice(from,1)[0]; draft.blocks.splice(to,0,m); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } });
     return el;
   }
   function swap(a,b){ const t=draft.blocks[a]; draft.blocks[a]=draft.blocks[b]; draft.blocks[b]=t; }
 
-  /* ---------- Image downscale ---------- */
-  function handleImage(e,b,container){
-    const f=e.target.files[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=()=>{ const img=new Image();
-      img.onload=()=>{ const max=1280; let{width:w,height:h}=img;
-        if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); }
-        const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
-        cv.getContext("2d").drawImage(img,0,0,w,h);
-        let out; try{ out=cv.toDataURL("image/jpeg",0.82); }catch(_){ out=reader.result; }
-        if(out.length>reader.result.length) out=reader.result;
-        b.data=out; renderEdBlocks(container); schedulePreview(); saveDraftAuto();
-        toast("画像を最適化して追加しました");
-      };
-      img.onerror=()=>{ b.data=reader.result; renderEdBlocks(container); schedulePreview(); saveDraftAuto(); };
-      img.src=reader.result;
-    };
-    reader.readAsDataURL(f);
-  }
+  function handleImage(e,b,container){ const f=e.target.files[0]; if(!f) return; const reader=new FileReader();
+    reader.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1280; let w=img.width,h=img.height; if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); } const cv=document.createElement("canvas"); cv.width=w; cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); let out; try{ out=cv.toDataURL("image/jpeg",0.82); }catch(_){ out=reader.result; } if(out.length>reader.result.length) out=reader.result; b.data=out; renderEdBlocks(container); schedulePreview(); saveDraftAuto(); toast("画像を最適化して追加しました"); }; img.onerror=()=>{ b.data=reader.result; renderEdBlocks(container); schedulePreview(); saveDraftAuto(); }; img.src=reader.result; };
+    reader.readAsDataURL(f); }
 
-  /* ---------- Preview ---------- */
   let pvTimer=null;
   function schedulePreview(){ clearTimeout(pvTimer); pvTimer=setTimeout(updatePreview,250); }
-  function updatePreview(){
-    const pv=document.getElementById("previewBody"); if(!pv||!draft) return;
-    const tdef=DOC_TYPES[draft.type||"general"];
-    if(!(draft.title||"").trim() && !draft.blocks.some(b=>(b.text||b.q||b.term||b.caption||"").trim())){
-      pv.innerHTML='<div class="pv-empty">ここに仕上がりプレビューが表示されます。<br>左で入力してください。</div>'; return;
-    }
-    pv.innerHTML='<div class="doc-head"><div class="doc-badges">'
-      +(tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")
-      +(draft.category?'<span class="doc-cat">'+esc(draft.category)+"</span>":"")+"</div>"
-      +'<h1 class="doc-title">'+esc(draft.title||"（無題）")+"</h1>"
-      +(draft.description?'<p class="doc-desc">'+esc(draft.description)+"</p>":"")
-      +'<div class="doc-meta"><span class="tags">'+(draft.tags||[]).map(t=>'<span class="tag">#'+esc(t)+"</span>").join("")+"</span></div></div>"
-      + docBodyHTML(draft);
-    bindBodyInteractions(pv, draft, false);
-  }
+  function updatePreview(){ const pv=document.getElementById("previewBody"); if(!pv||!draft) return; const tdef=DOC_TYPES[draft.type||"general"];
+    if(!(draft.title||"").trim() && !draft.blocks.some(b=>(b.text||b.q||b.term||b.caption||"").trim())){ pv.innerHTML='<div class="pv-empty">ここに仕上がりプレビューが表示されます。<br>左で入力してください。</div>'; return; }
+    pv.innerHTML='<div class="doc-head"><div class="doc-badges">'+(tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")+(draft.category?'<span class="doc-cat">'+esc(draft.category)+"</span>":"")+"</div>"
+      +'<h1 class="doc-title">'+esc(draft.title||"（無題）")+"</h1>"+(draft.description?'<p class="doc-desc">'+esc(draft.description)+"</p>":"")
+      +'<div class="doc-meta"><span class="tags">'+(draft.tags||[]).map(t=>'<span class="tag">#'+esc(t)+"</span>").join("")+"</span></div></div>"+docBodyHTML(draft,{docId:null});
+    bindBodyInteractions(pv, null, false); }
 
-  /* ---------- Markdown toolbar ---------- */
-  function applyMd(kind){
-    const ta=lastFocused;
-    if(!ta || ta.tagName!=="TEXTAREA"){ toast("装飾したい入力欄を選んでから押してください"); return; }
-    const s=ta.selectionStart, e=ta.selectionEnd, val=ta.value, sel=val.slice(s,e);
-    let rep=sel, cursor=null;
-    if(kind==="bold") rep="**"+(sel||"太字")+"**";
-    else if(kind==="italic") rep="*"+(sel||"斜体")+"*";
-    else if(kind==="code") rep="`"+(sel||"コード")+"`";
-    else if(kind==="link") rep="["+(sel||"リンク文字")+"](https://)";
-    else if(kind==="ul") rep=(sel||"項目").split(/\n/).map(l=>"- "+l).join("\n");
-    else if(kind==="ol") rep=(sel||"項目").split(/\n/).map((l,n)=>(n+1)+". "+l).join("\n");
-    ta.value=val.slice(0,s)+rep+val.slice(e);
-    ta.dispatchEvent(new Event("input",{bubbles:true}));
-    ta.focus(); ta.selectionStart=s; ta.selectionEnd=s+rep.length;
-  }
+  function applyMd(kind){ const ta=lastFocused; if(!ta||ta.tagName!=="TEXTAREA"){ toast("装飾したい入力欄を選んでから押してください"); return; }
+    const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value,sel=val.slice(s,e); let rep=sel;
+    if(kind==="bold") rep="**"+(sel||"太字")+"**"; else if(kind==="italic") rep="*"+(sel||"斜体")+"*"; else if(kind==="code") rep="`"+(sel||"コード")+"`"; else if(kind==="link") rep="["+(sel||"リンク文字")+"](https://)"; else if(kind==="ul") rep=(sel||"項目").split(/\n/).map(l=>"- "+l).join("\n"); else if(kind==="ol") rep=(sel||"項目").split(/\n/).map((l,n)=>(n+1)+". "+l).join("\n");
+    ta.value=val.slice(0,s)+rep+val.slice(e); ta.dispatchEvent(new Event("input",{bubbles:true})); ta.focus(); ta.selectionStart=s; ta.selectionEnd=s+rep.length; }
   document.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[type=text]")) lastFocused=e.target; });
 
-  /* ---------- Save / actions ---------- */
-  function saveDraft(){
-    if(!draft.title.trim()){ toast("タイトルを入力してください"); const t=document.getElementById("edTitle"); if(t){ document.querySelector(".editor-wrap").dataset.tab="edit"; t.focus(); } return; }
-    draft.blocks=draft.blocks.filter(b=>{
-      if(b.type==="image") return !!b.data;
-      if(b.type==="qa") return (b.q||"").trim()||(b.a||"").trim();
-      if(b.type==="term") return (b.term||"").trim()||(b.desc||"").trim();
-      if(b.type==="branch") return (b.text||"").trim()||(b.options||[]).some(o=>o.c||o.a);
-      return (b.text||"").trim()!=="";
-    });
-    draft.updated=Date.now();
-    if(draft.id){ const idx=docs.findIndex(d=>d.id===draft.id); if(idx>=0) docs[idx]=draft; }
-    else{ draft.id=uid(); draft.created=Date.now(); docs.unshift(draft); }
-    currentId=draft.id; save(); clearDraftAuto(); mode="view"; draft=null; render();
-    document.getElementById("main").scrollTop=0; toast("保存しました");
-  }
-  function duplicateDoc(id){ const s=docs.find(d=>d.id===id); if(!s) return;
-    const c=JSON.parse(JSON.stringify(s)); c.id=uid(); c.title=s.title+"（コピー）"; c.created=c.updated=Date.now();
-    docs.unshift(c); currentId=c.id; save(); render(); toast("複製しました"); }
-  function deleteDoc(id){ const d=docs.find(x=>x.id===id); if(!d) return;
-    if(!confirm("「"+d.title+"」を削除しますか？この操作は取り消せません。")) return;
-    docs=docs.filter(x=>x.id!==id); if(currentId===id){ currentId=null; mode="welcome"; }
-    save(); render(); toast("削除しました"); }
+  function saveDraft(){ if(!draft.title.trim()){ toast("タイトルを入力してください"); const t=document.getElementById("edTitle"); if(t){ document.querySelector(".editor-wrap").dataset.tab="edit"; t.focus(); } return; }
+    draft.blocks=draft.blocks.filter(b=>{ if(b.type==="image") return !!b.data; if(b.type==="qa") return (b.q||"").trim()||(b.a||"").trim(); if(b.type==="term") return (b.term||"").trim()||(b.desc||"").trim(); if(b.type==="branch") return (b.text||"").trim()||(b.options||[]).some(o=>o.c||o.a); return (b.text||"").trim()!==""; });
+    ensureBids(draft.blocks); draft.updated=Date.now();
+    if(draft.id){ const idx=docs.findIndex(d=>d.id===draft.id); if(idx>=0) docs[idx]=draft; } else { draft.id=uid(); draft.created=Date.now(); docs.unshift(draft); }
+    currentId=draft.id; save(); clearDraftAuto(); mode="view"; draft=null; render(); document.getElementById("main").scrollTop=0; toast("保存しました"); }
+  function duplicateDoc(id){ const s=docs.find(d=>d.id===id); if(!s) return; const c=JSON.parse(JSON.stringify(s)); c.id=uid(); c.title=s.title+"（コピー）"; c.created=c.updated=Date.now(); docs.unshift(c); currentId=c.id; viewFromCourse=null; save(); render(); toast("複製しました"); }
+  function deleteDoc(id){ const d=docs.find(x=>x.id===id); if(!d) return; if(!confirm("「"+d.title+"」を削除しますか？この操作は取り消せません。")) return; docs=docs.filter(x=>x.id!==id); if(currentId===id){ currentId=null; mode=viewFromCourse?"course":"welcome"; } save(); render(); toast("削除しました"); }
 
-  /* ---------- Import / Export ---------- */
-  function exportJSON(){ const blob=new Blob([JSON.stringify(docs,null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob); const a=document.createElement("a");
-    a.href=url; a.download="手順書データ_"+new Date().toISOString().slice(0,10)+".json"; a.click(); URL.revokeObjectURL(url); toast("JSONを書き出しました"); }
-  function importJSON(file){ const r=new FileReader();
-    r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw new Error("形式が不正です");
+  function exportJSON(){ const blob=new Blob([JSON.stringify({docs,courses},null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="手順書データ_"+new Date().toISOString().slice(0,10)+".json"; a.click(); URL.revokeObjectURL(url); toast("JSONを書き出しました"); }
+  function importJSON(file){ const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result);
+      let inDocs, inCourses=[]; if(Array.isArray(data)){ inDocs=data; } else { inDocs=data.docs||[]; inCourses=data.courses||[]; }
+      if(!Array.isArray(inDocs)) throw new Error("形式が不正です");
       const m = docs.length ? (confirm("既存データに「追加」しますか？\n[OK]=追加 / [キャンセル]=すべて置き換え")?"merge":"replace") : "replace";
-      const incoming=data.map(d=>({type:"general",...d, id:d.id||uid()}));
-      if(m==="replace") docs=incoming;
-      else{ const ids=new Set(docs.map(d=>d.id)); incoming.forEach(d=>{ if(ids.has(d.id)) d.id=uid(); docs.push(d); }); }
-      save(); mode="welcome"; currentId=null; render(); toast(incoming.length+"件を読み込みました");
-    }catch(e){ toast("読み込み失敗: "+e.message); } };
-    r.readAsText(file); }
+      const incoming=inDocs.map(d=>({type:"general",...d, id:d.id||uid()})); incoming.forEach(d=>ensureBids(d.blocks));
+      if(m==="replace"){ docs=incoming; courses=inCourses; } else { const ids=new Set(docs.map(d=>d.id)); incoming.forEach(d=>{ if(ids.has(d.id)) d.id=uid(); docs.push(d); }); inCourses.forEach(c=>{ c.id=c.id||uid(); courses.push(c); }); }
+      save(); mode="welcome"; currentId=null; navView="docs"; render(); toast(incoming.length+"件の文書を読み込みました");
+    }catch(e){ toast("読み込み失敗: "+e.message); } }; r.readAsText(file); }
 
-  /* ---------- Toast ---------- */
   let toastTimer=null;
-  function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
-    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2400); }
+  function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2400); }
 
-  /* ---------- Nav / events ---------- */
   function closeNav(){ document.getElementById("app").classList.remove("nav-open"); }
   function bindGlobal(){
     document.getElementById("search").addEventListener("input",e=>{ query=e.target.value; renderSidebar(); });
     document.getElementById("typeFilters").addEventListener("click",e=>{ const c=e.target.closest("[data-type]"); if(!c) return; activeType=c.dataset.type; renderSidebar(); });
     document.getElementById("cats").addEventListener("click",e=>{ const c=e.target.closest("[data-cat]"); if(!c) return; activeCat=c.dataset.cat; renderSidebar(); });
-    document.getElementById("doclist").addEventListener("click",e=>{ const it=e.target.closest("[data-id]"); if(!it) return;
-      currentId=it.dataset.id; mode="view"; closeNav(); render(); document.getElementById("main").scrollTop=0; });
-    document.getElementById("btnNew").onclick=()=>{ closeNav(); startNew(); };
+    document.getElementById("navseg").addEventListener("click",e=>{ const b=e.target.closest("[data-nav]"); if(!b) return; navView=b.dataset.nav; renderSidebar(); });
+    document.getElementById("doclist").addEventListener("click",e=>{ const it=e.target.closest("[data-id]"); const ci=e.target.closest("[data-cid]");
+      if(it){ currentId=it.dataset.id; viewFromCourse=null; mode="view"; closeNav(); render(); document.getElementById("main").scrollTop=0; }
+      else if(ci){ currentCourseId=ci.dataset.cid; mode="course"; closeNav(); render(); document.getElementById("main").scrollTop=0; } });
+    document.getElementById("btnNew").onclick=()=>{ closeNav(); if(navView==="courses") openCourseEditor(null); else startNew(); };
     document.getElementById("btnExport").onclick=exportJSON;
     document.getElementById("btnPrint").onclick=()=>window.print();
     document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
     document.getElementById("fileInput").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=""; });
     document.getElementById("hamb").onclick=()=>document.getElementById("app").classList.toggle("nav-open");
     document.getElementById("scrim").onclick=closeNav;
-    window.addEventListener("beforeunload",e=>{ if(mode==="edit"&&draft){ saveDraftAuto(); } });
+    window.addEventListener("beforeunload",()=>{ if(mode==="edit"&&draft) saveDraftAuto(); });
   }
 
   /* ---------- Seed ---------- */
-  function seedDocs(){
-    const now=Date.now();
-    return [
-      {id:uid(),type:"manual",category:"はじめに",title:"この手順書ナビの使い方",description:"新しく配属された方がまず読むガイドです。",tags:["新人向け","必読"],created:now,updated:now,blocks:[
-        {type:"text",text:"このシステムは、業務マニュアル・手順書・ワークフローなどを誰でも見やすく作成・閲覧できるツールです。**インストール不要**で、このページを開くだけで使えます。"},
-        {type:"heading",text:"閲覧する",level:1},
-        {type:"step",text:"左の一覧から読みたい文書を選びます（スマホは左上の ☰ ボタン）。"},
-        {type:"step",text:"上部の検索に言葉を入れると、本文まで含めて絞り込めます。"},
-        {type:"step",text:"「種類」「カテゴリ」のボタンで分類ごとに絞り込めます。"},
-        {type:"callout",variant:"tip",text:"見出しが2つ以上ある文書には自動で**目次**が付き、タップでジャンプできます。"},
-        {type:"heading",text:"作成・編集する",level:1},
-        {type:"step",text:"右上「＋ 新規作成」→ 文書の種類を選びます。種類ごとに雛形が入ります。"},
-        {type:"step",text:"左側で入力し、右側（スマホはタブ）の**プレビュー**で仕上がりを確認します。"},
-        {type:"step",text:"ツールバーで **太字**・斜体・リンク・箇条書きが付けられます。"},
-        {type:"step",text:"ブロックは ⠿ のドラッグ（PC）や ▲▼ で並べ替えできます。"},
-        {type:"callout",variant:"warning",text:"データはこのブラウザ内に保存されます。共有・バックアップは右上「📤 書出」でJSON保存し、相手は「📥 読込」で取り込んでください。"}
-      ]},
-      {id:uid(),type:"procedure",category:"接客",title:"来客対応の基本手順",description:"受付でお客様をお迎えするときの標準フロー。",tags:["新人向け","接客","必須"],created:now,updated:now,blocks:[
-        {type:"callout",variant:"info",text:"合言葉は「**笑顔・正確・迅速**」。迷ったら先輩に確認しましょう。"},
-        {type:"step",text:"お客様が来られたら立ち上がり「いらっしゃいませ」と挨拶する。"},
-        {type:"step",text:"ご用件・お名前・お約束の有無を伺う。"},
-        {type:"step",text:"担当者へ内線で取り次ぐ（内線表は受付デスク右側）。"},
-        {type:"step",text:"応接室へご案内し、お茶をお出しする。"},
-        {type:"heading",text:"確認チェック",level:1},
-        {type:"check",text:"来客記録に日時・氏名・用件を記入した",done:false},
-        {type:"check",text:"応接室の予約状況を確認した",done:false},
-        {type:"callout",variant:"danger",text:"アポイントのない営業訪問は、担当者の許可なく取り次がないこと。"}
-      ]},
-      {id:uid(),type:"workflow",category:"接客",title:"電話の取り次ぎフロー",description:"かかってきた電話を担当へつなぐ判断の流れ。",tags:["新人向け","電話"],created:now,updated:now,blocks:[
-        {type:"step",text:"3コール以内に出て「お電話ありがとうございます、〇〇会社です」と名乗る。"},
-        {type:"step",text:"相手の会社名・氏名・用件を復唱して確認する。"},
-        {type:"branch",text:"名指しの担当者は在席している？",options:[
-          {c:"在席",a:"「少々お待ちください」と保留にして担当へ取り次ぐ。"},
-          {c:"不在",a:"戻り予定を伝え、伝言または折り返しを提案する。"},
-          {c:"担当が不明",a:"用件を詳しく伺い、関係部署へ確認する。"}
-        ]},
-        {type:"step",text:"伝言は「誰から・誰へ・用件・連絡先・受けた時刻」をメモして共有する。"}
-      ]},
-      {id:uid(),type:"checklist",category:"総務",title:"開店前チェックリスト",description:"毎朝の開店前に確認する項目。",tags:["毎日","必須"],created:now,updated:now,blocks:[
-        {type:"text",text:"上から順に確認し、すべてチェックが付いたら開店します。"},
-        {type:"check",text:"入口・店内の照明をつけた",done:false},
-        {type:"check",text:"レジの釣銭を確認した",done:false},
-        {type:"check",text:"床・テーブルの清掃を済ませた",done:false},
-        {type:"check",text:"本日の予約・連絡事項を確認した",done:false}
-      ]},
-      {id:uid(),type:"faq",category:"システム操作",title:"勤怠システム よくある質問",description:"打刻まわりのつまずきと対処。",tags:["全員"],created:now,updated:now,blocks:[
-        {type:"qa",q:"打刻を忘れました。どうすれば？",a:"「勤怠修正申請」から対象日・時刻・理由を入力して申請します。上長の承認後に反映されます。"},
-        {type:"qa",q:"社外でも打刻できますか？",a:"はい。スマホアプリから打刻できます。社外勤務時はアプリを使ってください。"},
-        {type:"qa",q:"パスワードを忘れました。",a:"ログイン画面の「パスワード再設定」から、社用メール宛に再設定リンクを送れます。"}
-      ]},
-      {id:uid(),type:"glossary",category:"システム操作",title:"社内用語集（基本）",description:"新人がつまずきやすい略語・用語。",tags:["新人向け"],created:now,updated:now,blocks:[
-        {type:"term",term:"ポータル",desc:"社内の各システムへの入口となるWebサイト。勤怠・申請・周知などをここから開く。"},
-        {type:"term",term:"内線",desc:"社内同士でつなぐ電話番号。受付デスク右側に内線表がある。"},
-        {type:"term",term:"稟議（りんぎ）",desc:"購入や契約などを上長に承認してもらうための申請手続き。"}
-      ]}
-    ];
-  }
+  function seedDocs(){ const now=Date.now(); return [
+    {id:uid(),type:"manual",category:"はじめに",title:"この手順書ナビの使い方",description:"新しく配属された方がまず読むガイドです。",tags:["新人向け","必読"],created:now,updated:now,blocks:[
+      {type:"text",text:"このシステムは、業務マニュアル・手順書・ワークフローなどを誰でも見やすく作成・閲覧できるツールです。**インストール不要**で、このページを開くだけで使えます。"},
+      {type:"heading",text:"閲覧する",level:1},
+      {type:"step",text:"左の一覧から読みたい文書を選びます。新人の方は左上「🎓 コース」で読む順が分かります。"},
+      {type:"step",text:"上部の検索に言葉を入れると、本文まで含めて絞り込めます。"},
+      {type:"step",text:"「種類」「カテゴリ」のボタンで分類ごとに絞り込めます。"},
+      {type:"callout",variant:"tip",text:"チェックリストは、チェックの状態が**あなたの端末ごと**に保存されます（他の人には影響しません）。"},
+      {type:"heading",text:"作成・編集する",level:1},
+      {type:"step",text:"右上「＋ 新規作成」→ 文書の種類を選びます。種類ごとに雛形が入ります。"},
+      {type:"step",text:"左で入力し、右側（スマホはタブ）の**プレビュー**で仕上がりを確認します。"},
+      {type:"callout",variant:"warning",text:"データはこのブラウザ内に保存されます。共有・バックアップは右上「📤 書出」でJSON保存し、相手は「📥 読込」で取り込んでください。"}
+    ]},
+    {id:uid(),type:"procedure",category:"接客",title:"来客対応の基本手順",description:"受付でお客様をお迎えするときの標準フロー。",tags:["新人向け","接客","必須"],created:now,updated:now,blocks:[
+      {type:"callout",variant:"info",text:"合言葉は「**笑顔・正確・迅速**」。迷ったら先輩に確認しましょう。"},
+      {type:"step",text:"お客様が来られたら立ち上がり「いらっしゃいませ」と挨拶する。"},
+      {type:"step",text:"ご用件・お名前・お約束の有無を伺う。"},
+      {type:"step",text:"担当者へ内線で取り次ぐ（内線表は受付デスク右側）。"},
+      {type:"step",text:"応接室へご案内し、お茶をお出しする。"},
+      {type:"heading",text:"確認チェック",level:1},
+      {type:"check",text:"来客記録に日時・氏名・用件を記入した"},
+      {type:"check",text:"応接室の予約状況を確認した"},
+      {type:"callout",variant:"danger",text:"アポイントのない営業訪問は、担当者の許可なく取り次がないこと。"}
+    ]},
+    {id:uid(),type:"workflow",category:"接客",title:"電話の取り次ぎフロー",description:"かかってきた電話を担当へつなぐ判断の流れ。",tags:["新人向け","電話"],created:now,updated:now,blocks:[
+      {type:"step",text:"3コール以内に出て「お電話ありがとうございます、〇〇会社です」と名乗る。"},
+      {type:"step",text:"相手の会社名・氏名・用件を復唱して確認する。"},
+      {type:"branch",text:"名指しの担当者は在席している？",options:[{c:"在席",a:"「少々お待ちください」と保留にして担当へ取り次ぐ。"},{c:"不在",a:"戻り予定を伝え、伝言または折り返しを提案する。"},{c:"担当が不明",a:"用件を詳しく伺い、関係部署へ確認する。"}]},
+      {type:"step",text:"伝言は「誰から・誰へ・用件・連絡先・受けた時刻」をメモして共有する。"}
+    ]},
+    {id:uid(),type:"checklist",category:"総務",title:"開店前チェックリスト",description:"毎朝の開店前に確認する項目。",tags:["毎日","必須"],created:now,updated:now,blocks:[
+      {type:"text",text:"上から順に確認し、すべてチェックが付いたら開店します。終わったら「完了を記録」を押すと履歴が残ります。"},
+      {type:"check",text:"入口・店内の照明をつけた"},
+      {type:"check",text:"レジの釣銭を確認した"},
+      {type:"check",text:"床・テーブルの清掃を済ませた"},
+      {type:"check",text:"本日の予約・連絡事項を確認した"}
+    ]},
+    {id:uid(),type:"faq",category:"システム操作",title:"勤怠システム よくある質問",description:"打刻まわりのつまずきと対処。",tags:["全員"],created:now,updated:now,blocks:[
+      {type:"qa",q:"打刻を忘れました。どうすれば？",a:"「勤怠修正申請」から対象日・時刻・理由を入力して申請します。上長の承認後に反映されます。"},
+      {type:"qa",q:"社外でも打刻できますか？",a:"はい。スマホアプリから打刻できます。社外勤務時はアプリを使ってください。"},
+      {type:"qa",q:"パスワードを忘れました。",a:"ログイン画面の「パスワード再設定」から、社用メール宛に再設定リンクを送れます。"}
+    ]},
+    {id:uid(),type:"glossary",category:"システム操作",title:"社内用語集（基本）",description:"新人がつまずきやすい略語・用語。",tags:["新人向け"],created:now,updated:now,blocks:[
+      {type:"term",term:"ポータル",desc:"社内の各システムへの入口となるWebサイト。勤怠・申請・周知などをここから開く。"},
+      {type:"term",term:"内線",desc:"社内同士でつなぐ電話番号。受付デスク右側に内線表がある。"},
+      {type:"term",term:"稟議（りんぎ）",desc:"購入や契約などを上長に承認してもらうための申請手続き。"}
+    ]}
+  ]; }
 
-  /* ---------- Init ---------- */
   load(); bindGlobal(); mode="welcome"; render();
 })();
 </script>
