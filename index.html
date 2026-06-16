@@ -81,7 +81,14 @@
   .doc-desc{font-size:15.5px; color:var(--muted); margin:0 0 14px}
   .doc-meta{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px}
   .tags{display:flex; gap:6px; flex-wrap:wrap}
-  .tag{font-size:12px; color:#54607a; background:#eef1f6; border-radius:6px; padding:2px 9px}
+  .tag{font-size:12px; color:#54607a; background:#eef1f6; border-radius:6px; padding:2px 9px; cursor:pointer}
+  .tag:hover{background:#dfe5ee}
+  .doc-stale{display:inline-flex;align-items:center;font-size:12px;font-weight:800;color:#8a2b2b;background:#fdeeee;border:1px solid #f6cccc;padding:4px 11px;border-radius:999px}
+  .doc-history{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;font-size:14px}
+  .doc-history summary{cursor:pointer;font-weight:700;color:var(--muted)}
+  .doc-history ul{margin:10px 0 0;padding-left:18px}
+  .doc-history li{margin:4px 0;color:#3a4256}
+  .doc-history .hd{color:var(--muted);font-size:12.5px;margin-right:6px}
   .doc-actions{display:flex; gap:8px; margin-left:auto}
 
   /* Checklist runner */
@@ -135,6 +142,16 @@
   .b-img img{max-width:100%; border:1px solid var(--line); border-radius:10px; display:block}
   .b-img figcaption{font-size:12.5px; color:var(--muted); margin-top:6px; text-align:center}
   .b-code{background:#1c2230; color:#e6ebf5; border-radius:10px; padding:14px 16px; overflow-x:auto; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:pre-wrap; word-break:break-word}
+  .b-field{border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; padding:11px 15px; background:#fff}
+  .b-field .bf-label{font-weight:800; font-size:13px; color:var(--brand-d); margin-bottom:3px}
+  .b-field .bf-body{font-size:15.5px}
+  .b-related{border:1px solid var(--line); border-radius:12px; padding:12px 16px; background:#fbfcfe}
+  .b-related .br-title{font-weight:800; font-size:13px; color:var(--muted); margin-bottom:6px}
+  .b-related ul{margin:0; padding-left:18px}
+  .b-related a{cursor:pointer; font-weight:600}
+  .b-related a:hover{text-decoration:underline}
+  .rel-item{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:7px 11px; margin-bottom:6px; font-size:14px}
+  .rel-add{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px; font-size:14px; font-family:inherit}
   .b-table{width:100%; border-collapse:collapse; font-size:14.5px; border-radius:10px; border:1px solid var(--line)}
   .b-table th,.b-table td{border:1px solid var(--line); padding:9px 12px; text-align:left}
   .b-table th{background:#f1f4f9; font-weight:700}
@@ -347,10 +364,10 @@
     general:  {label:"一般文書",     icon:"📄", desc:"自由形式のメモ・案内。"}
   };
   const BLOCK_TYPES = {
-    heading:{label:"見出し",  icon:"H"}, text:{label:"本文", icon:"¶"}, step:{label:"手順ステップ", icon:"1."},
-    callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"}, branch:{label:"分岐", icon:"🔀"},
-    qa:{label:"Q&A", icon:"Q"}, term:{label:"用語", icon:"語"}, table:{label:"表", icon:"⊞"},
-    image:{label:"画像", icon:"🖼"}, code:{label:"コード/コマンド", icon:"</>"}
+    heading:{label:"見出し",  icon:"H"}, text:{label:"本文", icon:"¶"}, field:{label:"記入欄", icon:"▤"},
+    step:{label:"手順ステップ", icon:"1."}, callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"},
+    branch:{label:"分岐", icon:"🔀"}, qa:{label:"Q&A", icon:"Q"}, term:{label:"用語", icon:"語"},
+    table:{label:"表", icon:"⊞"}, related:{label:"関連文書", icon:"🔗"}, image:{label:"画像", icon:"🖼"}, code:{label:"コード/コマンド", icon:"</>"}
   };
 
   /* ---------- State ---------- */
@@ -358,7 +375,7 @@
   let currentId = null, currentCourseId = null, viewFromCourse = null;
   let mode = "welcome";       // welcome | view | edit | typepick | course | courseEdit
   let navView = "docs";       // docs | courses
-  let query = "", activeCat = "すべて", activeType = "すべて";
+  let query = "", activeCat = "すべて", activeType = "すべて", activeTag = "";
   let draft = null, courseDraft = null, lastFocused = null;
 
   /* local per-user state (checks / records / course progress) */
@@ -439,13 +456,17 @@
   /* ---------- Derived ---------- */
   function categories(){ const set=new Set(docs.map(d=>d.category).filter(Boolean));
     return ["すべて", ...[...set].sort((a,b)=>a.localeCompare(b,"ja"))]; }
-  function docText(d){ const parts=[d.title,d.description,d.category,(d.tags||[]).join(" ")];
-    (d.blocks||[]).forEach(b=>{ parts.push(b.text,b.caption,b.q,b.a,b.term,b.desc); (b.options||[]).forEach(o=>parts.push(o.c,o.a)); });
+  function docText(d){ const parts=[d.title,d.description,d.category,d.owner,(d.tags||[]).join(" ")];
+    (d.blocks||[]).forEach(b=>{ parts.push(b.text,b.caption,b.q,b.a,b.term,b.desc,b.label); (b.options||[]).forEach(o=>parts.push(o.c,o.a)); });
     return parts.filter(Boolean).join(" ").toLowerCase(); }
   function filteredDocs(){ return docs.filter(d=>{
     if(activeCat!=="すべて"&&d.category!==activeCat) return false;
     if(activeType!=="すべて"&&(d.type||"general")!==activeType) return false;
+    if(activeTag&&!(d.tags||[]).includes(activeTag)) return false;
     if(query&&!docText(d).includes(query.toLowerCase())) return false; return true; }); }
+  function snippet(d){ if(!query) return ""; const q=query.toLowerCase();
+    const fields=[]; (d.blocks||[]).forEach(b=>{ [b.text,b.q,b.a,b.term,b.desc,b.label,b.caption].forEach(x=>{ if(x) fields.push(x); }); });
+    fields.unshift(d.description||""); for(const f of fields){ const i=f.toLowerCase().indexOf(q); if(i>=0){ const s=Math.max(0,i-18); return (s>0?"…":"")+f.slice(s,i+q.length+30)+"…"; } } return ""; }
 
   /* ---------- Sidebar ---------- */
   function renderSidebar(){
@@ -463,17 +484,20 @@
       '<button class="chip '+(c===activeCat?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>").join("");
 
     const list=filteredDocs();
-    if(!list.length){ box.innerHTML='<div class="empty-list">'+((query||activeCat!=="すべて"||activeType!=="すべて")?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。")+"</div>"; return; }
+    const tagChip = activeTag ? '<div style="margin:0 2px 8px"><button class="chip active" id="clearTag">絞り込み中: #'+esc(activeTag)+' ✕</button></div>' : "";
+    if(!list.length){ box.innerHTML=tagChip+'<div class="empty-list">'+((query||activeCat!=="すべて"||activeType!=="すべて"||activeTag)?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。")+"</div>"; bindClearTag(); return; }
     const groups={}; list.forEach(d=>{ const c=d.category||"未分類"; (groups[c]=groups[c]||[]).push(d); });
-    let html="";
+    let html=tagChip;
     Object.keys(groups).sort((a,b)=>a.localeCompare(b,"ja")).forEach(cat=>{
       html+='<div class="docgroup-label">'+esc(cat)+"</div>";
       groups[cat].forEach(d=>{ const tdef=DOC_TYPES[d.type||"general"]; const steps=(d.blocks||[]).filter(b=>b.type==="step").length;
-        const meta=[tdef?tdef.label:"", steps?steps+"ステップ":"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
+        const sn=snippet(d);
+        const meta=sn || [tdef?tdef.label:"", steps?steps+"ステップ":"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
         html+='<button class="docitem '+(d.id===currentId&&mode==="view"?"active":"")+'" data-id="'+d.id+'"><span class="di-ic">'+(tdef?tdef.icon:"📄")+'</span><span class="di-body"><span class="t">'+hl(esc(d.title||"（無題）"))+'</span><span class="m">'+hl(esc(meta||d.description||""))+"</span></span></button>"; });
     });
-    box.innerHTML=html;
+    box.innerHTML=html; bindClearTag();
   }
+  function bindClearTag(){ const c=document.getElementById("clearTag"); if(c) c.onclick=()=>{ activeTag=""; renderSidebar(); }; }
   function renderCourseList(box){
     let html='<button class="btn primary" id="newCourse" style="width:100%;margin-bottom:10px">＋ 新しいコース</button>';
     if(!courses.length) html+='<div class="empty-list">コースがありません。<br>「配属初日に読むセット」のような<br>読む順・必読リストを作れます。</div>';
@@ -494,6 +518,9 @@
     return blocks.map((b,i)=>{ switch(b.type){
       case "heading":{ const lv=b.level||1; const tag=lv===2?"h4":"h3"; return "<"+tag+' class="block b-heading lvl'+lv+'" id="blk-'+i+'">'+hl(inlineMd(esc(b.text)))+"</"+tag+">"; }
       case "text": return '<div class="block b-text">'+fmtHL(b.text)+"</div>";
+      case "field": return (b.label||b.text)?'<div class="block b-field"><div class="bf-label">'+hl(esc(b.label||""))+'</div><div class="bf-body">'+(fmtHL(b.text)||'<span style="color:var(--muted)">（未記入）</span>')+"</div></div>":"";
+      case "related":{ const ids=(b.ids||[]).filter(id=>docs.find(x=>x.id===id)); if(!ids.length) return "";
+        return '<div class="block b-related"><div class="br-title">🔗 関連する文書</div><ul>'+ids.map(id=>{ const dd=docs.find(x=>x.id===id); const ic=DOC_TYPES[dd.type||"general"].icon; return '<li><a data-godoc="'+id+'">'+ic+" "+esc(dd.title)+"</a></li>"; }).join("")+"</ul></div>"; }
       case "step":{ stepNo++; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
       case "callout":{ const v=b.variant||"info"; const L={info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"}; return '<div class="block callout '+v+'"><span class="lbl">'+L[v]+"</span>"+fmtHL(b.text)+"</div>"; }
       case "check":{ const checked = ctx&&ctx.docId ? getCheck(ctx.docId,b.bid) : false;
@@ -551,20 +578,31 @@
       + (recs.length?'<div class="rn-hist"><div class="rn-hist-t">実施履歴（この端末）</div>'+recs.map(r=>'<div class="rn-rec"><span>'+esc(r.name||"匿名")+"</span><span>"+r.done+"/"+r.total+"</span><span>"+new Date(r.at).toLocaleString("ja-JP")+"</span></div>").join("")+"</div>":"")
       + "</div>";
   }
+  function reviewStatus(d){ if(!d.reviewEvery) return null;
+    if(!d.reviewed) return {overdue:true, never:true, next:null};
+    const next=new Date(d.reviewed); next.setMonth(next.getMonth()+d.reviewEvery);
+    return {overdue: Date.now()>next.getTime(), never:false, next:next}; }
+  function fdate(dt){ return dt.getFullYear()+"/"+(dt.getMonth()+1)+"/"+dt.getDate(); }
+  function historyHTML(d){ const h=(d.history||[]); if(!h.length) return "";
+    return '<details class="doc-history"><summary>変更履歴（'+h.length+"件）</summary><ul>"+h.slice(0,12).map(e=>'<li><span class="hd">'+new Date(e.at).toLocaleDateString("ja-JP")+"</span> "+esc(e.note||"更新")+"</li>").join("")+"</ul></details>"; }
   function renderViewer(d){
     const tdef=DOC_TYPES[d.type||"general"]; const meta=[]; const upd=d.updated?new Date(d.updated):null;
-    if(upd) meta.push("最終更新: "+upd.getFullYear()+"/"+(upd.getMonth()+1)+"/"+upd.getDate());
+    if(upd) meta.push("最終更新: "+fdate(upd));
+    if(d.owner) meta.push("オーナー: "+d.owner);
+    if(d.reviewed) meta.push("最終確認: "+d.reviewed);
+    const rs=reviewStatus(d); if(rs&&rs.next) meta.push("次回見直し: "+fdate(rs.next));
     const steps=(d.blocks||[]).filter(b=>b.type==="step").length; if(steps) meta.push("全"+steps+"ステップ");
     let crumb=""; if(viewFromCourse){ const c=courses.find(x=>x.id===viewFromCourse); if(c) crumb='<div class="breadcrumb"><button id="vBack">← 🎓 '+esc(c.title)+" に戻る</button></div>"; }
     return crumb + '<article class="reading"><header class="doc-head"><div class="doc-badges">'
       + (tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")
-      + (d.category?'<span class="doc-cat">'+esc(d.category)+"</span>":"") + "</div>"
+      + (d.category?'<span class="doc-cat">'+esc(d.category)+"</span>":"")
+      + (rs&&rs.overdue?'<span class="doc-stale">⚠️ 要確認'+(rs.never?"（未確認）":"（見直し期限超過）")+"</span>":"") + "</div>"
       + '<h1 class="doc-title">'+hl(esc(d.title||"（無題）"))+"</h1>"
       + (d.description?'<p class="doc-desc">'+hl(esc(d.description))+"</p>":"")
       + '<div class="doc-meta">'+meta.map(m=>"<span>"+esc(m)+"</span>").join("")
-      + '<span class="tags">'+(d.tags||[]).map(t=>'<span class="tag">#'+esc(t)+"</span>").join("")+"</span>"
-      + '<span class="doc-actions"><button class="btn" id="vEdit">✏️ 編集</button><button class="btn" id="vDup">⧉ 複製</button><button class="btn danger" id="vDel">🗑 削除</button></span>'
-      + "</div></header>" + runnerHTML(d) + docBodyHTML(d,{docId:d.id}) + "</article>";
+      + '<span class="tags">'+(d.tags||[]).map(t=>'<span class="tag" data-tag="'+esc(t)+'">#'+esc(t)+"</span>").join("")+"</span>"
+      + '<span class="doc-actions"><button class="btn" id="vReview" title="今日付で最終確認日を更新">✅ 確認済み</button><button class="btn" id="vReport">⚠ 報告</button><button class="btn" id="vEdit">✏️ 編集</button><button class="btn" id="vDup">⧉ 複製</button><button class="btn danger" id="vDel">🗑 削除</button></span>'
+      + "</div></header>" + runnerHTML(d) + docBodyHTML(d,{docId:d.id}) + historyHTML(d) + "</article>";
   }
   function bindViewer(d){
     const main=document.getElementById("main");
@@ -572,12 +610,23 @@
     main.querySelector("#vEdit").onclick=()=>openEditor(d.id);
     main.querySelector("#vDup").onclick=()=>duplicateDoc(d.id);
     main.querySelector("#vDel").onclick=()=>deleteDoc(d.id);
+    main.querySelector("#vReview").onclick=()=>{ d.reviewed=new Date().toISOString().slice(0,10); d.updated=Date.now(); (d.history=d.history||[]).unshift({at:Date.now(),note:"内容を確認（最終確認日を更新）"}); d.history=d.history.slice(0,30); save(); render(); toast("確認済みにしました（最終確認日を更新）"); };
+    main.querySelector("#vReport").onclick=()=>openReportModal(d);
+    main.querySelectorAll("[data-tag]").forEach(t=>t.onclick=()=>{ activeTag=t.dataset.tag; navView="docs"; mode="welcome"; currentId=null; closeNav(); render(); toast("タグ #"+activeTag+" で絞り込み中"); });
     const rec=main.querySelector("#rnRecord"); if(rec) rec.onclick=()=>recordChecklist(d);
     const rs=main.querySelector("#rnReset"); if(rs) rs.onclick=()=>{ if(confirm("この端末のチェックをすべて外しますか？")){ resetChecks(d.id); render(); } };
     bindBodyInteractions(main, d, true);
+    if(query){ const mk=main.querySelector("mark"); if(mk) setTimeout(()=>mk.scrollIntoView({behavior:"smooth",block:"center"}),60); }
+  }
+  function openReportModal(d){ const r=document.getElementById("modalRoot");
+    const txt="【手順書ナビ 報告】\n文書："+(d.title||"")+"\nオーナー："+(d.owner||"(未設定)")+"\n気になる点（古い・分かりにくい等）：\n";
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal"><h3>⚠ 気になる点を報告</h3><p>内容が古い・分かりにくい等があれば、下の文面を<b>Teamsでオーナー</b>に送ってください。LGWAN内のため、ここから自動送信はしません。</p><textarea id="repText" style="width:100%;height:150px;border:1px solid var(--line);border-radius:9px;padding:10px;font-family:inherit;font-size:14px">'+esc(txt)+'</textarea><div class="m-actions" style="margin-top:12px"><button class="btn primary" id="repCopy">コピー</button><button class="btn" id="mClose">閉じる</button></div></div></div>';
+    const $=id=>document.getElementById(id); $("mClose").onclick=closeModal; $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); };
+    $("repCopy").onclick=async()=>{ const ta=$("repText"); try{ await navigator.clipboard.writeText(ta.value); toast("コピーしました。Teamsに貼り付けてください"); }catch(e){ ta.focus(); ta.select(); try{document.execCommand("copy");}catch(_){} toast("コピーしました"); } };
   }
   function bindBodyInteractions(root, d, persist){
     root.querySelectorAll("[data-jump]").forEach(a=>{ a.onclick=e=>{ e.preventDefault(); const t=root.querySelector("#"+a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); }; });
+    if(persist) root.querySelectorAll("[data-godoc]").forEach(a=>{ a.style.cursor="pointer"; a.onclick=()=>{ currentId=a.dataset.godoc; viewFromCourse=null; mode="view"; render(); document.getElementById("main").scrollTop=0; }; });
     root.querySelectorAll(".b-check").forEach(lbl=>{ const cb=lbl.querySelector("input");
       if(!persist||!d){ cb.disabled=true; return; }
       cb.onchange=()=>{ setCheck(d.id, lbl.dataset.bid, cb.checked); lbl.classList.toggle("done",cb.checked); updateRunner(d); }; });
@@ -668,13 +717,29 @@
 
   /* ---------- Templates ---------- */
   function templateFor(type){ switch(type){
-    case "procedure": return [{type:"callout",variant:"info",text:"この手順の目的・前提をここに書きます。"},{type:"step",text:""},{type:"step",text:""},{type:"step",text:""},{type:"heading",text:"確認チェック",level:1},{type:"check",text:""}];
-    case "workflow": return [{type:"heading",text:"全体の流れ",level:1},{type:"step",text:""},{type:"branch",text:"〇〇の場合は？",options:[{c:"はい",a:""},{c:"いいえ",a:""}]},{type:"step",text:""}];
-    case "manual": return [{type:"heading",text:"第1章 概要",level:1},{type:"text",text:""},{type:"heading",text:"1-1 ポイント",level:2},{type:"text",text:""},{type:"heading",text:"第2章 ",level:1},{type:"text",text:""}];
-    case "checklist": return [{type:"text",text:"作業前に上から順に確認してください。"},{type:"check",text:""},{type:"check",text:""},{type:"check",text:""}];
+    case "procedure": return [
+      {type:"field",label:"目的（なぜ行うか）",text:""},
+      {type:"field",label:"前提・必要なもの",text:""},
+      {type:"field",label:"担当（誰が行うか）",text:""},
+      {type:"heading",text:"手順",level:1},{type:"step",text:""},{type:"step",text:""},{type:"step",text:""},
+      {type:"callout",variant:"tip",text:"完了の目安（うまくいった状態）："},
+      {type:"callout",variant:"warning",text:"うまくいかない時の対処："}];
+    case "workflow": return [
+      {type:"field",label:"目的",text:""},{type:"field",label:"担当",text:""},
+      {type:"heading",text:"判断の流れ",level:1},{type:"step",text:""},
+      {type:"branch",text:"〇〇の場合は？",options:[{c:"はい",a:""},{c:"いいえ",a:""}]},{type:"step",text:""}];
+    case "manual": return [
+      {type:"field",label:"このマニュアルの目的・対象者",text:""},
+      {type:"heading",text:"第1章 概要",level:1},{type:"text",text:""},
+      {type:"heading",text:"1-1 ポイント",level:2},{type:"text",text:""},
+      {type:"heading",text:"第2章 ",level:1},{type:"text",text:""}];
+    case "checklist": return [
+      {type:"field",label:"目的・いつ使うか",text:""},
+      {type:"text",text:"上から順に確認してください。終わったら「完了を記録」を押すと履歴が残ります。"},
+      {type:"check",text:""},{type:"check",text:""},{type:"check",text:""}];
     case "faq": return [{type:"qa",q:"",a:""},{type:"qa",q:"",a:""}];
     case "glossary": return [{type:"term",term:"",desc:""},{type:"term",term:"",desc:""}];
-    default: return [{type:"heading",text:"",level:1},{type:"text",text:""}];
+    default: return [{type:"field",label:"目的",text:""},{type:"heading",text:"",level:1},{type:"text",text:""}];
   } }
 
   /* ---------- Document editor ---------- */
@@ -694,14 +759,19 @@
       + '<div class="ed-row"><div class="field" style="flex:2"><label>タイトル *</label><input type="text" id="edTitle" value="'+esc(draft.title)+'" placeholder="例）来客対応の手順"></div><div class="field"><label>種類</label><select id="edType">'+typeOpts+"</select></div></div>"
       + '<div class="ed-row"><div class="field"><label>カテゴリ</label><input type="text" id="edCat" list="catList" value="'+esc(draft.category)+'" placeholder="例）接客 / 経理 / システム操作"><datalist id="catList">'+catOptions.map(c=>'<option value="'+esc(c)+'">').join("")+'</datalist></div><div class="field"><label>タグ（カンマ区切り）</label><input type="text" id="edTags" value="'+esc((draft.tags||[]).join(", "))+'" placeholder="例）新人向け, 必須"></div></div>'
       + '<div class="ed-row"><div class="field"><label>概要（一覧・検索に表示）</label><textarea id="edDesc" rows="2" placeholder="この文書の目的を一言で">'+esc(draft.description)+"</textarea></div></div>"
+      + '<div class="ed-row"><div class="field"><label>オーナー（管理担当）</label><input type="text" id="edOwner" value="'+esc(draft.owner||"")+'" placeholder="例）総務課 / 山田"></div>'
+        + '<div class="field"><label>最終確認日</label><input type="date" id="edReviewed" value="'+esc(draft.reviewed||"")+'"></div>'
+        + '<div class="field"><label>見直し間隔</label><select id="edReviewEvery">'+[[0,"なし"],[1,"1ヶ月ごと"],[3,"3ヶ月ごと"],[6,"6ヶ月ごと"],[12,"1年ごと"]].map(function(p){return '<option value="'+p[0]+'" '+((draft.reviewEvery||0)===p[0]?"selected":"")+">"+p[1]+"</option>";}).join("")+"</select></div></div>"
+      + '<div class="ed-row"><div class="field"><label>今回の変更メモ（任意・変更履歴に残ります）</label><input type="text" id="edChangeNote" placeholder="例）連絡先を更新 / 手順3を追加"></div></div>'
       + '<div class="sec-title" style="margin:16px 4px 4px">本文ブロック</div><div class="ed-blocks" id="edBlocks"></div>'
       + '<div class="add-bar"><span class="lbl">ブロックを追加</span><div class="add-grid">'+Object.keys(BLOCK_TYPES).map(t=>'<button class="addbtn" data-add="'+t+'">'+BLOCK_TYPES[t].icon+" "+BLOCK_TYPES[t].label+"</button>").join("")+"</div></div>"
       + '<div class="ed-footer"><span class="save-state"></span><button class="btn" id="edCancel">キャンセル</button><button class="btn primary" id="edSave">💾 保存</button></div></div>'
       + '<div class="pv-pane"><div class="reading" id="previewBody"></div></div></div>';
 
     wrap.querySelectorAll(".editor-tabs button").forEach(btn=>btn.onclick=()=>{ wrap.dataset.tab=btn.dataset.tab; wrap.querySelectorAll(".editor-tabs button").forEach(b=>b.classList.toggle("active",b===btn)); if(btn.dataset.tab==="preview") updatePreview(); });
-    const syncMeta=()=>{ draft.title=wrap.querySelector("#edTitle").value; draft.type=wrap.querySelector("#edType").value; draft.category=wrap.querySelector("#edCat").value.trim(); draft.description=wrap.querySelector("#edDesc").value; draft.tags=wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean); schedulePreview(); };
-    ["#edTitle","#edType","#edCat","#edDesc","#edTags"].forEach(s=>wrap.querySelector(s).addEventListener("input",syncMeta));
+    const syncMeta=()=>{ draft.title=wrap.querySelector("#edTitle").value; draft.type=wrap.querySelector("#edType").value; draft.category=wrap.querySelector("#edCat").value.trim(); draft.description=wrap.querySelector("#edDesc").value; draft.tags=wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean); draft.owner=wrap.querySelector("#edOwner").value.trim(); draft.reviewed=wrap.querySelector("#edReviewed").value; draft.reviewEvery=+wrap.querySelector("#edReviewEvery").value; schedulePreview(); };
+    ["#edTitle","#edType","#edCat","#edDesc","#edTags","#edOwner","#edReviewed","#edReviewEvery"].forEach(s=>wrap.querySelector(s).addEventListener("input",syncMeta));
+    wrap.querySelector("#edReviewEvery").addEventListener("change",syncMeta);
     wrap.querySelectorAll("[data-md]").forEach(b=>b.onmousedown=e=>{ e.preventDefault(); applyMd(b.dataset.md); });
     renderEdBlocks(wrap.querySelector("#edBlocks"));
     wrap.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ syncMeta(); addBlock(b.dataset.add, wrap.querySelector("#edBlocks")); });
@@ -714,6 +784,7 @@
     if(t==="callout") nb.variant="info"; if(t==="heading") nb.level=1; if(t==="image"){ nb.data=""; nb.caption=""; }
     if(t==="qa"){ nb.q=""; nb.a=""; delete nb.text; } if(t==="term"){ nb.term=""; nb.desc=""; delete nb.text; }
     if(t==="branch"){ nb.text=""; nb.options=[{c:"",a:""},{c:"",a:""}]; }
+    if(t==="field") nb.label=""; if(t==="related"){ nb.ids=[]; delete nb.text; }
     ensureBids([nb]); draft.blocks.push(nb); renderEdBlocks(container); saveDraftAuto(); schedulePreview();
     const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); } }
   function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; return; }
@@ -730,10 +801,12 @@
     else if(b.type==="term") bodyHTML='<div class="row2"><input type="text" class="tm-term" placeholder="用語" value="'+esc(b.term||"")+'" style="flex:0 0 38%"><input type="text" class="tm-desc" placeholder="意味・説明" value="'+esc(b.desc||"")+'" style="flex:1"></div>';
     else if(b.type==="table") bodyHTML='<div class="mini">1行＝1行、セルは縦棒 | で区切ります。1行目が見出しになります。</div><textarea class="b-text-in" rows="4" placeholder="項目 | 説明&#10;受付 | お客様対応&#10;電話 | 内線1234">'+esc(b.text||"")+"</textarea>";
     else if(b.type==="branch") bodyHTML='<input type="text" class="br-q" placeholder="問い（例：在庫はありますか？）" value="'+esc(b.text||"")+'" style="margin-bottom:8px"><div class="mini">条件ごとの分かれ道を書きます。</div><div class="br-opts"></div><button class="addbtn br-add" style="margin-top:4px">＋ 分岐を追加</button>';
+    else if(b.type==="field") bodyHTML='<input type="text" class="bf-label-in" placeholder="項目名（例：目的 / 前提・必要なもの / 担当）" value="'+esc(b.label||"")+'" style="margin-bottom:8px;font-weight:700"><textarea class="b-text-in" rows="2" placeholder="ここに記入してください">'+esc(b.text||"")+"</textarea>";
+    else if(b.type==="related") bodyHTML='<div class="mini">関連づける文書を選びます（読者はクリックで移動できます）。</div><div class="rel-list"></div><select class="rel-add"></select>';
     else { const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||""; const rows=(b.type==="text"||b.type==="code")?3:2; bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>"; }
     el.innerHTML=head+bodyHTML;
     const bindText=(sel,key)=>{ const x=el.querySelector(sel); if(x) x.addEventListener("input",()=>{ b[key]=x.value; schedulePreview(); saveDraftAuto(); }); };
-    bindText(".b-text-in","text"); bindText(".b-caption","caption"); bindText(".qa-q","q"); bindText(".qa-a","a"); bindText(".tm-term","term"); bindText(".tm-desc","desc"); bindText(".br-q","text");
+    bindText(".b-text-in","text"); bindText(".b-caption","caption"); bindText(".qa-q","q"); bindText(".qa-a","a"); bindText(".tm-term","term"); bindText(".tm-desc","desc"); bindText(".br-q","text"); bindText(".bf-label-in","label");
     const hlv=el.querySelector(".h-level"); if(hlv) hlv.addEventListener("change",()=>{ b.level=+hlv.value; schedulePreview(); saveDraftAuto(); });
     const clv=el.querySelector(".cl-variant"); if(clv) clv.addEventListener("change",()=>{ b.variant=clv.value; schedulePreview(); saveDraftAuto(); });
     const file=el.querySelector(".img-file"); if(file) file.addEventListener("change",e=>handleImage(e,b,container));
@@ -744,6 +817,12 @@
         row.querySelector(".a").addEventListener("input",ev=>{ o.a=ev.target.value; schedulePreview(); saveDraftAuto(); });
         row.querySelector(".rm").onclick=()=>{ b.options.splice(oi,1); drawOpts(); schedulePreview(); saveDraftAuto(); }; optBox.appendChild(row); }); };
       drawOpts(); el.querySelector(".br-add").onclick=()=>{ (b.options=b.options||[]).push({c:"",a:""}); drawOpts(); saveDraftAuto(); }; }
+    if(b.type==="related"){ const listBox=el.querySelector(".rel-list"); const addSel=el.querySelector(".rel-add");
+      const refresh=()=>{ const used=new Set(b.ids||[]); const opts=docs.filter(d=>d.id!==draft.id && !used.has(d.id));
+        addSel.innerHTML='<option value="">＋ 文書を追加…</option>'+opts.map(d=>'<option value="'+d.id+'">'+DOC_TYPES[d.type||"general"].icon+" "+esc(d.title)+"</option>").join(""); addSel.disabled=!opts.length;
+        listBox.innerHTML=(b.ids||[]).map((id,ri)=>{ const d=docs.find(x=>x.id===id); return '<div class="rel-item"><span>'+(d?DOC_TYPES[d.type||"general"].icon+" "+esc(d.title):"（削除された文書）")+'</span><button class="iconbtn" data-rrm="'+ri+'">✕</button></div>'; }).join("");
+        listBox.querySelectorAll("[data-rrm]").forEach(btn=>btn.onclick=()=>{ b.ids.splice(+btn.dataset.rrm,1); refresh(); schedulePreview(); saveDraftAuto(); }); };
+      addSel.addEventListener("change",()=>{ if(addSel.value){ (b.ids=b.ids||[]).push(addSel.value); refresh(); schedulePreview(); saveDraftAuto(); } }); refresh(); }
     el.querySelector('[data-mv="up"]').onclick=()=>{ if(i>0){ swap(i,i-1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
     el.querySelector('[data-mv="down"]').onclick=()=>{ if(i<total-1){ swap(i,i+1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
     el.querySelector('[data-del="1"]').onclick=()=>{ draft.blocks.splice(i,1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); };
@@ -776,8 +855,12 @@
   document.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[type=text]")) lastFocused=e.target; });
 
   function saveDraft(){ if(!draft.title.trim()){ toast("タイトルを入力してください"); const t=document.getElementById("edTitle"); if(t){ document.querySelector(".editor-wrap").dataset.tab="edit"; t.focus(); } return; }
-    draft.blocks=draft.blocks.filter(b=>{ if(b.type==="image") return !!b.data; if(b.type==="qa") return (b.q||"").trim()||(b.a||"").trim(); if(b.type==="term") return (b.term||"").trim()||(b.desc||"").trim(); if(b.type==="branch") return (b.text||"").trim()||(b.options||[]).some(o=>o.c||o.a); return (b.text||"").trim()!==""; });
+    draft.blocks=draft.blocks.filter(b=>{ if(b.type==="image") return !!b.data; if(b.type==="qa") return (b.q||"").trim()||(b.a||"").trim(); if(b.type==="term") return (b.term||"").trim()||(b.desc||"").trim(); if(b.type==="branch") return (b.text||"").trim()||(b.options||[]).some(o=>o.c||o.a); if(b.type==="field") return (b.label||"").trim()||(b.text||"").trim(); if(b.type==="related") return (b.ids||[]).length; return (b.text||"").trim()!==""; });
     ensureBids(draft.blocks); draft.updated=Date.now();
+    const noteEl=document.getElementById("edChangeNote"); const note=noteEl?noteEl.value.trim():"";
+    draft.history=draft.history||[];
+    draft.history.unshift({at:Date.now(), note: note || (draft.id?"内容を更新":"新規作成")});
+    draft.history=draft.history.slice(0,30);
     if(draft.id){ const idx=docs.findIndex(d=>d.id===draft.id); if(idx>=0) docs[idx]=draft; } else { draft.id=uid(); draft.created=Date.now(); docs.unshift(draft); }
     currentId=draft.id; save(); clearDraftAuto(); mode="view"; draft=null; render(); document.getElementById("main").scrollTop=0; toast("保存しました"); }
   function duplicateDoc(id){ const s=docs.find(d=>d.id===id); if(!s) return; const c=JSON.parse(JSON.stringify(s)); c.id=uid(); c.title=s.title+"（コピー）"; c.created=c.updated=Date.now(); docs.unshift(c); currentId=c.id; viewFromCourse=null; save(); render(); toast("複製しました"); }
@@ -817,7 +900,7 @@
 
   /* ---------- Seed ---------- */
   function seedDocs(){ const now=Date.now(); return [
-    {id:uid(),type:"manual",category:"はじめに",title:"この手順書ナビの使い方",description:"新しく配属された方がまず読むガイドです。",tags:["新人向け","必読"],created:now,updated:now,blocks:[
+    {id:uid(),type:"manual",category:"はじめに",title:"この手順書ナビの使い方",description:"新しく配属された方がまず読むガイドです。",tags:["新人向け","必読"],owner:"総務課",reviewed:"2026-04-01",reviewEvery:6,created:now,updated:now,blocks:[
       {type:"text",text:"このシステムは、業務マニュアル・手順書・ワークフローなどを誰でも見やすく作成・閲覧できるツールです。**インストール不要**で、このページを開くだけで使えます。"},
       {type:"heading",text:"閲覧する",level:1},
       {type:"step",text:"左の一覧から読みたい文書を選びます。新人の方は左上「🎓 コース」で読む順が分かります。"},
@@ -846,7 +929,7 @@
       {type:"branch",text:"名指しの担当者は在席している？",options:[{c:"在席",a:"「少々お待ちください」と保留にして担当へ取り次ぐ。"},{c:"不在",a:"戻り予定を伝え、伝言または折り返しを提案する。"},{c:"担当が不明",a:"用件を詳しく伺い、関係部署へ確認する。"}]},
       {type:"step",text:"伝言は「誰から・誰へ・用件・連絡先・受けた時刻」をメモして共有する。"}
     ]},
-    {id:uid(),type:"checklist",category:"総務",title:"開店前チェックリスト",description:"毎朝の開店前に確認する項目。",tags:["毎日","必須"],created:now,updated:now,blocks:[
+    {id:uid(),type:"checklist",category:"総務",title:"開店前チェックリスト",description:"毎朝の開店前に確認する項目。",tags:["毎日","必須"],owner:"店舗管理",reviewed:"2026-01-10",reviewEvery:1,created:now,updated:now,blocks:[
       {type:"text",text:"上から順に確認し、すべてチェックが付いたら開店します。終わったら「完了を記録」を押すと履歴が残ります。"},
       {type:"check",text:"入口・店内の照明をつけた"},
       {type:"check",text:"レジの釣銭を確認した"},
