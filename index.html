@@ -152,6 +152,21 @@
   .b-related a:hover{text-decoration:underline}
   .rel-item{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:7px 11px; margin-bottom:6px; font-size:14px}
   .rel-add{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px; font-size:14px; font-family:inherit}
+  .qahub{max-width:880px; margin:0 auto; padding:32px 40px 110px}
+  .qahub h2{font-size:24px; margin:0}
+  .qa-card{border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:#fff; overflow:hidden; box-shadow:var(--shadow)}
+  .qa-q-btn{width:100%; text-align:left; border:none; background:none; padding:14px 40px 14px 42px; position:relative; font-weight:700; font-size:15.5px; cursor:pointer; color:var(--ink); line-height:1.5}
+  .qa-q-btn::before{content:"Q"; position:absolute; left:16px; top:14px; color:var(--brand-d); font-weight:800}
+  .qa-q-btn::after{content:"▾"; position:absolute; right:16px; top:14px; color:var(--muted); transition:transform .15s}
+  .qa-card.open .qa-q-btn::after{transform:rotate(180deg)}
+  .qa-card:hover{border-color:#cfd8e6}
+  .qa-a-body{display:none; padding:2px 16px 14px 42px; font-size:15px; color:#2a3142; position:relative}
+  .qa-a-body::before{content:"A"; position:absolute; left:16px; top:2px; color:var(--muted); font-weight:800}
+  .qa-card.open .qa-a-body{display:block}
+  .qa-a-body .src{margin-top:10px; font-size:12.5px; color:var(--muted)}
+  .qa-a-body .src a{cursor:pointer; font-weight:600; color:var(--brand-d)}
+  .qa-a-body .src a:hover{text-decoration:underline}
+  @media (max-width:900px){ .qahub{padding:22px 16px 90px} }
   .b-table{width:100%; border-collapse:collapse; font-size:14.5px; border-radius:10px; border:1px solid var(--line)}
   .b-table th,.b-table td{border:1px solid var(--line); padding:9px 12px; text-align:left}
   .b-table th{background:#f1f4f9; font-weight:700}
@@ -331,6 +346,7 @@
     <div class="navseg" id="navseg">
       <button data-nav="docs" class="active">📄 文書</button>
       <button data-nav="courses">🎓 コース</button>
+      <button data-nav="qa">❓ Q&amp;A</button>
     </div>
     <div id="docFilters">
       <div class="search" style="margin-bottom:13px"><span class="ico">🔍</span><input id="search" type="search" placeholder="キーワードで検索（本文も対象）"></div>
@@ -374,7 +390,8 @@
   let docs = [], courses = [];
   let currentId = null, currentCourseId = null, viewFromCourse = null;
   let mode = "welcome";       // welcome | view | edit | typepick | course | courseEdit
-  let navView = "docs";       // docs | courses
+  let navView = "docs";       // docs | courses | qa
+  let qaQuery = "";
   let query = "", activeCat = "すべて", activeType = "すべて", activeTag = "";
   let draft = null, courseDraft = null, lastFocused = null;
 
@@ -449,8 +466,9 @@
     }
     return html;
   }
-  function hl(html){ if(!query) return html; const re=new RegExp("("+escapeReg(esc(query))+")","gi");
+  function hlWith(html,q){ if(!q) return html; const re=new RegExp("("+escapeReg(esc(q))+")","gi");
     return html.split(/(<[^>]+>)/).map(seg=> seg.charAt(0)==="<"?seg:seg.replace(re,"<mark>$1</mark>")).join(""); }
+  function hl(html){ return hlWith(html, query); }
   const fmtHL = t => hl(fmt(t));
 
   /* ---------- Derived ---------- */
@@ -474,6 +492,7 @@
     document.getElementById("docFilters").style.display = navView==="docs"?"":"none";
     const box=document.getElementById("doclist");
     if(navView==="courses"){ renderCourseList(box); return; }
+    if(navView==="qa"){ box.innerHTML='<div class="empty-list">右側で質問を検索できます。<br>全文書のQ&amp;Aをまとめて探せます。</div>'; return; }
 
     const usedTypes=new Set(docs.map(d=>d.type||"general"));
     document.getElementById("typeFilters").innerHTML =
@@ -554,6 +573,7 @@
     if(mode==="edit"){ main.innerHTML=""; main.appendChild(renderEditor()); return; }
     if(mode==="courseEdit"){ main.innerHTML=""; main.appendChild(renderCourseEditor()); return; }
     if(mode==="typepick"){ main.innerHTML=typePickHTML(); bindTypePick(); return; }
+    if(mode==="qahub"){ main.innerHTML=renderQaHub(); bindQaHub(); return; }
     if(mode==="course"){ const c=courses.find(x=>x.id===currentCourseId); if(c){ main.innerHTML=renderCourseView(c); bindCourseView(c); return; } mode="welcome"; }
     const doc=docs.find(d=>d.id===currentId);
     if(!doc||mode==="welcome"){ main.innerHTML=welcomeHTML(); bindWelcome(); return; }
@@ -563,8 +583,9 @@
   function restoreBannerHTML(){ const sd=getStoredDraft(); if(!sd||!sd.draft) return "";
     const t=sd.draft.title?"「"+esc(sd.draft.title)+"」":"無題の文書";
     return '<div class="restore-banner"><span class="rb-msg">📝 前回の下書き'+t+'が残っています。編集を再開しますか？</span><button class="btn primary" id="rbResume">再開する</button><button class="btn" id="rbDiscard">破棄</button></div>'; }
-  function welcomeHTML(){ return restoreBannerHTML()+'<div class="welcome"><div class="big">📘</div><h2>手順書ナビへようこそ</h2><p>マニュアル・手順書・ワークフロー・チェックリストなどを、誰でも見やすく作成・閲覧できます。新人の方は左上「🎓 コース」から読む順を確認できます。</p><div class="actions"><button class="btn primary" id="wNew">＋ 新しい文書を作る</button><button class="btn" id="wCourse">🎓 コースを見る</button></div></div>'; }
+  function welcomeHTML(){ return restoreBannerHTML()+'<div class="welcome"><div class="big">📘</div><h2>手順書ナビへようこそ</h2><p>マニュアル・手順書・ワークフロー・チェックリストなどを、誰でも見やすく作成・閲覧できます。困ったら「❓ Q&amp;A」、新人の方は「🎓 コース」から読む順を確認できます。</p><div class="actions"><button class="btn primary" id="wNew">＋ 新しい文書を作る</button><button class="btn" id="wQa">❓ Q&amp;A を見る</button><button class="btn" id="wCourse">🎓 コースを見る</button></div></div>'; }
   function bindWelcome(){ const n=document.getElementById("wNew"); if(n) n.onclick=()=>startNew();
+    const q=document.getElementById("wQa"); if(q) q.onclick=()=>{ navView="qa"; mode="qahub"; currentId=null; render(); };
     const c=document.getElementById("wCourse"); if(c) c.onclick=()=>{ navView="courses"; const f=courses[0]; if(f){ currentCourseId=f.id; mode="course"; } render(); };
     const r=document.getElementById("rbResume"),d=document.getElementById("rbDiscard");
     if(r) r.onclick=()=>{ const sd=getStoredDraft(); if(sd&&sd.draft){ draft=sd.draft; mode="edit"; render(); } };
@@ -704,6 +725,33 @@
       if(c.id){ const i=courses.findIndex(x=>x.id===c.id); if(i>=0) courses[i]=c; } else { c.id=uid(); courses.unshift(c); }
       currentCourseId=c.id; save(); mode="course"; navView="courses"; courseDraft=null; render(); toast("コースを保存しました"); };
     return wrap;
+  }
+
+  /* ---------- Q&A hub (cross-document FAQ) ---------- */
+  function qaEntries(){ const e=[]; docs.forEach(d=>(d.blocks||[]).forEach(b=>{ if(b.type==="qa" && ((b.q||"").trim()||(b.a||"").trim())) e.push({q:b.q||"",a:b.a||"",doc:d}); })); return e; }
+  function qaListHTML(){
+    const entries=qaEntries(); const q=qaQuery.trim().toLowerCase();
+    if(!entries.length) return '<div class="empty-list">まだQ&amp;Aがありません。<br>文書に「Q&amp;A」ブロックを追加するか、種類「FAQ」で文書を作成すると、ここに集まります。</div>';
+    const filtered = q ? entries.filter(e=>(e.q+" "+e.a+" "+(e.doc.title||"")+" "+(e.doc.category||"")).toLowerCase().includes(q)) : entries;
+    if(!filtered.length) return '<div class="empty-list">「'+esc(qaQuery)+'」に一致するQ&amp;Aはありません。</div>';
+    const open=!!q;
+    return filtered.map(e=>{ const tdef=DOC_TYPES[e.doc.type||"general"];
+      return '<div class="qa-card'+(open?" open":"")+'"><button class="qa-q-btn">'+hlWith(esc(e.q||"（質問未入力）"),qaQuery)+'</button>'
+        +'<div class="qa-a-body">'+(hlWith(fmt(e.a),qaQuery)||'<span style="color:var(--muted)">（回答未入力）</span>')
+        +'<div class="src">📄 出典: <a data-godoc-q="'+e.doc.id+'">'+(tdef?tdef.icon:"📄")+" "+esc(e.doc.title)+(e.doc.category?"（"+esc(e.doc.category)+"）":"")+"</a></div></div></div>"; }).join("");
+  }
+  function renderQaHub(){ const total=qaEntries().length;
+    return '<div class="qahub"><h2>❓ よくある質問</h2><p style="color:var(--muted);margin:4px 0 16px">全文書のQ&amp;Aをまとめて検索できます（全'+total+'件）。質問をクリックすると答えが開きます。</p>'
+      +'<div class="search" style="margin-bottom:16px"><span class="ico">🔍</span><input id="qaSearch" type="search" placeholder="質問を入力（例：パスワード／打刻／電話）" value="'+esc(qaQuery)+'"></div>'
+      +'<div id="qaList">'+qaListHTML()+"</div></div>";
+  }
+  function bindQaList(main){
+    main.querySelectorAll(".qa-card").forEach(c=>{ const btn=c.querySelector(".qa-q-btn"); if(btn) btn.onclick=()=>c.classList.toggle("open"); });
+    main.querySelectorAll("[data-godoc-q]").forEach(a=>{ a.style.cursor="pointer"; a.onclick=()=>{ currentId=a.dataset.godocQ; viewFromCourse=null; navView="docs"; mode="view"; render(); document.getElementById("main").scrollTop=0; }; });
+  }
+  function bindQaHub(){ const main=document.getElementById("main"); const s=main.querySelector("#qaSearch");
+    if(s) s.oninput=()=>{ qaQuery=s.value; main.querySelector("#qaList").innerHTML=qaListHTML(); bindQaList(main); };
+    bindQaList(main);
   }
 
   /* ---------- Type picker ---------- */
@@ -884,7 +932,9 @@
     document.getElementById("search").addEventListener("input",e=>{ query=e.target.value; renderSidebar(); });
     document.getElementById("typeFilters").addEventListener("click",e=>{ const c=e.target.closest("[data-type]"); if(!c) return; activeType=c.dataset.type; renderSidebar(); });
     document.getElementById("cats").addEventListener("click",e=>{ const c=e.target.closest("[data-cat]"); if(!c) return; activeCat=c.dataset.cat; renderSidebar(); });
-    document.getElementById("navseg").addEventListener("click",e=>{ const b=e.target.closest("[data-nav]"); if(!b) return; navView=b.dataset.nav; renderSidebar(); });
+    document.getElementById("navseg").addEventListener("click",e=>{ const b=e.target.closest("[data-nav]"); if(!b) return; navView=b.dataset.nav;
+      if(navView==="qa"){ mode="qahub"; currentId=null; closeNav(); render(); document.getElementById("main").scrollTop=0; }
+      else { if(mode==="qahub") mode=currentId?"view":"welcome"; render(); } });
     document.getElementById("doclist").addEventListener("click",e=>{ const it=e.target.closest("[data-id]"); const ci=e.target.closest("[data-cid]");
       if(it){ currentId=it.dataset.id; viewFromCourse=null; mode="view"; closeNav(); render(); document.getElementById("main").scrollTop=0; }
       else if(ci){ currentCourseId=ci.dataset.cid; mode="course"; closeNav(); render(); document.getElementById("main").scrollTop=0; } });
