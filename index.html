@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ねむりログ — 睡眠サイクル最適化</title>
+<meta name="description" content="エビデンスに基づく睡眠の規則性・睡眠負債・眠気予測・推奨行動アプリ">
+<meta name="theme-color" content="#0b1020">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ねむりログ">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="appbar">
+  <h1>🌙 ねむりログ</h1>
+  <span class="subtitle" id="todayLabel"></span>
+</header>
+
+<main id="app">
+  <!-- ホーム -->
+  <section class="tab" data-tab="home">
+    <div class="card hero">
+      <div class="hero-main">
+        <div class="hero-label">今夜の推奨就床</div>
+        <div class="hero-time" id="recBedtime">--:--</div>
+        <div class="hero-sub" id="recBedtimeSub"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card metric" id="cardRegularity">
+        <div class="metric-label">規則性スコア <button class="info" data-info="regularity">?</button></div>
+        <div class="metric-value" id="regValue">—</div>
+        <div class="metric-note" id="regNote">記録2日分から計算</div>
+      </div>
+      <div class="card metric" id="cardDebt">
+        <div class="metric-label">睡眠負債(14日) <button class="info" data-info="debt">?</button></div>
+        <div class="metric-value" id="debtValue">—</div>
+        <div class="metric-note" id="debtNote"></div>
+      </div>
+      <div class="card metric">
+        <div class="metric-label">昨夜の睡眠</div>
+        <div class="metric-value" id="lastValue">—</div>
+        <div class="metric-note" id="lastNote"></div>
+      </div>
+      <div class="card metric">
+        <div class="metric-label">ソーシャル時差ぼけ <button class="info" data-info="sjl">?</button></div>
+        <div class="metric-value" id="sjlValue">—</div>
+        <div class="metric-note" id="sjlNote">平日と休日のズレ</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">眠気予測カーブ <button class="info" data-info="curve">?</button></div>
+      <canvas id="sleepinessChart" height="180"></canvas>
+      <div class="legend" id="curveLegend"></div>
+      <p class="muted small">※二プロセスモデルによる<strong>推定</strong>です（実測ではありません）。縦軸=眠気の強さ、横軸=時刻。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">睡眠時間の推移（直近14日）</div>
+      <canvas id="durationChart" height="160"></canvas>
+    </div>
+  </section>
+
+  <!-- 記録 -->
+  <section class="tab" data-tab="log" hidden>
+    <div class="card">
+      <div class="card-title">かんたん記録</div>
+      <div class="quickrow">
+        <button class="btn big" id="btnSleepNow">🌙 今から寝る</button>
+        <button class="btn big" id="btnWakeNow">☀️ 今起きた</button>
+      </div>
+      <p class="muted small" id="quickHint">「今から寝る」を押すと就床時刻を記録、起きたら「今起きた」で完了します。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">手入力で追加</div>
+      <label>就床日時 <input type="datetime-local" id="inBed"></label>
+      <label>起床日時 <input type="datetime-local" id="inWake"></label>
+      <label>メモ <input type="text" id="inNote" placeholder="例: 寝つき悪かった / 途中で起きた"></label>
+      <button class="btn" id="btnAdd">記録を追加</button>
+      <p class="muted small">スマートウォッチの値は「就床・起床時刻」だけ入れればOK（深い/浅いの内訳は精度が低いので使いません）。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">記録一覧</div>
+      <div id="recordList" class="reclist"></div>
+    </div>
+  </section>
+
+  <!-- 行動 -->
+  <section class="tab" data-tab="plan" hidden>
+    <div class="card">
+      <div class="card-title">今日の推奨行動タイムライン</div>
+      <p class="muted small">推奨就床 <strong id="planBed">--:--</strong> / 目標起床 <strong id="planWake">--:--</strong> を基準に、飲食・運動・光のタイミングを並べています。各項目の根拠リンク付き。</p>
+      <div id="timeline" class="timeline"></div>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="tab" data-tab="settings" hidden>
+    <div class="card">
+      <div class="card-title">目標設定</div>
+      <label>目標起床時刻 <input type="time" id="setWake"></label>
+      <label>目標睡眠時間
+        <select id="setDur">
+          <option value="390">6時間30分</option>
+          <option value="420">7時間（最低ライン）</option>
+          <option value="450">7時間30分</option>
+          <option value="480">8時間</option>
+          <option value="510">8時間30分</option>
+        </select>
+      </label>
+      <label>想定入眠時間（布団に入って眠るまで）
+        <select id="setOnset">
+          <option value="10">10分</option>
+          <option value="15">15分</option>
+          <option value="20">20分</option>
+          <option value="30">30分</option>
+        </select>
+      </label>
+      <button class="btn" id="btnSaveSettings">保存</button>
+      <p class="muted small">推奨睡眠は成人で7時間以上（AASM/CDC）。7時間未満が続くと自覚なく集中力が落ちます。</p>
+    </div>
+    <div class="card">
+      <div class="card-title">データ（すべて端末内に保存）</div>
+      <button class="btn ghost" id="btnExport">バックアップを書き出す</button>
+      <label class="filelabel">バックアップを読み込む<input type="file" id="fileImport" accept="application/json" hidden></label>
+      <button class="btn danger" id="btnClear">全データを削除</button>
+      <p class="muted small">データは外部に送信されません。機種変更時はバックアップを書き出して移行してください。</p>
+    </div>
+    <div class="card">
+      <div class="card-title">このアプリについて</div>
+      <p class="muted small">巷の「90分サイクルで起こす」計算は科学的根拠が弱いため採用していません。代わりに、エビデンスの強い<strong>睡眠の規則性・7時間以上の睡眠・睡眠負債</strong>を重視し、眠気は二プロセスモデルで推定しています。睡眠段階の内訳は精度が低いため表示しません。医療目的のものではありません。</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tabbtn active" data-go="home">🏠<span>ホーム</span></button>
+  <button class="tabbtn" data-go="log">✏️<span>記録</span></button>
+  <button class="tabbtn" data-go="plan">📋<span>行動</span></button>
+  <button class="tabbtn" data-go="settings">⚙️<span>設定</span></button>
+</nav>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/storage.js"></script>
+<script src="js/science.js"></script>
+<script src="js/timeline.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
