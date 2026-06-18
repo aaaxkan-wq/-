@@ -185,6 +185,66 @@ function circadianHints(wakeMin, bedMin) {
   };
 }
 
+/* ---------- 適応的な「今夜の推奨」 ----------
+ * 固定の目標から逆算するだけでなく、積み上がった睡眠負債に応じて就床を早める。
+ *
+ * 科学的に確定している原則（これに厳密に従う）:
+ *   1) 起床時刻は固定が正解（規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを
+ *      悪化させるため不可）→ 回復は「就床を早める」方向のみ。
+ *   2) 睡眠負債は1晩では返せず、数晩かけて回復する(Banks 2010, Depner 2019)。
+ *   3) 就床直前は体内時計の覚醒帯(WMZ)で寝つけない → 前倒しには上限が要る。
+ *   4) 総睡眠は約7〜9時間が最適、9h超は避ける(U字カーブ)。
+ *
+ * 実務的ヒューリスティック（方向は科学で確定、具体的な数値は下記で明示）:
+ *   - 負債がある夜は、目標より最大 RECOVERY_CAP_MIN 分だけ就床を前倒し。
+ *   - 推奨睡眠機会は MAX_OPPORTUNITY_MIN(9h) を超えない。
+ *   - 残った負債は翌日以降へ。回復に要する目安の晩数も提示する。
+ */
+const RECOVERY_CAP_MIN = 45;     // 1晩の前倒し上限（WMZの制約＋多晩で回復、の保守的上限）
+const MAX_OPPORTUNITY_MIN = 540; // 推奨睡眠機会の上限 = 9時間（U字カーブの上側を避ける）
+const DEBT_DEADBAND_MIN = 30;    // この未満の負債はノイズとみなし前倒ししない（過剰反応の抑制）
+
+function recommendTonight(records, settings) {
+  const baseBed = recommendBedtime(settings);             // 目標どおりの就床（負債ゼロ時）
+  const debt = sleepDebt(records, settings.targetMin);    // 14日累積の不足
+  const debtMin = debt.nights ? debt.debtMin : 0;
+
+  // 負債があれば最大45分まで前倒し（合計9hを超えない範囲で）。
+  // ごく軽微な負債(デッドバンド未満)はノイズとみなし適応しない。
+  let advance = debtMin >= DEBT_DEADBAND_MIN ? Math.min(RECOVERY_CAP_MIN, debtMin) : 0;
+  let recDur = settings.targetMin + advance;
+  if (recDur > MAX_OPPORTUNITY_MIN) { recDur = MAX_OPPORTUNITY_MIN; advance = Math.max(0, recDur - settings.targetMin); }
+
+  // 起床は目標時刻に固定し、就床だけを前倒し
+  const recBed = (parseHM(settings.targetWake) - recDur - settings.onsetMin + MIN_PER_DAY * 2) % MIN_PER_DAY;
+
+  // 全部は1晩で返せない。今夜の前倒し量で割った概算の晩数。
+  const nightsToRecover = advance > 0 ? Math.ceil(debtMin / advance) : 0;
+
+  // 参考: 直近の習慣的な就床（前倒しが普段よりかなり早いと寝つけない可能性を注意喚起）
+  const stats = personalStats(records, 14);
+  let muchEarlierThanUsual = false;
+  if (stats && stats.avgBed != null) {
+    // 推奨就床が習慣就床より90分以上早いか（円周上の差）
+    let diff = (stats.avgBed - recBed + MIN_PER_DAY) % MIN_PER_DAY;
+    if (diff > MIN_PER_DAY / 2) diff -= MIN_PER_DAY; // -720..720
+    muchEarlierThanUsual = diff > 90; // 習慣より90分以上早い
+  }
+
+  return {
+    bedMin: recBed,
+    baseBedMin: baseBed,
+    advanceMin: advance,
+    recDurMin: recDur,
+    targetDurMin: settings.targetMin,
+    debtMin,
+    nightsToRecover,
+    inDebt: advance > 0,
+    muchEarlierThanUsual,
+    habitualBed: stats ? stats.avgBed : null,
+  };
+}
+
 /* ---------- まとめてダッシュボード指標を計算 ---------- */
 function computeDashboard(records, settings) {
   const sorted = [...records].sort((a, b) => toDate(a.wake) - toDate(b.wake));
@@ -192,7 +252,8 @@ function computeDashboard(records, settings) {
   const sri = sleepRegularityIndex(records);
   const debt = sleepDebt(records, settings.targetMin);
   const sjl = socialJetlag(records);
-  const recBed = recommendBedtime(settings);
+  const rec = recommendTonight(records, settings);   // 負債に応じて適応した今夜の推奨
+  const recBed = rec.bedMin;
 
   // 体内時計の目安の時間帯（集団平均）: 起点は直近の起床、無ければ目標起床
   const wakeMin = last ? (toDate(last.wake).getHours() * 60 + toDate(last.wake).getMinutes())
@@ -206,6 +267,7 @@ function computeDashboard(records, settings) {
     debt,
     socialJetlagMin: sjl,
     recommendedBedtimeMin: recBed,
+    recommendation: rec,
     hints,
     wakeMinForHints: wakeMin,
     nights: sorted.length,
@@ -292,7 +354,7 @@ function durationTrend(records) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, circadianHints, computeDashboard,
+  recommendBedtime, recommendTonight, circadianHints, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin,
   recordsWithin, toDate, AASM_MIN: 420,
 };

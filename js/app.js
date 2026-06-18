@@ -56,10 +56,31 @@
     const settings = Store.loadSettings();
     const d = S.computeDashboard(records, settings);
 
-    // 推奨就床
+    // 推奨就床（負債に応じて適応）
+    const rec = d.recommendation;
     $('#recBedtime').textContent = S.fmtHM(d.recommendedBedtimeMin);
-    $('#recBedtimeSub').textContent =
-      `目標 ${settings.targetWake} 起床 / ${S.fmtDur(settings.targetMin)} 睡眠 から逆算`;
+    if (rec.inDebt) {
+      $('#recBedtimeSub').textContent =
+        `起床 ${settings.targetWake} 固定・睡眠負債のため目標より ${S.fmtDur(rec.advanceMin)} 早め（約${S.fmtDur(rec.recDurMin)}）`;
+    } else {
+      $('#recBedtimeSub').textContent =
+        `起床 ${settings.targetWake} 固定 / ${S.fmtDur(settings.targetMin)} 睡眠 から逆算（負債ほぼ無し）`;
+    }
+
+    // 回復プラン（負債がある時だけ表示）
+    const rc = $('#recoveryCard');
+    if (rec.inDebt) {
+      rc.hidden = false;
+      const parts = [];
+      parts.push(`<div class="card-title">😴 回復プラン</div>`);
+      parts.push(`<p class="small">直近14日の睡眠負債は <strong>${S.fmtDur(rec.debtMin)}</strong>。1晩では返せないので、<strong>起床時刻は ${settings.targetWake} のまま固定</strong>し、就床を <strong>${S.fmtHM(d.recommendedBedtimeMin)}</strong>（目標より${S.fmtDur(rec.advanceMin)}早め）にして少しずつ返します。`);
+      if (rec.nightsToRecover > 1) parts.push(`<p class="small muted">この前倒しを続けた場合、解消の目安は<strong>あと約${rec.nightsToRecover}晩</strong>です（実際は体調次第。無理のない範囲で）。</p>`);
+      if (rec.muchEarlierThanUsual) parts.push(`<p class="small" style="color:var(--warn)">⚠️ 普段の就床よりかなり早い提案です。就床直前は体内時計の影響で寝つきにくい時間帯（WMZ）に当たることがあるので、眠れなければ無理せず。徐々に前倒しでOKです。</p>`);
+      parts.push(`<p class="muted small">根拠: 起床固定＝規則性重視 / 多晩で回復(<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2910531/" target="_blank" rel="noopener">Banks 2010</a>, <a href="https://www.cell.com/current-biology/fulltext/S0960-9822(19)30098-3" target="_blank" rel="noopener">Depner 2019</a>) / 9時間を超えない(U字)。前倒しの上限45分は保守的な実務目安です。</p>`);
+      $('#recoveryBody').innerHTML = parts.join('');
+    } else {
+      rc.hidden = true;
+    }
 
     // 規則性（恣意的な閾値・色分けはしない。生の値と中立的な注記のみ）
     const rv = $('#regValue');
@@ -375,6 +396,7 @@
     debt: '直近14日の「あなたの目標睡眠時間 − 実際の睡眠時間」の不足分の累積です(生理的な睡眠負債そのものの測定ではありません)。不足のみを足し、寝だめでの相殺はしません(週末の回復では完全に返せないとの研究に基づく)。色は平均が7時間=AASM/CDCの推奨下限を下回る場合のみ表示します。',
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
+    rec: '今夜の推奨就床は、目標から逆算した時刻を基準に、積み上がった睡眠負債に応じて自動で前倒しします。科学的根拠: ①起床時刻は固定が最善(規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを悪化させる)ので就床だけ早める ②負債は1晩で返せず数晩かけて回復(Banks 2010 / Depner 2019) ③総睡眠9時間は超えない(U字カーブ)。前倒しの上限45分は、就床直前の覚醒帯(WMZ)で寝つけない制約と「多晩で回復」に基づく保守的な実務目安です(検証された精密な処方ではありません)。',
     trend: 'この画面は、あなたが入力した記録そのものの集計（記述統計）です。AIによる予測や、根拠のないスコアは一切含みません。時刻の平均は、深夜をまたぐ時刻を正しく扱うため円周平均で計算しています。',
     chrono: 'あなたの休日の睡眠中央時刻から、朝型/夜型の標準的な目安(MCTQのMSFsc)を計算したものです。本来は入眠時刻を使いますが、就床時刻で代用しているためやや早めに出ます。土日を休日とみなす簡易計算で、少数の記録では不安定です。診断ではなく目安です。',
   };
