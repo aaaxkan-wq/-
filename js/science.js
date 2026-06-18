@@ -196,16 +196,19 @@ function gauss(x, mean, sd) {
 }
 
 /*
- * 24時間分の眠気カーブを生成。
+ * 24時間分の眠気カーブ（概念図）を生成。
  *
- * 合成 = 睡眠圧S（単調増加）＋ 概日成分C（夜にピーク）
- *        ＋ 午後の眠気の山（起床+7h付近, post-lunch dip）
- *        − 夕方の覚醒帯の谷（就床2h前付近, wake maintenance zone）
- * これにより文献の landmark（午後の谷=起床6〜8h, 夕方は寝つきにくい）が形に出る。
- * 値はあくまで推定。
+ * ⚠️ 科学的厳密さに関する注意（正直な記載）:
+ *  この曲線は二プロセスモデルに着想を得た「概念図」であり、検証された個人予測モデル
+ *  ではない。S(睡眠圧)とC(概日)は文献の形に沿うが、下記の afternoon/wmz の2項は
+ *  教科書的な見た目（午後の山・夕方の覚醒帯）を出すために後付けした装飾項であり、
+ *  二プロセスモデル本体には含まれない。係数(0.5/0.4/0.13/0.16)も経験的な手調整。
+ *  さらに最後に 0-100 へ min-max 正規化するため、高さは相対値で絶対的な眠気量ではない。
+ *  ラベル時刻(午後の谷・最も覚醒)もカーブの形ではなく文献の経験則(起床+7h, +2.5h)で
+ *  決め打ちしている。したがって本曲線は「目安のイメージ」として扱うこと。
  *
  * @param wakeHour    今日の起床クロック時（例 7.0）
- * @param s0AtWake    起床時のS（前夜よく寝たら低い ~0.22、寝不足だと高い）
+ * @param s0AtWake    起床時のS（装飾項。正規化後は形にほとんど影響しない）
  * @param bedtimeHour 推奨就床のクロック時
  */
 function sleepinessCurve(wakeHour, s0AtWake, bedtimeHour) {
@@ -217,8 +220,8 @@ function sleepinessCurve(wakeHour, s0AtWake, bedtimeHour) {
     const clock = (wakeHour + h) % 24;
     const S = processS_wake(h, s0AtWake);                 // 0..1 単調増加
     const C = (processC(clock, cbtMin) + 1.28) / 2.56;    // 0..1 夜にピーク
-    const afternoon = gauss(h, 7, 1.6);                   // 起床+7h の山
-    // WMZ: 就床前は「眠くなりにくい」= 眠気を下げる
+    const afternoon = gauss(h, 7, 1.6);                   // 装飾: 起床+7h の山
+    // 装飾: WMZ(就床前は眠くなりにくい)を形として出すため眠気を下げる
     const wmzDist = Math.min(
       Math.abs(clock - wmzCenter),
       24 - Math.abs(clock - wmzCenter)
@@ -244,11 +247,12 @@ function sleepinessCurve(wakeHour, s0AtWake, bedtimeHour) {
 }
 
 /* ---------- 起床時のS0推定 ---------- */
-// 前夜の睡眠時間が長いほど睡眠圧は十分に解消され、起床時S0は低い。
+// 前夜の睡眠が長いほど睡眠圧は解消され起床時S0は低い、という方向性のみ反映した
+// 創作の当てはめ式（文献で較正した値ではない）。概念図の装飾にのみ使用。
 function estimateS0(prevDurationMin) {
   if (prevDurationMin == null) return 0.30;
   const h = prevDurationMin / 60;
-  // 8h睡眠で~0.22、5hで~0.40 程度のゆるい近似
+  // 8h睡眠で~0.22、5hで~0.40 程度のゆるい近似（根拠は方向性のみ）
   const s0 = 0.22 + Math.max(0, (8 - h)) * 0.045;
   return Math.min(0.55, Math.max(0.18, s0));
 }
