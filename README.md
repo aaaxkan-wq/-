@@ -21,13 +21,28 @@
 | 指標 | 何を見るか | 主な根拠 |
 |------|-----------|----------|
 | **睡眠の規則性 (SRI近似)** | 毎日同じ時刻に寝起きできているか | 規則性は睡眠時間より死亡率を強く予測（UK Biobank: [Windred 2024 SLEEP](https://academic.oup.com/sleep/article/47/1/zsad253/7280269) / [eLife 88359](https://elifesciences.org/articles/88359)） |
-| **睡眠負債** | 直近14日の睡眠不足の累積 | 自覚なく蓄積、週末では返せない（[Van Dongen 2003](https://pubmed.ncbi.nlm.nih.gov/12683469/) / [Depner 2019](https://www.cell.com/current-biology/fulltext/S0960-9822(19)30098-3)） |
-| **眠気予測カーブ** | いつ眠くなるか（午後の谷・夜の寝つきにくい時間帯） | 二プロセスモデル（[Borbély 2022](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9540767/)） |
+| **睡眠負債** | 直近14日の「目標−実績」の不足の累積 | 自覚なく蓄積、週末では返せない（[Van Dongen 2003](https://pubmed.ncbi.nlm.nih.gov/12683469/) / [Depner 2019](https://www.cell.com/current-biology/fulltext/S0960-9822(19)30098-3)） |
+| **体内時計の目安の時間帯** | 午後の眠気（起床+6〜8h）・寝つきにくい帯（就床1〜3h前） | 集団平均（[Sleep Foundation](https://www.sleepfoundation.org/circadian-rhythm/sleep-drive-and-your-body-clock) / [PMC6054682](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6054682/)） |
 | **ソーシャル時差ぼけ** | 平日と休日の睡眠中央時刻のズレ | [Roenneberg 2012](https://www.cell.com/current-biology/fulltext/S0960-9822(12)00325-9) |
 | **推奨行動タイムライン** | 飲食・運動・光・カフェインの最適タイミング | AASM/CDC ほか（各項目にリンク） |
 
 推奨睡眠は成人で7時間以上（[AASM/CDC](https://aasm.org/seven-or-more-hours-of-sleep-per-night-a-health-necessity-for-adults/)）。
 睡眠段階の内訳は精度が低く、過度に追うと逆効果（orthosomnia）になりうるため表示しません。
+
+### 科学的厳密性についての方針
+
+表示する値は次の2種類**だけ**で、検証されていない個人予測モデルや、見栄えのための
+恣意的なスコア・閾値・正規化は**使いません**:
+
+1. **あなたの設定からの算術計算** — 推奨就床（目標起床−目標睡眠−入眠潜時）、睡眠負債（目標との不足の累積）
+2. **出典のある集団平均の知見** — 眠気が出やすい時間帯（起床+6〜8h）など。個人差がある旨を明記
+
+色分け・しきい値も、根拠のあるもの（7時間=AASM/CDCの推奨下限）に限定し、
+その他の指標（規則性スコア・ソーシャル時差ぼけ）は標準的な良し悪しの境界が
+存在しないため**数値と出典の説明のみ**を表示します。
+
+> 当初は「二プロセスモデル風の眠気予測カーブ」を載せていましたが、係数の手調整・
+> 正規化・ラベルの決め打ちなど科学的に正当化できない要素が多かったため撤去しました。
 
 > ⚠️ 本アプリは健康情報の参考用であり、医療診断・治療を目的としたものではありません。
 
@@ -79,7 +94,7 @@ manifest.webmanifest    PWA マニフェスト
 sw.js                   Service Worker（オフライン動作）
 js/
   storage.js            端末内データ保存（localStorage）
-  science.js            睡眠科学エンジン（規則性/睡眠負債/二プロセスモデル）
+  science.js            睡眠科学エンジン（規則性/睡眠負債/social jetlag/体内時計の目安）
   timeline.js           推奨行動タイムライン（根拠付き）
   charts.js             依存ゼロのキャンバス描画
   app.js                UIコントローラ

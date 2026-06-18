@@ -50,58 +50,54 @@
     $('#recBedtimeSub').textContent =
       `目標 ${settings.targetWake} 起床 / ${S.fmtDur(settings.targetMin)} 睡眠 から逆算`;
 
-    // 規則性
+    // 規則性（恣意的な閾値・色分けはしない。生の値と中立的な注記のみ）
     const rv = $('#regValue');
     if (d.sri == null) {
       rv.textContent = '—'; rv.className = 'metric-value';
-      $('#regNote').textContent = `記録 ${d.nights}/2日`;
+      $('#regNote').textContent = `連続2日分の記録が必要（現在 ${d.nights}夜）`;
     } else {
       rv.textContent = Math.round(d.sri);
-      rv.className = 'metric-value ' + (d.regularity.tone === 'good' ? 'good' : d.regularity.tone === 'warn' ? 'warn' : 'bad');
-      $('#regNote').textContent = d.regularity.label + '（-100〜100）';
+      rv.className = 'metric-value';
+      $('#regNote').textContent = '高いほど規則的（-100〜100, 自己申告の近似）';
     }
 
-    // 睡眠負債
+    // 睡眠負債（色分けは7時間=AASM基準のみ。平均が7h未満なら注意色）
     const dv = $('#debtValue');
     if (!d.debt.nights) {
       dv.textContent = '—'; dv.className = 'metric-value';
       $('#debtNote').textContent = '記録がありません';
     } else {
       dv.textContent = S.fmtDur(d.debt.debtMin);
-      dv.className = 'metric-value ' + (d.debt.debtMin >= 300 ? 'bad' : d.debt.debtMin >= 120 ? 'warn' : 'good');
-      $('#debtNote').textContent = `平均 ${S.fmtDur(d.debt.avgMin)}/夜 ・ ${d.debt.nights}夜`;
+      dv.className = 'metric-value ' + (d.debt.avgMin < S.AASM_MIN ? 'bad' : '');
+      $('#debtNote').textContent = `目標との不足の累積 ・ 平均 ${S.fmtDur(d.debt.avgMin)}/夜`;
     }
 
-    // 昨夜
+    // 昨夜（色分けは7時間=AASM/CDCの推奨下限のみ）
     const lv = $('#lastValue');
     if (d.lastDuration != null) {
       lv.textContent = S.fmtDur(d.lastDuration);
-      lv.className = 'metric-value ' + (d.lastDuration < 420 ? 'bad' : d.lastDuration < settings.targetMin ? 'warn' : 'good');
+      lv.className = 'metric-value ' + (d.lastDuration < S.AASM_MIN ? 'bad' : '');
       $('#lastNote').textContent = dateLabel(d.last.bed) + ' →';
     } else {
       lv.textContent = '—'; $('#lastNote').textContent = '記録がありません';
     }
 
-    // social jetlag
+    // social jetlag（恣意的な閾値・色分けはしない。値と出典文脈のみ）
     const sv = $('#sjlValue');
     if (d.socialJetlagMin == null) {
       sv.textContent = '—'; sv.className = 'metric-value';
+      $('#sjlNote').textContent = '平日と休日の記録が必要';
     } else {
       sv.textContent = S.fmtDur(d.socialJetlagMin);
-      sv.className = 'metric-value ' + (d.socialJetlagMin >= 120 ? 'bad' : d.socialJetlagMin >= 60 ? 'warn' : 'good');
+      sv.className = 'metric-value';
+      $('#sjlNote').textContent = '平日と休日の睡眠中央時刻のズレ';
     }
 
-    // 眠気カーブ
-    const markers = [];
-    if (d.curve.afternoonDip) markers.push({ hsw: d.curve.afternoonDip.hoursSinceWake, color: '#f59e0b' });
-    Charts.drawSleepiness($('#sleepinessChart'), d.curve, markers);
-    const legend = [];
-    if (d.curve.afternoonDip)
-      legend.push(`<span><span class="dot" style="background:#f59e0b"></span>午後の眠気 ${S.fmtHM(d.curve.afternoonDip.h * 60)}頃</span>`);
-    if (d.curve.alertPeak)
-      legend.push(`<span><span class="dot" style="background:#34d399"></span>集中しやすい ${S.fmtHM(d.curve.alertPeak.h * 60)}頃</span>`);
-    legend.push(`<span><span class="dot" style="background:#818cf8"></span>寝つきにくい ${S.fmtHM(d.curve.wmz.start * 60)}〜${S.fmtHM(d.curve.wmz.end * 60)}</span>`);
-    $('#curveLegend').innerHTML = legend.join('');
+    // 体内時計の目安となる時間帯（集団平均・出典あり）
+    $('#hintAfternoon').innerHTML =
+      `😴 <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong> 頃：午後に眠気が出やすい時間帯（起床の6〜8時間後）`;
+    $('#hintWmz').innerHTML =
+      `🛋️ <strong>${S.fmtHM(d.hints.wmz.start)}〜${S.fmtHM(d.hints.wmz.end)}</strong> 頃：体内時計の影響で寝つきにくい時間帯（就床の1〜3時間前）`;
 
     // 睡眠時間推移
     const recent = S.recordsWithin(records, 14);
@@ -191,7 +187,8 @@
     const d = S.computeDashboard(records, settings);
     const bedMin = d.recommendedBedtimeMin;
     const wakeMin = S.parseHM(settings.targetWake);
-    const dipMin = d.curve.afternoonDip ? Math.round(d.curve.afternoonDip.h * 60) : null;
+    // 午後の眠気帯は集団平均の範囲(起床+6〜8h)。その開始時刻を仮眠の目安に使う。
+    const dipMin = d.hints.afternoon.start;
 
     $('#planBed').textContent = S.fmtHM(bedMin);
     $('#planWake').textContent = settings.targetWake;
@@ -253,10 +250,10 @@
 
   /* ---------- info ポップ ---------- */
   const INFO = {
-    regularity: '睡眠の「規則性」。毎日同じ時刻に寝起きできているかの指標(SRI近似, -100〜100)。大規模研究では規則性は睡眠時間より死亡率を強く予測しました。※自己申告の就床/起床時刻から近似計算しており、本来のSRI(加速度計ベース)より精度は劣ります。「とても規則的/不規則」の区切りは本アプリの目安(標準化された基準ではありません)。まずは「最も不規則な層から抜ける」のが目標。',
-    debt: '直近14日の「目標−実績」の累積不足。睡眠負債は自覚しにくく、週末の寝だめでは完全には返せません。',
-    sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ)。大きいほど肥満・抑うつ・代謝リスクと関連。1時間未満が理想。',
-    curve: 'これは集団平均に基づく「概念図」です。あなたの記録から個別計算したものではなく、起床+約7hに午後の眠気、就床1〜3h前に寝つきにくい帯(体内時計)が来るという文献の経験則を、あなたの起床・就床時刻に当てはめて描いています。高さは相対表示で絶対的な眠気量ではありません。',
+    regularity: '睡眠の「規則性」の近似指標(-100〜100, 高いほど規則的)。本来のSRIは加速度計の連続データから計算しますが、本アプリは自己申告の就床/起床時刻から近似するため、公表されているSRI値とは直接比較できません。良い/悪いの標準的な閾値は存在しないため区切りや色分けはせず、自分の推移を追う用途で使ってください。大規模研究では規則性は睡眠時間より死亡率を強く予測したと報告されています(UK Biobank)。',
+    debt: '直近14日の「あなたの目標睡眠時間 − 実際の睡眠時間」の不足分の累積です(生理的な睡眠負債そのものの測定ではありません)。不足のみを足し、寝だめでの相殺はしません(週末の回復では完全に返せないとの研究に基づく)。色は平均が7時間=AASM/CDCの推奨下限を下回る場合のみ表示します。',
+    sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
+    hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
   };
   document.addEventListener('click', e => {
     const b = e.target.closest('.info');

@@ -97,14 +97,12 @@ function sleepRegularityIndex(records) {
   return Math.round((200 * (total / pairs) - 100) * 10) / 10; // -100..100
 }
 
-// SRI を 0-100 のわかりやすいスコアと評価ラベルに
+// SRI の説明。標準化された「良い/悪い」の閾値は存在しない（自己申告近似なので
+// 公表SRI値とも直接比較できない）ため、恣意的なバンド分け・色分けはしない。
+// 高いほど規則的、という方向性と「自分の推移を追う」用途のみ伝える。
 function regularityLabel(sri) {
-  if (sri == null) return { score: null, label: '記録不足', tone: 'muted' };
-  // 文献の死亡リスク低減は概ね上位四分位で頭打ち。SRI~80前後を「良好」目安に。
-  if (sri >= 80) return { score: sri, label: 'とても規則的', tone: 'good' };
-  if (sri >= 70) return { score: sri, label: '規則的', tone: 'good' };
-  if (sri >= 55) return { score: sri, label: 'やや不規則', tone: 'warn' };
-  return { score: sri, label: '不規則', tone: 'bad' };
+  if (sri == null) return { score: null };
+  return { score: sri };
 }
 
 /* ---------- 睡眠負債 ----------
@@ -169,92 +167,22 @@ function parseHM(hm) {
   return h * 60 + m;
 }
 
-/* ---------- 二プロセスモデルによる眠気推定 ----------
- * Process S: 覚醒中 S=1-(1-S0)e^(-t/τw), τw≈18.2h / 睡眠中 S=S0 e^(-t/τs), τs≈4.2h
- * Process C: 概日の睡眠傾性。深部体温最低点(CBTmin)≈起床の約2.5h前にピーク。
- *            12h高調波を加えて午後の眠気(post-lunch dip)を表現。
- * 眠気スコア = w_s·S + w_c·C を 0-100 に正規化。あくまで推定（実測ではない）。
- */
-const TAU_W = 18.2, TAU_S = 4.2;
-
-function processS_wake(hoursSinceWake, s0) {
-  return 1 - (1 - s0) * Math.exp(-hoursSinceWake / TAU_W);
-}
-
-// 概日睡眠傾性（クロック時hに対して）。CBTmin時刻にピーク=1付近。
-function processC(hourOfDay, cbtMinHour) {
-  const w = (2 * Math.PI) / 24;
-  const main = Math.cos(w * (hourOfDay - cbtMinHour));
-  const harm = 0.28 * Math.cos(2 * w * (hourOfDay - cbtMinHour)); // 午後の二峰性
-  return main + harm; // 約 -1.28..1.28
-}
-
-// ガウス関数（特徴の局所的な山/谷を表現するため）
-function gauss(x, mean, sd) {
-  const d = x - mean;
-  return Math.exp(-(d * d) / (2 * sd * sd));
-}
-
-/*
- * 24時間分の眠気カーブ（概念図）を生成。
+/* ---------- 体内時計の目安となる時間帯（集団平均・出典あり） ----------
+ * 以前はここで「眠気カーブ」を生成していたが、係数の手調整・正規化・ラベルの
+ * 決め打ちなど科学的に正当化できない要素が多かったため撤去した。
+ * 代わりに、文献で確立した集団平均の時間帯を「範囲」で返すだけにする。
+ * 個人データから計算したものではなく、あくまで一般的な目安（個人差あり）。
  *
- * ⚠️ 科学的厳密さに関する注意（正直な記載）:
- *  この曲線は二プロセスモデルに着想を得た「概念図」であり、検証された個人予測モデル
- *  ではない。S(睡眠圧)とC(概日)は文献の形に沿うが、下記の afternoon/wmz の2項は
- *  教科書的な見た目（午後の山・夕方の覚醒帯）を出すために後付けした装飾項であり、
- *  二プロセスモデル本体には含まれない。係数(0.5/0.4/0.13/0.16)も経験的な手調整。
- *  さらに最後に 0-100 へ min-max 正規化するため、高さは相対値で絶対的な眠気量ではない。
- *  ラベル時刻(午後の谷・最も覚醒)もカーブの形ではなく文献の経験則(起床+7h, +2.5h)で
- *  決め打ちしている。したがって本曲線は「目安のイメージ」として扱うこと。
- *
- * @param wakeHour    今日の起床クロック時（例 7.0）
- * @param s0AtWake    起床時のS（装飾項。正規化後は形にほとんど影響しない）
- * @param bedtimeHour 推奨就床のクロック時
+ *  - 午後に眠気が出やすい時間帯: 起床の約6〜8時間後(post-lunch dip)
+ *      出典: Sleep Foundation (Sleep Drive and Your Body Clock)
+ *  - 夜に寝つきにくい時間帯(体内時計の覚醒帯, WMZ): 就床の約1〜3時間前
+ *      出典: PMC6054682 (wake maintenance zone)
  */
-function sleepinessCurve(wakeHour, s0AtWake, bedtimeHour) {
-  const cbtMin = (wakeHour - 2.5 + 24) % 24; // CBTmin ≈ 起床2.5h前
-  const wmzCenter = (bedtimeHour - 2 + 24) % 24;
-  const points = [];
-  for (let i = 0; i <= 48; i++) {     // 30分刻みで24h
-    const h = i / 2;
-    const clock = (wakeHour + h) % 24;
-    const S = processS_wake(h, s0AtWake);                 // 0..1 単調増加
-    const C = (processC(clock, cbtMin) + 1.28) / 2.56;    // 0..1 夜にピーク
-    const afternoon = gauss(h, 7, 1.6);                   // 装飾: 起床+7h の山
-    // 装飾: WMZ(就床前は眠くなりにくい)を形として出すため眠気を下げる
-    const wmzDist = Math.min(
-      Math.abs(clock - wmzCenter),
-      24 - Math.abs(clock - wmzCenter)
-    );
-    const wmz = gauss(wmzDist, 0, 1.5);
-    let s = 0.5 * S + 0.4 * C + 0.13 * afternoon - 0.16 * wmz;
-    points.push({ h: clock, hoursSinceWake: h, sleepiness: s });
-  }
-  // 0-100 に正規化
-  const vals = points.map(p => p.sleepiness);
-  const lo = Math.min(...vals), hi = Math.max(...vals);
-  for (const p of points) p.sleepiness = Math.round(((p.sleepiness - lo) / (hi - lo)) * 100);
-
-  // landmark は確立した経験則で決める（カーブの形ではなく文献値）:
-  //  午後の眠気の谷 = 起床+7h、最も覚醒 = 起床+2.5h
-  const nearest = targetHsw => points.reduce((best, p) =>
-    Math.abs(p.hoursSinceWake - targetHsw) < Math.abs(best.hoursSinceWake - targetHsw) ? p : best);
-  const afternoonDip = nearest(7);
-  const alertPeak = nearest(2.5);
-  // WMZ（寝つきにくい時間帯）= 就床1〜3h前
-  const wmz = { start: (bedtimeHour - 3 + 24) % 24, end: (bedtimeHour - 1 + 24) % 24 };
-  return { points, afternoonDip, alertPeak, wmz };
-}
-
-/* ---------- 起床時のS0推定 ---------- */
-// 前夜の睡眠が長いほど睡眠圧は解消され起床時S0は低い、という方向性のみ反映した
-// 創作の当てはめ式（文献で較正した値ではない）。概念図の装飾にのみ使用。
-function estimateS0(prevDurationMin) {
-  if (prevDurationMin == null) return 0.30;
-  const h = prevDurationMin / 60;
-  // 8h睡眠で~0.22、5hで~0.40 程度のゆるい近似（根拠は方向性のみ）
-  const s0 = 0.22 + Math.max(0, (8 - h)) * 0.045;
-  return Math.min(0.55, Math.max(0.18, s0));
+function circadianHints(wakeMin, bedMin) {
+  return {
+    afternoon: { start: (wakeMin + 6 * 60) % MIN_PER_DAY, end: (wakeMin + 8 * 60) % MIN_PER_DAY },
+    wmz: { start: (bedMin - 3 * 60 + MIN_PER_DAY) % MIN_PER_DAY, end: (bedMin - 1 * 60 + MIN_PER_DAY) % MIN_PER_DAY },
+  };
 }
 
 /* ---------- まとめてダッシュボード指標を計算 ---------- */
@@ -266,28 +194,20 @@ function computeDashboard(records, settings) {
   const sjl = socialJetlag(records);
   const recBed = recommendBedtime(settings);
 
-  // 眠気カーブの起点: 直近の起床時刻、無ければ目標起床
-  let wakeHour, s0;
-  if (last) {
-    const w = toDate(last.wake);
-    wakeHour = w.getHours() + w.getMinutes() / 60;
-    s0 = estimateS0(durationMin(last));
-  } else {
-    wakeHour = parseHM(settings.targetWake) / 60;
-    s0 = 0.30;
-  }
-  const bedHour = recBed / 60;
-  const curve = sleepinessCurve(wakeHour, s0, bedHour);
+  // 体内時計の目安の時間帯（集団平均）: 起点は直近の起床、無ければ目標起床
+  const wakeMin = last ? (toDate(last.wake).getHours() * 60 + toDate(last.wake).getMinutes())
+                       : parseHM(settings.targetWake);
+  const hints = circadianHints(wakeMin, recBed);
 
   return {
     last,
     lastDuration: last ? durationMin(last) : null,
     sri,
-    regularity: regularityLabel(sri),
     debt,
     socialJetlagMin: sjl,
     recommendedBedtimeMin: recBed,
-    curve,
+    hints,
+    wakeMinForHints: wakeMin,
     nights: sorted.length,
   };
 }
@@ -295,6 +215,6 @@ function computeDashboard(records, settings) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, sleepinessCurve, estimateS0, computeDashboard,
-  recordsWithin, toDate,
+  recommendBedtime, circadianHints, computeDashboard,
+  recordsWithin, toDate, AASM_MIN: 420,
 };

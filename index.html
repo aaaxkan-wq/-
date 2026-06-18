@@ -54,10 +54,10 @@
     </div>
 
     <div class="card">
-      <div class="card-title">眠気の目安（概念図） <button class="info" data-info="curve">?</button></div>
-      <canvas id="sleepinessChart" height="180"></canvas>
-      <div class="legend" id="curveLegend"></div>
-      <p class="muted small">※これは<strong>集団平均に基づく概念図</strong>です。あなたの起床・就床時刻に合わせて形を描いていますが、睡眠の記録から個別に計算した値ではありません。曲線の高さは0〜100の<strong>相対</strong>表示で絶対的な眠気量ではなく、ラベルの時刻は文献の経験則（午後の谷＝起床+約7h、寝つきにくい帯＝就床1〜3h前）に基づく目安です。</p>
+      <div class="card-title">体内時計の目安となる時間帯 <button class="info" data-info="hints">?</button></div>
+      <div id="hintAfternoon" class="hintrow"></div>
+      <div id="hintWmz" class="hintrow"></div>
+      <p class="muted small">※これは<strong>集団平均の一般的な目安</strong>で、あなたの起床・就床時刻に時間帯を当てはめたものです。個人の記録から計算した予測ではなく、個人差があります。出典: <a href="https://www.sleepfoundation.org/circadian-rhythm/sleep-drive-and-your-body-clock" target="_blank" rel="noopener">Sleep Foundation</a> / <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6054682/" target="_blank" rel="noopener">PMC6054682</a></p>
     </div>
 
     <div class="card">
@@ -135,7 +135,7 @@
     </div>
     <div class="card">
       <div class="card-title">このアプリについて</div>
-      <p class="muted small">巷の「90分サイクルで起こす」計算は科学的根拠が弱いため採用していません。代わりに、エビデンスの強い<strong>睡眠の規則性・7時間以上の睡眠・睡眠負債</strong>を重視し、眠気は二プロセスモデルで推定しています。睡眠段階の内訳は精度が低いため表示しません。医療目的のものではありません。</p>
+      <p class="muted small">巷の「90分サイクルで起こす」計算は科学的根拠が弱いため採用していません。代わりに、エビデンスの強い<strong>睡眠の規則性・7時間以上の睡眠・睡眠負債</strong>を重視します。表示する値は、あなたの設定からの算術計算（推奨就床・睡眠負債）か、出典のある集団平均の知見（眠気の出やすい時間帯など）のみで、<strong>検証されていない個人予測モデルや、見栄えのための恣意的なスコア・閾値は使っていません</strong>。睡眠段階の内訳は精度が低いため表示しません。医療目的のものではありません。</p>
     </div>
   </section>
 </main>

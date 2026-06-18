@@ -41,11 +41,11 @@ function buildTimeline(bedMin, wakeMin, dipMin) {
     src: SOURCES.light_morning,
   });
 
-  // カフェイン締切（就床8h前が理想、6h前が最終ライン）
+  // カフェイン締切（試験で6h前でも有意差。6h前を目安に）
   items.push({
-    time: clock(bedMin, -8 * 60), icon: '☕', kind: 'avoid',
-    title: 'カフェインはここまで（理想）',
-    detail: 'カフェインは就床6時間前でも睡眠を約41分削る。コーヒー・紅茶・エナドリ・濃い緑茶はこの時刻まで。最終ラインは就床6h前（' + F(clock(bedMin, -6 * 60)) + '）。',
+    time: clock(bedMin, -6 * 60), icon: '☕', kind: 'avoid',
+    title: 'カフェインはここまで（就床6h前）',
+    detail: '400mg(コーヒー2〜3杯相当)を就床6時間前に摂っても総睡眠時間が有意に減ったとの試験あり。コーヒー・紅茶・エナドリ・濃い緑茶はこの時刻までを目安に。',
     src: SOURCES.caffeine,
   });
 
@@ -75,11 +75,11 @@ function buildTimeline(bedMin, wakeMin, dipMin) {
     src: SOURCES.meal,
   });
 
-  // 激しい運動（就床1h前は厳禁、2h前推奨）
+  // 激しい運動（エビデンスの線は就床1h前。安全側に余裕を見るなら2h前）
   items.push({
-    time: clock(bedMin, -2 * 60), icon: '🏃', kind: 'avoid',
-    title: '激しい運動はここまで（就床2h前推奨）',
-    detail: '高強度運動は就床1時間以内だと入眠を遅らせ質を下げる。それ以前なら睡眠にむしろ好影響。軽いストレッチはOK。',
+    time: clock(bedMin, -60), icon: '🏃', kind: 'avoid',
+    title: '激しい運動はここまで（就床1h前）',
+    detail: '高強度運動は就床1時間以内だと入眠を遅らせ質を下げるとの報告。1時間より前なら睡眠への悪影響は示されておらず、むしろ好影響との解析もある。軽いストレッチはOK。',
     src: SOURCES.exercise,
   });
 
