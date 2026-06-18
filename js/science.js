@@ -212,9 +212,87 @@ function computeDashboard(records, settings) {
   };
 }
 
+/* ---------- 個人の記録の集計（「学習」＝実データの記述統計。推測・予測はしない） ----------
+ * ここで返すのは全て「あなたが入力した記録そのものの集計値」で、検証されていない
+ * 予測モデルや恣意的なスコアは含まない。唯一の派生指標 chronotypeMSFsc は出典のある
+ * 公表手法(MCTQ)で、適用上の制約を明記する。
+ */
+
+// クロック時刻(分)の円周平均。深夜をまたぐ時刻(23:30と0:30など)を正しく平均するため。
+function circularMeanMin(minsArr) {
+  const xs = minsArr.filter(m => m != null);
+  if (!xs.length) return null;
+  let sx = 0, sy = 0;
+  for (const m of xs) {
+    const a = (m / MIN_PER_DAY) * 2 * Math.PI;
+    sx += Math.cos(a); sy += Math.sin(a);
+  }
+  let ang = Math.atan2(sy / xs.length, sx / xs.length);
+  if (ang < 0) ang += 2 * Math.PI;
+  return Math.round((ang / (2 * Math.PI)) * MIN_PER_DAY) % MIN_PER_DAY;
+}
+
+function bedClockMin(rec) { const b = toDate(rec.bed); return b ? b.getHours() * 60 + b.getMinutes() : null; }
+function wakeClockMin(rec) { const w = toDate(rec.wake); return w ? w.getHours() * 60 + w.getMinutes() : null; }
+
+// 直近days日の記述統計（時刻は円周平均、睡眠時間は通常平均）
+function personalStats(records, days = 14) {
+  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  if (!recent.length) return null;
+  const durs = recent.map(durationMin);
+  return {
+    nights: recent.length,
+    avgBed: circularMeanMin(recent.map(bedClockMin)),
+    avgWake: circularMeanMin(recent.map(wakeClockMin)),
+    avgMid: circularMeanMin(recent.map(midSleepClockMin)),
+    avgDur: Math.round(durs.reduce((s, x) => s + x, 0) / durs.length),
+    minDur: Math.min(...durs), maxDur: Math.max(...durs),
+  };
+}
+
+// 土日を休日(free day)とみなす簡易判定
+function isFreeDay(rec) { const d = toDate(rec.wake).getDay(); return d === 0 || d === 6; }
+
+/* クロノタイプの目安: MCTQ の MSFsc(休日の睡眠中央時刻を睡眠負債で補正した値)。
+ *   MSFsc = MSF − (SDf − SDweek)/2   (Roenneberg, MCTQ)
+ * 値が早い=朝型寄り、遅い=夜型寄り（連続量。恣意的なカテゴリ分けはしない）。
+ * ⚠️適用上の制約(正直な記載):
+ *   - MCTQ本来は「入眠」時刻を使うが、本アプリは入眠時刻を持たないため「就床」時刻を
+ *     代理に使う → 中央時刻はやや早めに出る。
+ *   - 「土日=休日」という簡易判定。交代勤務や週末も同時刻起床の人には当てはまらない。
+ *   - 自己申告・少数夜だと不安定。あくまで目安。
+ */
+function chronotypeMSFsc(records, days = 60) {
+  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  const free = recent.filter(isFreeDay);
+  if (free.length < 1 || recent.length < 2) return null;
+  const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const msf = circularMeanMin(free.map(midSleepClockMin));        // 休日の睡眠中央時刻
+  const sdf = mean(free.map(durationMin));                         // 休日の平均睡眠時間
+  const sdweek = mean(recent.map(durationMin));                    // 全日の平均睡眠時間
+  let msfsc = msf - (sdf - sdweek) / 2;
+  msfsc = ((Math.round(msfsc) % MIN_PER_DAY) + MIN_PER_DAY) % MIN_PER_DAY;
+  return { msfscMin: msfsc, freeNights: free.length, workNights: recent.length - free.length };
+}
+
+// 直近7日 vs その前7日 の平均睡眠時間の比較（実データの差分）
+function durationTrend(records) {
+  const inWindow = (lo, hi) => records.filter(r => {
+    const w = toDate(r.wake); if (!w || durationMin(r) == null) return false;
+    const age = (Date.now() - w.getTime()) / 86400000;
+    return age >= lo && age < hi;
+  });
+  const avg = arr => arr.length ? Math.round(arr.reduce((s, r) => s + durationMin(r), 0) / arr.length) : null;
+  const cur = avg(inWindow(0, 7));
+  if (cur == null) return null;
+  const prev = avg(inWindow(7, 14));
+  return { current: cur, previous: prev, deltaMin: prev == null ? null : cur - prev };
+}
+
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
   recommendBedtime, circadianHints, computeDashboard,
+  personalStats, chronotypeMSFsc, durationTrend, circularMeanMin,
   recordsWithin, toDate, AASM_MIN: 420,
 };

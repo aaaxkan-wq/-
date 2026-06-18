@@ -78,17 +78,42 @@
     </div>
 
     <div class="card">
-      <div class="card-title">手入力で追加</div>
-      <label>就床日時 <input type="datetime-local" id="inBed"></label>
-      <label>起床日時 <input type="datetime-local" id="inWake"></label>
+      <div class="card-title" id="formTitle">手入力で追加</div>
+      <label>🌙 就床日時 <input type="datetime-local" id="inBed"></label>
+      <label>☀️ 起床日時 <input type="datetime-local" id="inWake"></label>
+      <div id="durPreview" class="durpreview"></div>
       <label>メモ <input type="text" id="inNote" placeholder="例: 寝つき悪かった / 途中で起きた"></label>
-      <button class="btn" id="btnAdd">記録を追加</button>
-      <p class="muted small">スマートウォッチの値は「就床・起床時刻」だけ入れればOK（深い/浅いの内訳は精度が低いので使いません）。</p>
+      <div class="quickrow" id="formButtons">
+        <button class="btn" id="btnAdd">記録を追加</button>
+        <button class="btn ghost" id="btnCancelEdit" hidden>編集をやめる</button>
+      </div>
+      <p class="muted small">スマートウォッチの値は「就床・起床時刻」だけ入れればOK（深い/浅いの内訳は精度が低いので使いません）。日付をまたぐ場合は起床側の日付を翌日にしてください。</p>
     </div>
 
     <div class="card">
       <div class="card-title">記録一覧</div>
       <div id="recordList" class="reclist"></div>
+    </div>
+  </section>
+
+  <!-- 傾向（あなたの記録の集計） -->
+  <section class="tab" data-tab="trend" hidden>
+    <div class="card">
+      <div class="card-title">あなたの傾向（実データの集計） <button class="info" data-info="trend">?</button></div>
+      <p class="muted small">ここは<strong>あなたが入力した記録そのものの集計</strong>です。AIの予測や推測ではありません。</p>
+      <div id="statsBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">クロノタイプの目安（朝型・夜型） <button class="info" data-info="chrono">?</button></div>
+      <div id="chronoBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">最近の変化</div>
+      <div id="trendBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">気づき（記録から事実のみ）</div>
+      <div id="insightBody"></div>
     </div>
   </section>
 
@@ -143,6 +168,7 @@
 <nav class="tabbar">
   <button class="tabbtn active" data-go="home">🏠<span>ホーム</span></button>
   <button class="tabbtn" data-go="log">✏️<span>記録</span></button>
+  <button class="tabbtn" data-go="trend">📈<span>傾向</span></button>
   <button class="tabbtn" data-go="plan">📋<span>行動</span></button>
   <button class="tabbtn" data-go="settings">⚙️<span>設定</span></button>
 </nav>

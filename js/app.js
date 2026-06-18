@@ -12,6 +12,7 @@
     $$('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.go === tab));
     if (tab === 'home') renderHome();
     if (tab === 'log') renderLog();
+    if (tab === 'trend') renderTrends();
     if (tab === 'plan') renderPlan();
     if (tab === 'settings') renderSettings();
     window.scrollTo(0, 0);
@@ -33,10 +34,20 @@
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   }
+  const WD = ['日', '月', '火', '水', '木', '金', '土'];
   function dateLabel(s) {
     const d = S.toDate(s);
-    const wd = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-    return `${d.getMonth() + 1}/${d.getDate()}(${wd}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  const hm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  // 1夜を見やすく整形: 「6/18(水) の睡眠 / 🌙23:00 → ☀06:30(翌) / 7時間30分」
+  function nightLabel(rec) {
+    const b = S.toDate(rec.bed), w = S.toDate(rec.wake);
+    const nextDay = w.getDate() !== b.getDate() || w.getMonth() !== b.getMonth();
+    return {
+      head: `${w.getMonth() + 1}/${w.getDate()}(${WD[w.getDay()]}) の睡眠`,
+      span: `🌙 ${hm(b)} → ☀️ ${nextDay ? '翌' : ''}${hm(w)}`,
+    };
   }
 
   /* ---------- ホーム ---------- */
@@ -125,7 +136,9 @@
       $('#inWake').value = localDTString(now);
     }
 
-    // 一覧
+    updateDurPreview();
+
+    // 一覧（1夜ずつ、起床日を見出しにして日付またぎを「翌」で表現）
     const records = Store.loadRecords().sort((a, b) => S.toDate(b.wake) - S.toDate(a.wake));
     const list = $('#recordList');
     if (!records.length) {
@@ -134,20 +147,63 @@
     }
     list.innerHTML = records.map(r => {
       const dur = S.durationMin(r);
+      const nl = nightLabel(r);
+      const short = dur != null && dur < S.AASM_MIN; // 7時間未満を控えめに示す
       return `<div class="recitem">
-        <div>
-          <div class="rmain">${dateLabel(r.bed)} → ${dateLabel(r.wake).split(' ')[1]}</div>
-          <div class="rsub">${r.note ? escapeHtml(r.note) : ''}${r.source === 'watch' ? ' ⌚' : ''}</div>
+        <div class="rleft">
+          <div class="rhead">${nl.head}</div>
+          <div class="rspan">${nl.span}${r.note ? ' ・ ' + escapeHtml(r.note) : ''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="rdur">${dur == null ? '?' : S.fmtDur(dur)}</span>
-          <button class="del" data-del="${r.id}">×</button>
+        <div class="rright">
+          <span class="rdur${short ? ' low' : ''}">${dur == null ? '?' : S.fmtDur(dur)}</span>
+          <button class="iconbtn" data-edit="${r.id}" aria-label="編集">✎</button>
+          <button class="iconbtn del" data-del="${r.id}" aria-label="削除">×</button>
         </div>
       </div>`;
     }).join('');
-    $$('#recordList .del').forEach(b => b.addEventListener('click', () => {
+    $$('#recordList [data-del]').forEach(b => b.addEventListener('click', () => {
+      if (!confirm('この記録を削除しますか？')) return;
       Store.deleteRecord(b.dataset.del); renderLog(); toast('削除しました');
     }));
+    $$('#recordList [data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
+  }
+
+  /* ---------- 入力中の睡眠時間プレビュー & 編集 ---------- */
+  function updateDurPreview() {
+    const bed = $('#inBed').value, wake = $('#inWake').value;
+    const el = $('#durPreview');
+    if (!bed || !wake) { el.textContent = ''; el.className = 'durpreview'; return; }
+    const mins = (S.toDate(wake) - S.toDate(bed)) / 60000;
+    if (mins <= 0) { el.textContent = '⚠️ 起床は就床より後にしてください'; el.className = 'durpreview warn'; return; }
+    el.textContent = `この記録の睡眠時間: ${S.fmtDur(Math.round(mins))}`;
+    el.className = 'durpreview' + (mins < S.AASM_MIN ? ' low' : '');
+  }
+  $('#inBed').addEventListener('input', updateDurPreview);
+  $('#inWake').addEventListener('input', updateDurPreview);
+
+  let editingId = null;
+  function startEdit(id) {
+    const r = Store.loadRecords().find(x => x.id === id);
+    if (!r) return;
+    editingId = id;
+    $('#inBed').value = r.bed; $('#inWake').value = r.wake; $('#inNote').value = r.note || '';
+    $('#formTitle').textContent = '記録を編集';
+    $('#btnAdd').textContent = '更新する';
+    $('#btnCancelEdit').hidden = false;
+    updateDurPreview();
+    $('#inBed').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function endEdit() {
+    editingId = null;
+    $('#formTitle').textContent = '手入力で追加';
+    $('#btnAdd').textContent = '記録を追加';
+    $('#btnCancelEdit').hidden = true;
+    $('#inNote').value = '';
+  }
+  $('#btnCancelEdit').addEventListener('click', () => { endEdit(); renderLog(); });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
   function escapeHtml(s) {
@@ -174,9 +230,15 @@
     const bed = $('#inBed').value, wake = $('#inWake').value;
     if (!bed || !wake) { toast('就床・起床日時を入力してください'); return; }
     if (S.toDate(wake) <= S.toDate(bed)) { toast('起床は就床より後にしてください'); return; }
-    Store.addRecord({ bed, wake, note: $('#inNote').value.trim(), source: 'manual' });
-    $('#inNote').value = '';
-    toast('記録を追加しました');
+    const note = $('#inNote').value.trim();
+    if (editingId) {
+      Store.updateRecord(editingId, { bed, wake, note });
+      endEdit(); toast('更新しました');
+    } else {
+      Store.addRecord({ bed, wake, note, source: 'manual' });
+      $('#inNote').value = '';
+      toast('記録を追加しました');
+    }
     renderLog();
   });
 
@@ -204,6 +266,65 @@
           <div class="tl-src">出典: <a href="${it.src.url}" target="_blank" rel="noopener">${escapeHtml(it.src.label)}</a></div>
         </div>
       </div>`).join('');
+  }
+
+  /* ---------- 傾向（実データの集計） ---------- */
+  function renderTrends() {
+    const records = Store.loadRecords();
+    const settings = Store.loadSettings();
+
+    // 基本統計
+    const st = S.personalStats(records, 14);
+    if (!st) {
+      $('#statsBody').innerHTML = '<p class="muted small">記録がまだありません。数日分つけると傾向が出ます。</p>';
+    } else {
+      $('#statsBody').innerHTML = `
+        <div class="statgrid">
+          <div><div class="statk">平均就床</div><div class="statv">${S.fmtHM(st.avgBed)}</div></div>
+          <div><div class="statk">平均起床</div><div class="statv">${S.fmtHM(st.avgWake)}</div></div>
+          <div><div class="statk">平均睡眠</div><div class="statv">${S.fmtDur(st.avgDur)}</div></div>
+          <div><div class="statk">睡眠中央</div><div class="statv">${S.fmtHM(st.avgMid)}</div></div>
+        </div>
+        <p class="muted small">直近 ${st.nights} 夜の平均（時刻は深夜またぎを考慮した円周平均）。睡眠時間は最短 ${S.fmtDur(st.minDur)}〜最長 ${S.fmtDur(st.maxDur)}。</p>`;
+    }
+
+    // クロノタイプ（MSFsc）
+    const ch = S.chronotypeMSFsc(records);
+    if (!ch) {
+      $('#chronoBody').innerHTML = '<p class="muted small">休日（土日）と平日の両方の記録が貯まると、あなたの朝型/夜型の目安を計算できます。</p>';
+    } else {
+      $('#chronoBody').innerHTML = `
+        <div class="bigstat">睡眠の中央時刻（補正後）<strong>${S.fmtHM(ch.msfscMin)}</strong></div>
+        <p class="muted small">MCTQ の MSFsc（休日の睡眠中央時刻を睡眠負債で補正した、朝型/夜型の標準的な目安）。<strong>早いほど朝型寄り、遅いほど夜型寄り</strong>です。出典: <a href="https://www.thewep.org/documentations/mctq" target="_blank" rel="noopener">MCTQ (Roenneberg)</a><br>※入眠時刻の代わりに就床時刻を使う簡易計算で、やや早めに出ます。土日=休日とみなしています（休日${ch.freeNights}夜/平日${ch.workNights}夜）。目安としてご利用ください。</p>`;
+    }
+
+    // 最近の変化（直近7日 vs その前7日）
+    const tr = S.durationTrend(records);
+    if (!tr) {
+      $('#trendBody').innerHTML = '<p class="muted small">直近7日の記録が必要です。</p>';
+    } else if (tr.deltaMin == null) {
+      $('#trendBody').innerHTML = `<p class="small">直近7日の平均睡眠: <strong>${S.fmtDur(tr.current)}</strong>（前週との比較は記録が貯まると表示）</p>`;
+    } else {
+      const sign = tr.deltaMin > 0 ? '＋' : tr.deltaMin < 0 ? '−' : '±';
+      const arrow = tr.deltaMin > 0 ? '📈' : tr.deltaMin < 0 ? '📉' : '➡️';
+      $('#trendBody').innerHTML = `<p class="small">直近7日の平均睡眠 <strong>${S.fmtDur(tr.current)}</strong> ${arrow} 前週（${S.fmtDur(tr.previous)}）より ${sign}${S.fmtDur(Math.abs(tr.deltaMin))}</p>`;
+    }
+
+    // 気づき（記録から事実のみ。出典のある閾値だけ使う）
+    const ins = [];
+    if (st) {
+      if (st.avgDur < S.AASM_MIN) ins.push(`直近の平均睡眠は ${S.fmtDur(st.avgDur)} で、7時間（AASM/CDCの推奨下限）を下回っています。`);
+      else ins.push(`直近の平均睡眠は ${S.fmtDur(st.avgDur)} で、7時間以上を満たしています。`);
+    }
+    const sjl = S.socialJetlag(records);
+    if (sjl != null) ins.push(`平日と休日の睡眠中央時刻のズレ（ソーシャル時差ぼけ）は ${S.fmtDur(sjl)} です。`);
+    const sri = S.sleepRegularityIndex(records);
+    if (sri != null) ins.push(`規則性スコア（自己申告の近似）は ${Math.round(sri)} です（高いほど規則的）。`);
+    const debt = S.sleepDebt(records, settings.targetMin);
+    if (debt.nights) ins.push(`直近14日で、目標 ${S.fmtDur(settings.targetMin)} に対する不足の累積は ${S.fmtDur(debt.debtMin)} です。`);
+    $('#insightBody').innerHTML = ins.length
+      ? '<ul class="insights">' + ins.map(t => `<li>${t}</li>`).join('') + '</ul>'
+      : '<p class="muted small">記録が貯まると、事実ベースの気づきを表示します。</p>';
   }
 
   /* ---------- 設定 ---------- */
@@ -254,6 +375,8 @@
     debt: '直近14日の「あなたの目標睡眠時間 − 実際の睡眠時間」の不足分の累積です(生理的な睡眠負債そのものの測定ではありません)。不足のみを足し、寝だめでの相殺はしません(週末の回復では完全に返せないとの研究に基づく)。色は平均が7時間=AASM/CDCの推奨下限を下回る場合のみ表示します。',
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
+    trend: 'この画面は、あなたが入力した記録そのものの集計（記述統計）です。AIによる予測や、根拠のないスコアは一切含みません。時刻の平均は、深夜をまたぐ時刻を正しく扱うため円周平均で計算しています。',
+    chrono: 'あなたの休日の睡眠中央時刻から、朝型/夜型の標準的な目安(MCTQのMSFsc)を計算したものです。本来は入眠時刻を使いますが、就床時刻で代用しているためやや早めに出ます。土日を休日とみなす簡易計算で、少数の記録では不安定です。診断ではなく目安です。',
   };
   document.addEventListener('click', e => {
     const b = e.target.closest('.info');

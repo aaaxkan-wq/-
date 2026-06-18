@@ -45,6 +45,12 @@ function addRecord(rec) {
   return rec;
 }
 
+function updateRecord(id, fields) {
+  const records = loadRecords();
+  const i = records.findIndex(r => r.id === id);
+  if (i >= 0) { records[i] = { ...records[i], ...fields }; saveRecords(records); }
+}
+
 function deleteRecord(id) {
   saveRecords(loadRecords().filter(r => r.id !== id));
 }
@@ -65,5 +71,5 @@ function importJSON(text) {
 
 window.Store = {
   DEFAULT_SETTINGS, loadRecords, saveRecords, loadSettings, saveSettings,
-  addRecord, deleteRecord, exportJSON, importJSON,
+  addRecord, updateRecord, deleteRecord, exportJSON, importJSON,
 };
