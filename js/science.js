@@ -105,24 +105,29 @@ function regularityLabel(sri) {
   return { score: sri };
 }
 
-/* ---------- 睡眠負債 ----------
- * 直近N日について (目標 - 実績) を合計。寝だめでは完全に返せない(Banks 2010,
- * Depner 2019)ため、貯金(マイナス負債)は0で頭打ちにする保守的な扱い。
+/* ---------- 睡眠負債（ローリング収支） ----------
+ * 記録を古い順に処理し、各夜 balance += (目標 − 実績) を加算する。
+ *  - 目標より短い夜 → 負債が増える
+ *  - 目標より長い夜（回復睡眠） → 負債が減る（Banks 2010 で回復睡眠は神経行動機能を
+ *    部分的に改善）
+ *  - 下限0でクランプ（寝過ぎを「貯金」にはしない）。
+ * 旧実装は不足だけを合計し回復を一切反映しなかったため、しっかり寝ても負債が動かない
+ * 不具合があった。これを修正。
+ * 注: 1晩の極端な寝過ぎで全部返せるわけではない（代謝面は週末回復で戻らない: Depner 2019）
+ *     が、就床/起床のみの自己申告から扱える範囲の近似として収支方式を用いる。
  */
 function sleepDebt(records, targetMin, days = 14) {
-  const recent = recordsWithin(records, days);
-  if (!recent.length) return { debtMin: 0, nights: 0, avgMin: null };
-  let sumDur = 0, debt = 0, nights = 0;
+  const recent = recordsWithin(records, days); // wake昇順
+  let balance = 0, sumDur = 0, nights = 0;
   for (const r of recent) {
     const d = durationMin(r);
     if (d == null) continue;
-    nights++;
-    sumDur += d;
-    const nightly = targetMin - d;
-    if (nightly > 0) debt += nightly; // 不足のみ累積、寝だめでは相殺しすぎない
+    nights++; sumDur += d;
+    balance += (targetMin - d);     // 不足は+、回復(余剰)は−
+    if (balance < 0) balance = 0;    // 負債の下限は0（貯金しない）
   }
   return {
-    debtMin: debt,
+    debtMin: Math.round(balance),
     nights,
     avgMin: nights ? Math.round(sumDur / nights) : null,
   };
@@ -148,8 +153,10 @@ function socialJetlag(records) {
     (wakeDay === 0 || wakeDay === 6 ? we : wk).push(mid);
   }
   if (wk.length < 1 || we.length < 1) return null;
-  const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
-  const diff = Math.abs(avg(we) - avg(wk));
+  // 円周平均＋最短角距離（睡眠中央時刻が深夜をまたいでも正しく扱う）
+  const wkMean = circularMeanMin(wk), weMean = circularMeanMin(we);
+  let diff = Math.abs(weMean - wkMean);
+  if (diff > MIN_PER_DAY / 2) diff = MIN_PER_DAY - diff;
   return Math.round(diff); // 分
 }
 

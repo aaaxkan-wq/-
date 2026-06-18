@@ -101,7 +101,7 @@
     } else {
       dv.textContent = S.fmtDur(d.debt.debtMin);
       dv.className = 'metric-value ' + (d.debt.avgMin < S.AASM_MIN ? 'bad' : '');
-      $('#debtNote').textContent = `目標との不足の累積 ・ 平均 ${S.fmtDur(d.debt.avgMin)}/夜`;
+      $('#debtNote').textContent = `不足で増え、しっかり寝ると減る（下限0）・ 平均 ${S.fmtDur(d.debt.avgMin)}/夜`;
     }
 
     // 昨夜（色分けは7時間=AASM/CDCの推奨下限のみ）
@@ -227,10 +227,6 @@
     return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
-  function escapeHtml(s) {
-    return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  }
-
   $('#btnSleepNow').addEventListener('click', () => {
     const pending = localStorage.getItem(PENDING_KEY);
     if (pending) { localStorage.removeItem(PENDING_KEY); toast('就床記録を取り消しました'); }
@@ -342,7 +338,7 @@
     const sri = S.sleepRegularityIndex(records);
     if (sri != null) ins.push(`規則性スコア（自己申告の近似）は ${Math.round(sri)} です（高いほど規則的）。`);
     const debt = S.sleepDebt(records, settings.targetMin);
-    if (debt.nights) ins.push(`直近14日で、目標 ${S.fmtDur(settings.targetMin)} に対する不足の累積は ${S.fmtDur(debt.debtMin)} です。`);
+    if (debt.nights) ins.push(`現在の睡眠負債（収支, 目標 ${S.fmtDur(settings.targetMin)} 基準）は ${S.fmtDur(debt.debtMin)} です。`);
     $('#insightBody').innerHTML = ins.length
       ? '<ul class="insights">' + ins.map(t => `<li>${t}</li>`).join('') + '</ul>'
       : '<p class="muted small">記録が貯まると、事実ベースの気づきを表示します。</p>';
@@ -393,7 +389,7 @@
   /* ---------- info ポップ ---------- */
   const INFO = {
     regularity: '睡眠の「規則性」の近似指標(-100〜100, 高いほど規則的)。本来のSRIは加速度計の連続データから計算しますが、本アプリは自己申告の就床/起床時刻から近似するため、公表されているSRI値とは直接比較できません。良い/悪いの標準的な閾値は存在しないため区切りや色分けはせず、自分の推移を追う用途で使ってください。大規模研究では規則性は睡眠時間より死亡率を強く予測したと報告されています(UK Biobank)。',
-    debt: '直近14日の「あなたの目標睡眠時間 − 実際の睡眠時間」の不足分の累積です(生理的な睡眠負債そのものの測定ではありません)。不足のみを足し、寝だめでの相殺はしません(週末の回復では完全に返せないとの研究に基づく)。色は平均が7時間=AASM/CDCの推奨下限を下回る場合のみ表示します。',
+    debt: '直近14日の記録を古い順にたどり、毎晩「目標睡眠 − 実際の睡眠」を足し引きしたローリング収支です。短い夜で増え、しっかり寝た夜(回復睡眠)で減り、下限は0(寝過ぎを貯金にはしません)。回復睡眠が神経行動機能を部分的に戻すこと(Banks 2010)に基づきます。ただし1晩の寝過ぎで代謝面まで完全回復はしません(Depner 2019)。生理的な睡眠負債そのものの測定ではなく目安です。色は平均睡眠が7時間(AASM/CDC下限)未満のとき表示します。',
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
     rec: '今夜の推奨就床は、目標から逆算した時刻を基準に、積み上がった睡眠負債に応じて自動で前倒しします。科学的根拠: ①起床時刻は固定が最善(規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを悪化させる)ので就床だけ早める ②負債は1晩で返せず数晩かけて回復(Banks 2010 / Depner 2019) ③総睡眠9時間は超えない(U字カーブ)。前倒しの上限45分は、就床直前の覚醒帯(WMZ)で寝つけない制約と「多晩で回復」に基づく保守的な実務目安です(検証された精密な処方ではありません)。',
