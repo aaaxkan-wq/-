@@ -7,7 +7,10 @@ function setupCanvas(canvas) {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const w = rect.width || canvas.clientWidth || 320;
-  const h = parseInt(canvas.getAttribute('height')) || 180;
+  // 論理高さは初回に確定して保持する。canvas.height を設定すると height 属性も
+  // 書き換わるため、毎回属性から読むと再描画ごとに dpr 倍に膨張してしまう（バグ）。
+  if (!canvas._logicalH) canvas._logicalH = parseInt(canvas.getAttribute('height')) || 180;
+  const h = canvas._logicalH;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   canvas.style.height = h + 'px';

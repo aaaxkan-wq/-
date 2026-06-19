@@ -552,7 +552,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v8 (2026-06-19) ホーム軽量化・眠気タブ分離';
+  const APP_VERSION = 'v9 (2026-06-19) チャート膨張バグ修正';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');
