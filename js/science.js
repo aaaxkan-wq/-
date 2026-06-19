@@ -278,9 +278,45 @@ function sleepinessForecast(records) {
   for (const p of pts) if (Math.abs(p.t - elapsed) < Math.abs(cur.t - elapsed)) cur = p;
 
   return {
-    pts, wH, cbtMin, dip, peak, gate,
+    pts, wH, cbtMin, dip, peak, gate, s0: S0,
     currentScore: cur.score, elapsed,
     sleepGateMin: gate ? Math.round(((wH + gate.t) % 24) * 60) : null,
+  };
+}
+
+/* ---------- 仮眠シミュレーション ----------
+ * 「今 napMin 分仮眠したら」を二プロセスモデルで試算。仮眠中は睡眠圧Sが減衰し、
+ * その後の眠気カーブと夜の睡眠ゲート(自然入眠時刻)が変化する。
+ * 戻り値: 仮眠後の代替カーブ pts と、新しい睡眠ゲート、入眠の遅れ(分)。
+ */
+function napCurve(fc, napMin) {
+  if (!fc || fc.s0 == null) return null;
+  const e = fc.elapsed, napH = napMin / 60;
+  const sNow = tpSw(e, fc.s0);             // 仮眠開始時のS
+  const sAfter = tpSs(napH, sNow);         // 仮眠で減衰したS
+  const pts = fc.pts.map(p => {
+    let sv;
+    if (p.t <= e) sv = tpSw(p.t, fc.s0);
+    else if (p.t <= e + napH) sv = tpSs(p.t - e, sNow);    // 仮眠中
+    else sv = tpSw(p.t - (e + napH), sAfter);              // 仮眠後の覚醒
+    const cv = tpCt(p.clock, fc.cbtMin);
+    return {
+      t: p.t, clock: p.clock, score: tpScore(sv, cv),
+      pressure: clampN(Math.round((sv - TP.sMin) / (TP.sMax - TP.sMin) * 100), 0, 100),
+      circ: p.circ,
+    };
+  });
+  // 仮眠後の夜の睡眠ゲート
+  let gate = null;
+  const after = Math.max(14, e + napH + 0.5);
+  for (const p of pts) { if (p.t >= after && p.score >= 55) { gate = p; break; } }
+  const baseGate = fc.gate ? fc.gate.t : null;
+  const delayMin = (gate && baseGate != null) ? Math.round((gate.t - baseGate) * 60) : null;
+  return {
+    pts, wH: fc.wH, cbtMin: fc.cbtMin, elapsed: fc.elapsed, gate,
+    napStart: e, napEnd: e + napH, napMin,
+    sleepGateMin: gate ? Math.round(((fc.wH + gate.t) % 24) * 60) : null,
+    delayMin,
   };
 }
 
@@ -533,7 +569,7 @@ function durationTrend(records) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, computeDashboard,
+  recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, napCurve, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
   recordsWithin, toDate, AASM_MIN: 420,
 };

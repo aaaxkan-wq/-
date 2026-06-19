@@ -157,14 +157,15 @@
   /* ---------- 眠気予測の表示 ---------- */
   function sCol(s) { return s < 35 ? '#34d399' : s < 55 ? '#fbbf24' : s < 72 ? '#fb923c' : '#f87171'; }
   function sLbl(s) { return s < 35 ? '覚醒（集中しやすい）' : s < 55 ? '普通' : s < 72 ? '眠気あり' : s < 85 ? '強い眠気' : '非常に眠い'; }
+  let napSelMin = 0; // 仮眠シミュの選択(0=なし)
+  window.selectNap = function (m) { napSelMin = (napSelMin === m ? 0 : m); renderForecast(S.computeDashboard(Store.loadRecords(), Store.loadSettings())); };
 
   function renderForecast(d) {
     const fc = d.forecast;
-    const gauge = $('#forecastGauge'), times = $('#forecastTimes'), legend = $('#forecastLegend');
+    const gauge = $('#forecastGauge'), times = $('#forecastTimes'), legend = $('#forecastLegend'), nap = $('#napSim');
     const canvas = $('#forecastChart');
     if (!fc) {
-      gauge.innerHTML = '';
-      legend.innerHTML = '';
+      gauge.innerHTML = ''; legend.innerHTML = ''; nap.innerHTML = '';
       canvas.style.display = 'none';
       times.innerHTML = `<p class="muted small">眠気予測には記録が2日分以上必要です。とりあえずの目安：午後の眠気は <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong>頃、寝つきにくい帯は <strong>${S.fmtHM(d.hints.wmz.start)}〜${S.fmtHM(d.hints.wmz.end)}</strong>頃（集団平均）。</p>`;
       return;
@@ -177,11 +178,22 @@
         <div style="font-size:46px;font-weight:800;line-height:1.1;color:${c}">${fc.currentScore}<span style="font-size:18px;color:var(--muted)"> /100</span></div>
         <div style="font-size:13px;font-weight:600;color:${c}">${sLbl(fc.currentScore)}</div>
       </div>`;
-    Charts.drawForecast(canvas, fc);
+    const napFc = napSelMin ? S.napCurve(fc, napSelMin) : null;
+    Charts.drawForecast(canvas, fc, napFc);
     legend.innerHTML =
       `<span><span class="dot" style="background:#f87171"></span>眠気スコア</span>
        <span><span class="dot" style="background:#818cf8"></span>睡眠圧 S</span>
-       <span><span class="dot" style="background:#34d399"></span>概日リズム</span>`;
+       <span><span class="dot" style="background:#34d399"></span>概日リズム</span>`
+      + (napFc ? `<span><span class="dot" style="background:#60a5fa"></span>仮眠後</span>` : '');
+
+    // 仮眠シミュ ボタン
+    const opts = [['なし', 0], ['20分', 20], ['30分', 30], ['90分', 90]];
+    nap.innerHTML = '<div class="muted small" style="margin:6px 0 4px">💤 今から仮眠したら？（シミュレーション）</div>'
+      + '<div class="quickrow" style="grid-template-columns:repeat(4,1fr);gap:6px">'
+      + opts.map(([lb, m]) => `<button class="btn ${napSelMin === m ? '' : 'ghost'}" style="padding:8px 0;font-size:13px" onclick="selectNap(${m})">${lb}</button>`).join('')
+      + '</div>'
+      + (napFc ? `<div class="notice" style="background:rgba(96,165,250,.1);color:#9ec5fb;border:1px solid rgba(96,165,250,.25);padding:8px 10px;border-radius:7px;font-size:12px;margin-top:8px">${napSelMin}分仮眠すると、夜に自然に眠くなる時刻が <strong>${napFc.sleepGateMin != null ? S.fmtHM(napFc.sleepGateMin) : '—'}</strong>${napFc.delayMin != null && napFc.delayMin > 0 ? `（約${S.fmtDur(napFc.delayMin)}遅れる）` : napFc.delayMin != null && napFc.delayMin < 0 ? `（早まる）` : ''}。長い仮眠ほど夜の入眠が遅れやすい。午後の早い時間×短時間が無難。</div>` : '');
+
     const rows = [];
     if (fc.sleepGateMin != null)
       rows.push(`🌙 <strong>${S.fmtHM(fc.sleepGateMin)}</strong> 頃：夜に自然に眠くなり始める（入眠しやすい）`);

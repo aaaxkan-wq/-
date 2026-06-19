@@ -30,8 +30,9 @@ const COL = {
   circ: '#34d399',           // 概日の眠気寄与
 };
 
-/* 眠気予測カーブ（二プロセスモデル）。fc = sleepinessForecast の戻り値 */
-function drawForecast(canvas, fc) {
+/* 眠気予測カーブ（二プロセスモデル）。fc = sleepinessForecast。
+ * napFc を渡すと、仮眠後の代替カーブを重ね描き（元カーブは薄く）。 */
+function drawForecast(canvas, fc, napFc) {
   const { ctx, w, h } = setupCanvas(canvas);
   ctx.clearRect(0, 0, w, h);
   if (!fc || !fc.pts || !fc.pts.length) return;
@@ -79,8 +80,17 @@ function drawForecast(canvas, fc) {
   ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(cx(pts[0].t), cy(0));
   pts.forEach(p => ctx.lineTo(cx(p.t), cy(p.score)));
   ctx.lineTo(cx(pts[pts.length - 1].t), cy(0)); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = COL.sleep; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.strokeStyle = napFc ? 'rgba(248,113,113,0.28)' : COL.sleep;
+  ctx.lineWidth = napFc ? 1.5 : 2.5; ctx.lineJoin = 'round';
   ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.score); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+
+  // 仮眠シミュレーション: 仮眠窓を陰影＋仮眠後カーブを実線
+  if (napFc) {
+    ctx.fillStyle = 'rgba(96,165,250,0.18)';
+    ctx.fillRect(cx(napFc.napStart), padT, cx(napFc.napEnd) - cx(napFc.napStart), ch);
+    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    ctx.beginPath(); napFc.pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.score); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+  }
 
   // 現在時刻マーカー
   const ex = Math.max(0, Math.min(24, fc.elapsed));
