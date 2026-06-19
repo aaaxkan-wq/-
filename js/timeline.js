@@ -25,19 +25,29 @@ function clock(bedMin, deltaMin) {
 }
 
 /*
- * @param bedMin   推奨就床（0時からの分）
- * @param wakeMin  目標起床（0時からの分）
- * @param dipMin   午後の眠気の谷の時刻（分, 任意）
+ * @param bedMin        実際の就床（0時からの分）
+ * @param wakeMin       実際の起床（0時からの分）
+ * @param dipMin        午後の眠気の谷の時刻（分, 任意）
+ * @param targetWakeMin 目標起床（0時からの分, 任意）。実際の起床が目標より遅いとき、
+ *                      朝の光で体内時計を前進させる助言を加えるために使う。
  */
-function buildTimeline(bedMin, wakeMin, dipMin) {
+function buildTimeline(bedMin, wakeMin, dipMin, targetWakeMin) {
   const F = window.Science.fmtHM;
   const items = [];
 
-  // 朝: 光
+  // 朝: 光（基本は実際の起床に合わせる。ただし目標より遅起きなら前進の助言を足す）
+  let lightDetail = '朝の光は体内時計を前進させ、早起きが楽になり夜のメラトニンも早く出る。カーテンを開ける/外に出る。';
+  if (targetWakeMin != null) {
+    let later = (wakeMin - targetWakeMin + 1440) % 1440;        // 実際が目標より何分遅いか
+    if (later > 720) later -= 1440;
+    if (later > 30) {
+      lightDetail += ` 今は目標(${F(targetWakeMin)})より遅く起きています。早起きにしたいなら、起床後できるだけ早く（理想は目標時刻に近づけて）光を浴びると体内時計が前進します。`;
+    }
+  }
   items.push({
     time: wakeMin, icon: '☀️', kind: 'do',
     title: '起きたら強い光を浴びる',
-    detail: '朝の光は体内時計を前進させ、早起きが楽になり夜のメラトニンも早く出る。カーテンを開ける/外に出る。',
+    detail: lightDetail,
     src: SOURCES.light_morning,
   });
 

@@ -276,7 +276,7 @@
       ? 'あなたの直近の平均的な就床・起床に合わせています'
       : '記録がまだ無いため、目標値で暫定表示しています（記録すると実際に合わせます）';
 
-    const items = window.Timeline.buildTimeline(bedMin, wakeMin, dipMin);
+    const items = window.Timeline.buildTimeline(bedMin, wakeMin, dipMin, S.parseHM(settings.targetWake));
     $('#timeline').innerHTML = items.map(it => `
       <div class="tl-item">
         <div class="tl-time">${S.fmtHM(it.time)}</div>
