@@ -1,5 +1,11 @@
-/* sw.js — オフライン動作用サービスワーカー（アプリシェルをキャッシュ） */
-const CACHE = 'nemurilog-v1';
+/* sw.js — オフライン動作用サービスワーカー
+ *
+ * 方針: アプリ本体(HTML/JS/CSS)は「ネットワーク優先」にする。
+ *   オンライン時は常に最新を取得し(=更新が即届く)、取得したものをキャッシュに保存。
+ *   オフライン時のみキャッシュにフォールバックする。
+ *   以前は「キャッシュ優先」で、コードを更新しても古い版が配信され続ける問題があった。
+ */
+const CACHE = 'nemurilog-v3';
 const ASSETS = [
   '.',
   'index.html',
@@ -27,19 +33,18 @@ self.addEventListener('activate', e => {
   );
 });
 
-// cache-first（オフラインでも起動。更新はネット接続時に取得してキャッシュ更新）
+// ネットワーク優先（オンラインなら常に最新、失敗時のみキャッシュ）
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetched = fetch(e.request).then(res => {
+    fetch(e.request)
+      .then(res => {
         if (res && res.status === 200 && res.type === 'basic') {
           const copy = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
-      }).catch(() => cached);
-      return cached || fetched;
-    })
+      })
+      .catch(() => caches.match(e.request).then(c => c || caches.match('index.html')))
   );
 });

@@ -405,14 +405,36 @@
     if (b) toast(INFO[b.dataset.info] || '');
   });
 
+  /* ---------- 更新（キャッシュ消去） ---------- */
+  const APP_VERSION = 'v3 (2026-06-19) 実際スケジュール連動';
+  const av = document.getElementById('appVersion');
+  if (av) av.textContent = APP_VERSION;
+  const bu = document.getElementById('btnUpdate');
+  if (bu) bu.addEventListener('click', async () => {
+    toast('更新中…');
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch (e) { /* noop */ }
+    location.reload(true);
+  });
+
   /* ---------- 初期化 ---------- */
   const now = new Date();
   $('#todayLabel').textContent =
     `${now.getMonth() + 1}月${now.getDate()}日`;
   go('home');
 
-  // Service Worker
+  // Service Worker（更新検知したら次回起動で最新が当たる）
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => { reg.update && reg.update(); })
+      .catch(() => {});
   }
 })();
