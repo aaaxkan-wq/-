@@ -145,4 +145,54 @@ function drawDuration(canvas, bars, targetMin) {
   });
 }
 
-window.Charts = { drawDuration, drawForecast };
+/* 睡眠ラスター図: 各行=1日(正午→翌正午), 横=時刻, 睡眠帯を塗る。
+ * 時間生物学の定番可視化。記録から直接描くだけ(加工・推定なし)。*/
+function drawRaster(canvas, records, days) {
+  days = days || 21;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width || 340;
+  const cutoff = Date.now() - days * 86400000;
+  const rows = {};
+  for (const r of records) {
+    const b = new Date(r.bed), wk = new Date(r.wake);
+    if (isNaN(b) || isNaN(wk) || wk <= b) continue;
+    if (wk.getTime() < cutoff) continue;
+    const origin = new Date(b);
+    if (origin.getHours() < 12) origin.setDate(origin.getDate() - 1);
+    origin.setHours(12, 0, 0, 0);
+    const key = origin.getTime();
+    const s = Math.max(0, (b - origin) / 60000), e = Math.min(1440, (wk - origin) / 60000);
+    (rows[key] = rows[key] || { bars: [] }).bars.push({ s, e });
+  }
+  const keys = Object.keys(rows).map(Number).sort((a, b) => b - a);
+  const rowH = 14, padT = 16, padB = 6, padL = 40, padR = 8;
+  const n = Math.max(keys.length, 1);
+  const H = padT + padB + n * rowH;
+  canvas.width = w * dpr; canvas.height = H * dpr; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  const plotW = w - padL - padR;
+  const X = m => padL + m / 1440 * plotW;
+
+  ctx.font = '9px system-ui'; ctx.textAlign = 'center';
+  [[0, '12'], [360, '18'], [720, '0'], [1080, '6'], [1440, '12']].forEach(([m, lb]) => {
+    ctx.strokeStyle = 'rgba(148,163,184,0.13)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(m), padT); ctx.lineTo(X(m), padT + n * rowH); ctx.stroke();
+    ctx.fillStyle = 'rgba(226,232,240,0.5)'; ctx.fillText(lb, X(m), 11);
+  });
+  if (!keys.length) {
+    ctx.fillStyle = 'rgba(226,232,240,0.5)'; ctx.font = '12px system-ui';
+    ctx.fillText('記録がありません', w / 2, padT + 16); return;
+  }
+  keys.forEach((k, i) => {
+    const y = padT + i * rowH, d = new Date(k);
+    ctx.fillStyle = 'rgba(226,232,240,0.45)'; ctx.textAlign = 'right'; ctx.font = '9px system-ui';
+    ctx.fillText((d.getMonth() + 1) + '/' + d.getDate(), padL - 4, y + rowH - 3);
+    rows[k].bars.forEach(bar => {
+      ctx.fillStyle = '#818cf8';
+      ctx.fillRect(X(bar.s), y + 1, Math.max(1, X(bar.e) - X(bar.s)), rowH - 3);
+    });
+  });
+}
+
+window.Charts = { drawDuration, drawForecast, drawRaster };

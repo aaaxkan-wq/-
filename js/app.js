@@ -372,6 +372,9 @@
         <p class="muted small">直近 ${st.nights} 夜の平均（時刻は深夜またぎを考慮した円周平均）。睡眠時間は最短 ${S.fmtDur(st.minDur)}〜最長 ${S.fmtDur(st.maxDur)}。</p>`;
     }
 
+    // 睡眠ラスター図
+    Charts.drawRaster($('#rasterChart'), records, 21);
+
     // クロノタイプ（MSFsc）
     const ch = S.chronotypeMSFsc(records);
     if (!ch) {
