@@ -273,7 +273,7 @@
     $('#planBed').textContent = S.fmtHM(bedMin);
     $('#planWake').textContent = S.fmtHM(wakeMin);
     $('#planBasis').textContent = d.hasActualSchedule
-      ? 'あなたの直近の平均的な就床・起床に合わせています'
+      ? 'あなたの実際の睡眠に合わせています（直近の夜ほど重視・半減期3日の加重平均）'
       : '記録がまだ無いため、目標値で暫定表示しています（記録すると実際に合わせます）';
 
     const items = window.Timeline.buildTimeline(bedMin, wakeMin, dipMin, S.parseHM(settings.targetWake));
@@ -406,7 +406,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v3 (2026-06-19) 実際スケジュール連動';
+  const APP_VERSION = 'v4 (2026-06-19) 直近寄り加重平均';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');

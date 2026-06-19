@@ -264,12 +264,12 @@ function computeDashboard(records, settings) {
   const rec = recommendTonight(records, settings);   // 負債に応じて適応した今夜の推奨
   const recBed = rec.bedMin;
 
-  // 「実際の睡眠スケジュール」= 直近14日の習慣的な就床・起床（円周平均）。
+  // 「実際の睡眠スケジュール」= 直近の就床・起床（新しい夜ほど重い加重平均）。
   // 推奨行動・体内時計の目安は、目標/推奨ではなく "実際" に合わせる。
-  const stats = personalStats(records, 14);
+  const sched = actualSchedule(records);
   let actualBed, actualWake, hasActualSchedule = true;
-  if (stats) {
-    actualBed = stats.avgBed; actualWake = stats.avgWake;
+  if (sched) {
+    actualBed = sched.bed; actualWake = sched.wake;
   } else if (last) {
     actualBed = bedClockMin(last); actualWake = wakeClockMin(last);
   } else {
@@ -301,6 +301,43 @@ function computeDashboard(records, settings) {
  * 予測モデルや恣意的なスコアは含まない。唯一の派生指標 chronotypeMSFsc は出典のある
  * 公表手法(MCTQ)で、適用上の制約を明記する。
  */
+
+// 重み付き円周平均。pairs=[{min, w}]。深夜またぎを正しく扱う。
+function weightedCircularMeanMin(pairs) {
+  let sx = 0, sy = 0, sw = 0;
+  for (const { min, w } of pairs) {
+    if (min == null) continue;
+    const a = (min / MIN_PER_DAY) * 2 * Math.PI;
+    sx += w * Math.cos(a); sy += w * Math.sin(a); sw += w;
+  }
+  if (!sw) return null;
+  let ang = Math.atan2(sy / sw, sx / sw);
+  if (ang < 0) ang += 2 * Math.PI;
+  return Math.round((ang / (2 * Math.PI)) * MIN_PER_DAY) % MIN_PER_DAY;
+}
+
+/* 「実際の睡眠スケジュール」= 直近の就床・起床を、新しい夜ほど重く見た加重平均。
+ * 半減期 halfLife 日（既定3日）の指数減衰で重み付け。
+ *  - 直近の生活リズムを強く反映しつつ、1晩の例外には過剰反応しない。
+ *  - 体内時計は習慣的な就寝時刻で決まる（1晩では動かない）ため、平均ベースが妥当。
+ */
+function actualSchedule(records, days = 7, halfLife = 3) {
+  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  if (!recent.length) return null;
+  const now = Date.now();
+  const bedPairs = [], wakePairs = [];
+  for (const r of recent) {
+    const ageDays = (now - toDate(r.wake).getTime()) / 86400000;
+    const w = Math.pow(0.5, Math.max(0, ageDays) / halfLife);
+    bedPairs.push({ min: bedClockMin(r), w });
+    wakePairs.push({ min: wakeClockMin(r), w });
+  }
+  return {
+    bed: weightedCircularMeanMin(bedPairs),
+    wake: weightedCircularMeanMin(wakePairs),
+    nights: recent.length,
+  };
+}
 
 // クロック時刻(分)の円周平均。深夜をまたぐ時刻(23:30と0:30など)を正しく平均するため。
 function circularMeanMin(minsArr) {
@@ -377,6 +414,6 @@ window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
   recommendBedtime, recommendTonight, circadianHints, computeDashboard,
-  personalStats, chronotypeMSFsc, durationTrend, circularMeanMin,
+  personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
   recordsWithin, toDate, AASM_MIN: 420,
 };
