@@ -220,7 +220,8 @@ function tpSteady(sd, wd) {
   return Math.abs(d) < 1e-9 ? 0.5 : (TP.sMin * (1 - es) + TP.sMax * (1 - ew) * es) / d;
 }
 
-function sleepinessForecast(records) {
+function sleepinessForecast(records, phaseOffsetMin) {
+  const phaseOff = (phaseOffsetMin || 0) / 60; // 個人補正(時間)
   const recent = recordsWithin(records, 14).filter(r => durationMin(r) != null).slice(-7);
   if (recent.length < 2) return null;
   const wks = [], sls = [], drs = [];
@@ -232,10 +233,11 @@ function sleepinessForecast(records) {
   }
   for (let i = 0; i < drs.length; i++) if (!(drs[i] > 0 && drs[i] <= 24)) return null;
 
-  // 概日の基準: 実際の習慣的な起床(加重平均)の約2h前を CBTmin とする
+  // 概日の基準: 実際の習慣的な起床(加重平均)の約2h前を CBTmin とする（個人補正phaseOffを反映）
   const sched = actualSchedule(records);
   const habW = sched && sched.wake != null ? sched.wake / 60 : wks.reduce((a, b) => a + b, 0) / wks.length;
-  const cbtMin = (habW - 2 + 24) % 24;
+  const cbtMinBase = (habW - 2 + 24) % 24;
+  const cbtMin = (cbtMinBase + phaseOff + 24) % 24;
 
   // 定常状態の S を反復で求め、最後の起床時点の S0 を得る
   let S = tpSteady(drs[0], 24 - drs[0]);
@@ -278,10 +280,36 @@ function sleepinessForecast(records) {
   for (const p of pts) if (Math.abs(p.t - elapsed) < Math.abs(cur.t - elapsed)) cur = p;
 
   return {
-    pts, wH, cbtMin, dip, peak, gate, s0: S0,
+    pts, wH, cbtMin, cbtMinBase, dip, peak, gate, s0: S0,
     currentScore: cur.score, elapsed,
     sleepGateMin: gate ? Math.round(((wH + gate.t) % 24) * 60) : null,
   };
+}
+
+/* 現在時刻のモデル状態（眠気ログ保存用。位相補正を含まない素のCBTminを返す） */
+function forecastNowState(fc) {
+  if (!fc || fc.s0 == null) return null;
+  return {
+    rawS: tpSw(fc.elapsed, fc.s0),                 // 睡眠圧（概日と独立）
+    clock: (fc.wH + fc.elapsed) % 24,              // 記録時の時計時刻
+    cbtMinBase: fc.cbtMinBase,                     // 補正なしの概日基準
+    pred: fc.currentScore,                         // 現行モデルの予測
+  };
+}
+
+/* 眠気ログから個人の概日位相オフセットを推定（予測と主観の誤差最小化）。
+ * logs: [{subj, rawS, clock, cbtMinBase}]。grid search。最低5点。 */
+function fitPhaseOffset(logs) {
+  const v = (logs || []).filter(l => l && l.rawS != null && l.clock != null && l.cbtMinBase != null && l.subj != null);
+  if (v.length < 5) return null;
+  const mae = offH => {
+    let s = 0;
+    for (const l of v) s += Math.abs(tpScore(l.rawS, tpCt(l.clock, l.cbtMinBase + offH)) - l.subj);
+    return s / v.length;
+  };
+  let best = 0, bestMae = mae(0);
+  for (let off = -3; off <= 3.0001; off += 0.25) { const m = mae(off); if (m < bestMae) { bestMae = m; best = off; } }
+  return { offsetMin: Math.round(best * 60), maeBefore: Math.round(mae(0)), maeAfter: Math.round(bestMae), n: v.length };
 }
 
 /* ---------- 仮眠シミュレーション ----------
@@ -427,8 +455,8 @@ function computeDashboard(records, settings) {
 
   // 体内時計の目安は実際の起床・就床に合わせる
   const hints = circadianHints(actualWake, actualBed);
-  // 二プロセスモデルによる眠気予測（記録2日以上で算出, モデル推定）
-  const forecast = sleepinessForecast(records);
+  // 二プロセスモデルによる眠気予測（記録2日以上で算出, モデル推定。個人補正を反映）
+  const forecast = sleepinessForecast(records, settings.phaseOffsetMin || 0);
   // 目標起床へ向けた段階的シフト計画（実績がある時のみ）
   const shift = hasActualSchedule
     ? shiftPlan(actualWake, parseHM(settings.targetWake), settings.targetMin, settings.onsetMin)
@@ -569,7 +597,8 @@ function durationTrend(records) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, napCurve, computeDashboard,
+  recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, napCurve,
+  forecastNowState, fitPhaseOffset, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
   recordsWithin, toDate, AASM_MIN: 420,
 };

@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   targetWake: '06:30',  // 目標起床
   targetMin: 450,       // 目標睡眠時間（分）= 7.5h
   onsetMin: 15,         // 想定入眠潜時（分）
+  phaseOffsetMin: 0,    // 個人の概日位相補正（答え合わせで推定, 分）
 };
 
 function loadRecords() {
@@ -55,11 +56,24 @@ function deleteRecord(id) {
   saveRecords(loadRecords().filter(r => r.id !== id));
 }
 
+/* 眠気の自己評価ログ（予測の答え合わせ・個人補正用） */
+const ALERT_KEY = 'sleeplog.alert.v1';
+function loadAlerts() {
+  try { return JSON.parse(localStorage.getItem(ALERT_KEY)) || []; } catch (e) { return []; }
+}
+function addAlert(a) {
+  const xs = loadAlerts(); xs.push(a);
+  while (xs.length > 1000) xs.shift();
+  localStorage.setItem(ALERT_KEY, JSON.stringify(xs));
+}
+function clearAlerts() { localStorage.removeItem(ALERT_KEY); }
+
 function exportJSON() {
   return JSON.stringify({
     exportedAt: new Date().toISOString(),
     settings: loadSettings(),
     records: loadRecords(),
+    alerts: loadAlerts(),
   }, null, 2);
 }
 
@@ -67,9 +81,11 @@ function importJSON(text) {
   const data = JSON.parse(text);
   if (Array.isArray(data.records)) saveRecords(data.records);
   if (data.settings) saveSettings({ ...DEFAULT_SETTINGS, ...data.settings });
+  if (Array.isArray(data.alerts)) localStorage.setItem(ALERT_KEY, JSON.stringify(data.alerts));
 }
 
 window.Store = {
   DEFAULT_SETTINGS, loadRecords, saveRecords, loadSettings, saveSettings,
   addRecord, updateRecord, deleteRecord, exportJSON, importJSON,
+  loadAlerts, addAlert, clearAlerts,
 };

@@ -66,6 +66,7 @@
       <div class="legend" id="forecastLegend"></div>
       <div id="napSim"></div>
       <div id="forecastTimes"></div>
+      <div id="alertLog"></div>
       <p class="muted small">※<strong>Borbély/Daanの二プロセスモデルによるモデル推定</strong>（実測ではありません）。あなたの実際の睡眠（直近の就床・起床）に合わせて算出。午後の眠気は基本モデルでは弱く出るため集団平均の目安を併記。個人差があります。出典: <a href="https://onlinelibrary.wiley.com/doi/10.1111/jsr.13598" target="_blank" rel="noopener">Borbély 2022</a> / <a href="https://pubmed.ncbi.nlm.nih.gov/6696142/" target="_blank" rel="noopener">Daan-Beersma 1984</a></p>
     </div>
 
@@ -120,6 +121,10 @@
     <div class="card">
       <div class="card-title">クロノタイプの目安（朝型・夜型） <button class="info" data-info="chrono">?</button></div>
       <div id="chronoBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">予測の答え合わせ＆個人補正 <button class="info" data-info="calib">?</button></div>
+      <div id="calibBody"></div>
     </div>
     <div class="card">
       <div class="card-title">最近の変化</div>

@@ -160,6 +160,18 @@
   let napSelMin = 0; // 仮眠シミュの選択(0=なし)
   window.selectNap = function (m) { napSelMin = (napSelMin === m ? 0 : m); renderForecast(S.computeDashboard(Store.loadRecords(), Store.loadSettings())); };
 
+  // 眠気の自己評価を記録（予測の答え合わせ・個人補正用）
+  const SUBJ = { 1: 10, 2: 30, 3: 50, 4: 70, 5: 90 };
+  window.logAlert = function (level) {
+    const settings = Store.loadSettings();
+    const fc = S.computeDashboard(Store.loadRecords(), settings).forecast;
+    const st = fc ? S.forecastNowState(fc) : null;
+    if (!st) { toast('記録が2日分貯まると答え合わせできます'); return; }
+    Store.addAlert({ ts: Date.now(), subj: SUBJ[level], rawS: st.rawS, clock: st.clock, cbtMinBase: st.cbtMinBase, pred: st.pred });
+    toast(`記録しました（モデル予測 ${st.pred} / あなた ${SUBJ[level]}）`);
+    renderForecast(S.computeDashboard(Store.loadRecords(), settings));
+  };
+
   function renderForecast(d) {
     const fc = d.forecast;
     const gauge = $('#forecastGauge'), times = $('#forecastTimes'), legend = $('#forecastLegend'), nap = $('#napSim');
@@ -201,6 +213,16 @@
       rows.push(`😴 <strong>${S.fmtHM(Math.round(fc.peak.clock * 60))}</strong> 頃：眠気が最も強い（深部体温の最低期）`);
     rows.push(`☕ <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong> 頃：午後の眠気が出やすい（集団平均の目安）`);
     times.innerHTML = rows.map(r => `<div class="hintrow">${r}</div>`).join('');
+
+    // 眠気の自己評価（答え合わせ用）
+    const nAlerts = Store.loadAlerts().length;
+    const lbls = [['1<br>覚醒', 1], ['2', 2], ['3<br>普通', 3], ['4', 4], ['5<br>眠い', 5]];
+    $('#alertLog').innerHTML =
+      '<div class="muted small" style="margin:10px 0 4px">📝 今の眠気を記録して予測を答え合わせ（記録ほど精度UP）</div>'
+      + '<div class="quickrow" style="grid-template-columns:repeat(5,1fr);gap:5px">'
+      + lbls.map(([lb, lv]) => `<button class="btn ghost" style="padding:7px 0;font-size:12px;line-height:1.2" onclick="logAlert(${lv})">${lb}</button>`).join('')
+      + '</div>'
+      + (nAlerts ? `<div class="muted small" style="margin-top:5px">これまで ${nAlerts} 件記録（「傾向」タブで精度と個人補正を確認）</div>` : '');
   }
 
   /* ---------- 記録 ---------- */
@@ -385,6 +407,9 @@
         <p class="muted small">MCTQ の MSFsc（休日の睡眠中央時刻を睡眠負債で補正した、朝型/夜型の標準的な目安）。<strong>早いほど朝型寄り、遅いほど夜型寄り</strong>です。出典: <a href="https://www.thewep.org/documentations/mctq" target="_blank" rel="noopener">MCTQ (Roenneberg)</a><br>※入眠時刻の代わりに就床時刻を使う簡易計算で、やや早めに出ます。土日=休日とみなしています（休日${ch.freeNights}夜/平日${ch.workNights}夜）。目安としてご利用ください。</p>`;
     }
 
+    // 予測の答え合わせ＆個人補正
+    renderCalibration();
+
     // 最近の変化（直近7日 vs その前7日）
     const tr = S.durationTrend(records);
     if (!tr) {
@@ -413,6 +438,43 @@
       ? '<ul class="insights">' + ins.map(t => `<li>${t}</li>`).join('') + '</ul>'
       : '<p class="muted small">記録が貯まると、事実ベースの気づきを表示します。</p>';
   }
+
+  /* ---------- 予測の答え合わせ＆個人補正 ---------- */
+  function renderCalibration() {
+    const alerts = Store.loadAlerts();
+    const settings = Store.loadSettings();
+    const body = $('#calibBody');
+    const cur = settings.phaseOffsetMin || 0;
+    const curLine = cur ? `<p class="small">現在の個人補正: <strong>体内時計を ${cur < 0 ? S.fmtDur(-cur) + ' 早める' : S.fmtDur(cur) + ' 遅らせる'}</strong> を適用中 <button class="btn ghost" style="display:inline-block;width:auto;padding:3px 10px;font-size:11px;margin-left:6px" onclick="clearCalib()">解除</button></p>` : '';
+    if (alerts.length < 5) {
+      body.innerHTML = `<p class="muted small">眠気の自己評価が <strong>${alerts.length}/5</strong> 件。ホームの眠気予測カードで「今の眠気」を5件以上記録すると、予測の精度（平均誤差）と、あなたの体内時計のズレ（個人補正）を計算します。</p>${curLine}`;
+      return;
+    }
+    const fit = S.fitPhaseOffset(alerts);
+    if (!fit) { body.innerHTML = `<p class="muted small">計算できませんでした。</p>${curLine}`; return; }
+    const improve = fit.maeBefore - fit.maeAfter;
+    body.innerHTML =
+      `<p class="small">記録 <strong>${fit.n}</strong>件。現在のモデルの平均誤差（0-100中）は <strong>${fit.maeBefore}</strong>。</p>`
+      + (Math.abs(fit.offsetMin) >= 15 && improve >= 2
+        ? `<p class="small">あなたは標準モデルより体内時計が <strong>${fit.offsetMin < 0 ? S.fmtDur(-fit.offsetMin) + ' 早い' : S.fmtDur(fit.offsetMin) + ' 遅い'}</strong> 傾向。補正すると平均誤差 <strong>${fit.maeBefore}→${fit.maeAfter}</strong> に改善します。`
+          + ` <button class="btn" style="margin-top:8px" onclick="applyCalib(${fit.offsetMin})">この補正を適用する</button></p>`
+        : `<p class="small muted">標準モデルでよく合っています（補正の必要はほぼ無し）。</p>`)
+      + curLine
+      + `<p class="muted small">主観評価とモデル予測の差が最小になる概日位相のズレを推定（grid search）。あなたのデータだけに基づく正直な調整で、捏造ではありません。`
+      + `<button class="btn ghost" style="margin-top:8px" onclick="clearAlerts()">記録をリセット</button></p>`;
+  }
+  window.applyCalib = function (off) {
+    const s = Store.loadSettings(); s.phaseOffsetMin = off; Store.saveSettings(s);
+    toast('個人補正を適用しました'); renderCalibration();
+  };
+  window.clearCalib = function () {
+    const s = Store.loadSettings(); s.phaseOffsetMin = 0; Store.saveSettings(s);
+    toast('補正を解除しました'); renderCalibration();
+  };
+  window.clearAlerts = function () {
+    if (!confirm('眠気の自己評価ログを全て消しますか？')) return;
+    Store.clearAlerts(); toast('リセットしました'); renderCalibration();
+  };
 
   /* ---------- 設定 ---------- */
   function renderSettings() {
@@ -452,6 +514,7 @@
       localStorage.removeItem('sleeplog.records.v1');
       localStorage.removeItem('sleeplog.settings.v1');
       localStorage.removeItem(PENDING_KEY);
+      Store.clearAlerts();
       toast('削除しました'); go('home');
     }
   });
@@ -462,6 +525,7 @@
     debt: '直近14日の記録を古い順にたどり、毎晩「目標睡眠 − 実際の睡眠」を足し引きしたローリング収支です。短い夜で増え、しっかり寝た夜(回復睡眠)で減り、下限は0(寝過ぎを貯金にはしません)。回復睡眠が神経行動機能を部分的に戻すこと(Banks 2010)に基づきます。ただし1晩の寝過ぎで代謝面まで完全回復はしません(Depner 2019)。生理的な睡眠負債そのものの測定ではなく目安です。色は平均睡眠が7時間(AASM/CDC下限)未満のとき表示します。',
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
+    calib: 'ホームで記録した「今の眠気(主観)」と、二プロセスモデルの予測を突き合わせます。両者の差(平均誤差)が最小になるように、あなたの概日リズムのズレ(位相オフセット)をgrid searchで推定し、適用すると以降の眠気予測があなた個人に寄ります。あなたの記録だけに基づく調整で、恣意的な数値ではありません。最低5件、できれば色々な時間帯で記録すると精度が上がります。',
     shift: '今の起床時刻から目標起床時刻へ、毎日少しずつ近づける移行プランです。概日リズムは強い光でも1日に最大約1時間しか位相が動かないため、安全側に1日15分ずつにしています。特に早起き化(前進)は難しいので、前倒しの日は起床直後の強い光が有効です。睡眠時間は目標どおり保ったまま、就床も連動して動かします。',
     forecast: '二プロセスモデル(Borbély 1982 / Daan-Beersma 1984)で眠気を推定します。睡眠圧S(覚醒で蓄積・睡眠で解消, 文献の時定数τ覚醒18.2h/τ睡眠4.2h)と概日リズムC(深部体温最低点≈起床2h前で眠気最大)を合成。あなたの直近の睡眠から定常状態を解いて算出します。これは集団モデルによる推定で、あなたの眠気を実測したものではありません(個人差あり)。基本モデルでは午後の眠気が弱く出るため、その時間帯だけは集団平均の経験則を併記しています。',
     rec: '今夜の推奨就床は、目標から逆算した時刻を基準に、積み上がった睡眠負債に応じて自動で前倒しします。科学的根拠: ①起床時刻は固定が最善(規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを悪化させる)ので就床だけ早める ②負債は1晩で返せず数晩かけて回復(Banks 2010 / Depner 2019) ③総睡眠9時間は超えない(U字カーブ)。前倒しの上限45分は、就床直前の覚醒帯(WMZ)で寝つけない制約と「多晩で回復」に基づく保守的な実務目安です(検証された精密な処方ではありません)。',
@@ -474,7 +538,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v5 (2026-06-19) 眠気予測(二プロセスモデル)';
+  const APP_VERSION = 'v6 (2026-06-19) 仮眠/シフト/ラスター/答え合わせ';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');
