@@ -30,73 +30,79 @@ const COL = {
   circ: '#34d399',           // 概日の眠気寄与
 };
 
-/* 眠気予測カーブ（二プロセスモデル）。fc = sleepinessForecast。
- * napFc を渡すと、仮眠後の代替カーブを重ね描き（元カーブは薄く）。 */
-function drawForecast(canvas, fc, napFc) {
+/* 眠気予測カーブ（二プロセスモデル）。スマホ縦でも見やすいよう、背景を眠気レベルで
+ * 色分けし、メインの眠気カーブを主役に。opts.detail で睡眠圧S・概日の補助線を表示。
+ * napFc を渡すと仮眠後カーブを重ね描き。 */
+function drawForecast(canvas, fc, napFc, opts) {
+  opts = opts || {};
   const { ctx, w, h } = setupCanvas(canvas);
   ctx.clearRect(0, 0, w, h);
   if (!fc || !fc.pts || !fc.pts.length) return;
-  const padL = 6, padR = 6, padT = 16, padB = 20;
+  const padL = 30, padR = 8, padT = 14, padB = 22;
   const cw = w - padL - padR, ch = h - padT - padB;
   const pts = fc.pts;
   const cx = t => padL + (t / 24) * cw;
   const cy = v => padT + ch - (v / 100) * ch;
 
-  // grid（横）
-  ctx.strokeStyle = COL.grid; ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
-  [0, 25, 50, 75, 100].forEach(v => { ctx.beginPath(); ctx.moveTo(padL, cy(v)); ctx.lineTo(w - padR, cy(v)); ctx.stroke(); });
-  ctx.setLineDash([]);
+  // 眠気レベルの背景帯（高さ＝意味、を一目で）
+  [[0, 35, 'rgba(52,211,153,0.10)'], [35, 55, 'rgba(251,191,36,0.07)'],
+   [55, 72, 'rgba(251,146,60,0.10)'], [72, 100, 'rgba(248,113,113,0.13)']]
+    .forEach(([lo, hi, col]) => { ctx.fillStyle = col; ctx.fillRect(padL, cy(hi), cw, cy(lo) - cy(hi)); });
 
-  // x軸: 起床からの経過に対応する時計時刻
-  ctx.fillStyle = COL.text; ctx.font = '9px system-ui'; ctx.textAlign = 'center';
-  for (let t = 0; t <= 24; t += 4) {
+  // y軸ラベル
+  ctx.fillStyle = 'rgba(226,232,240,0.6)'; ctx.font = '10px system-ui'; ctx.textAlign = 'right';
+  ctx.fillText('眠い', padL - 5, cy(86)); ctx.fillText('覚醒', padL - 5, cy(12));
+
+  // x軸: 3hごとの時計時刻
+  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(226,232,240,0.6)'; ctx.font = '10px system-ui';
+  for (let t = 0; t <= 24; t += 3) {
     const clock = (fc.wH + t) % 24;
-    ctx.fillText(String(Math.round(clock)).padStart(2, '0'), cx(t), h - 5);
+    ctx.fillText(String(Math.round(clock)).padStart(2, '0'), cx(t), h - 6);
   }
 
-  // 縦線ヘルパ
-  const vline = (t, color, label) => {
-    if (t == null) return;
-    const x = cx(((t) + 24) % 24);
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
-    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke();
+  // 補助線（既定OFF）: 睡眠圧S・概日
+  if (opts.detail) {
+    ctx.strokeStyle = 'rgba(129,140,248,0.55)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 3]);
+    ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.pressure); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+    ctx.strokeStyle = 'rgba(52,211,153,0.55)'; ctx.setLineDash([2, 4]);
+    ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.circ); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
     ctx.setLineDash([]);
-    if (label) { ctx.fillStyle = color; ctx.font = '8px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, x, padT - 5); }
-  };
-  // 睡眠ゲート（自然に眠くなる夜の時刻）
-  if (fc.gate) vline(fc.gate.t, 'rgba(96,165,250,0.6)', '眠くなる');
+  }
 
-  // 睡眠圧 S（破線）
-  ctx.strokeStyle = COL.pressure; ctx.lineWidth = 1.3; ctx.setLineDash([5, 3]);
-  ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.pressure); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-  // 概日（破線）
-  ctx.strokeStyle = COL.circ; ctx.setLineDash([2, 4]);
-  ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.circ); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-  ctx.setLineDash([]);
+  // 睡眠ゲート（夜に自然に眠くなる時刻）
+  if (fc.gate) {
+    const x = cx(fc.gate.t);
+    ctx.strokeStyle = 'rgba(96,165,250,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + ch); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#60a5fa'; ctx.font = '9px system-ui'; ctx.textAlign = 'center'; ctx.fillText('眠くなる', x, padT - 3);
+  }
 
-  // 眠気スコア（塗り＋線）
+  // 眠気スコア（メイン: 塗り＋太線）
   const grad = ctx.createLinearGradient(0, cy(100), 0, cy(0));
-  grad.addColorStop(0, 'rgba(248,113,113,0.30)'); grad.addColorStop(1, 'rgba(248,113,113,0.02)');
+  grad.addColorStop(0, 'rgba(248,113,113,0.32)'); grad.addColorStop(1, 'rgba(248,113,113,0.02)');
   ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(cx(pts[0].t), cy(0));
   pts.forEach(p => ctx.lineTo(cx(p.t), cy(p.score)));
   ctx.lineTo(cx(pts[pts.length - 1].t), cy(0)); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = napFc ? 'rgba(248,113,113,0.28)' : COL.sleep;
-  ctx.lineWidth = napFc ? 1.5 : 2.5; ctx.lineJoin = 'round';
+  ctx.strokeStyle = napFc ? 'rgba(248,113,113,0.30)' : COL.sleep;
+  ctx.lineWidth = napFc ? 1.5 : 3; ctx.lineJoin = 'round';
   ctx.beginPath(); pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.score); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
 
-  // 仮眠シミュレーション: 仮眠窓を陰影＋仮眠後カーブを実線
+  // 仮眠後カーブ
   if (napFc) {
-    ctx.fillStyle = 'rgba(96,165,250,0.18)';
+    ctx.fillStyle = 'rgba(96,165,250,0.16)';
     ctx.fillRect(cx(napFc.napStart), padT, cx(napFc.napEnd) - cx(napFc.napStart), ch);
-    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
     ctx.beginPath(); napFc.pts.forEach((p, i) => { const x = cx(p.t), y = cy(p.score); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
   }
 
-  // 現在時刻マーカー
+  // 現在地マーカー（縦線＋カーブ上の点＋スコア）
   const ex = Math.max(0, Math.min(24, fc.elapsed));
+  let curP = pts[0]; for (const p of pts) if (Math.abs(p.t - ex) < Math.abs(curP.t - ex)) curP = p;
   ctx.strokeStyle = COL.marker; ctx.lineWidth = 2; ctx.setLineDash([3, 2]);
   ctx.beginPath(); ctx.moveTo(cx(ex), padT); ctx.lineTo(cx(ex), padT + ch); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = COL.marker; ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.fillText('今', cx(ex), padT - 5);
+  ctx.fillStyle = COL.marker; ctx.beginPath(); ctx.arc(cx(ex), cy(curP.score), 4, 0, 2 * Math.PI); ctx.fill();
+  ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('今 ' + curP.score, cx(ex), padT - 3);
 }
 
 /* 睡眠時間の棒グラフ: bars=[{label, min, target}]

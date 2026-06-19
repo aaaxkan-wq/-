@@ -158,7 +158,9 @@
   function sCol(s) { return s < 35 ? '#34d399' : s < 55 ? '#fbbf24' : s < 72 ? '#fb923c' : '#f87171'; }
   function sLbl(s) { return s < 35 ? '覚醒（集中しやすい）' : s < 55 ? '普通' : s < 72 ? '眠気あり' : s < 85 ? '強い眠気' : '非常に眠い'; }
   let napSelMin = 0; // 仮眠シミュの選択(0=なし)
+  let fcDetail = false; // 補助線(S・概日)の表示
   window.selectNap = function (m) { napSelMin = (napSelMin === m ? 0 : m); renderForecast(S.computeDashboard(Store.loadRecords(), Store.loadSettings())); };
+  window.toggleFcDetail = function () { fcDetail = !fcDetail; renderForecast(S.computeDashboard(Store.loadRecords(), Store.loadSettings())); };
 
   // 眠気の自己評価を記録（予測の答え合わせ・個人補正用）
   const SUBJ = { 1: 10, 2: 30, 3: 50, 4: 70, 5: 90 };
@@ -191,12 +193,12 @@
         <div style="font-size:13px;font-weight:600;color:${c}">${sLbl(fc.currentScore)}</div>
       </div>`;
     const napFc = napSelMin ? S.napCurve(fc, napSelMin) : null;
-    Charts.drawForecast(canvas, fc, napFc);
+    Charts.drawForecast(canvas, fc, napFc, { detail: fcDetail });
     legend.innerHTML =
-      `<span><span class="dot" style="background:#f87171"></span>眠気スコア</span>
-       <span><span class="dot" style="background:#818cf8"></span>睡眠圧 S</span>
-       <span><span class="dot" style="background:#34d399"></span>概日リズム</span>`
-      + (napFc ? `<span><span class="dot" style="background:#60a5fa"></span>仮眠後</span>` : '');
+      `<span><span class="dot" style="background:#f87171"></span>眠気（上ほど眠い）</span>`
+      + (napFc ? `<span><span class="dot" style="background:#60a5fa"></span>仮眠後</span>` : '')
+      + (fcDetail ? `<span><span class="dot" style="background:#818cf8"></span>睡眠圧 S</span><span><span class="dot" style="background:#34d399"></span>概日リズム</span>` : '')
+      + `<span style="cursor:pointer;color:var(--accent)" onclick="toggleFcDetail()">${fcDetail ? '補助線を隠す' : '＋補助線(S・概日)'}</span>`;
 
     // 仮眠シミュ ボタン
     const opts = [['なし', 0], ['20分', 20], ['30分', 30], ['90分', 90]];
@@ -538,7 +540,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v6 (2026-06-19) 仮眠/シフト/ラスター/答え合わせ';
+  const APP_VERSION = 'v7 (2026-06-19) 眠気予測チャート見やすく';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');
