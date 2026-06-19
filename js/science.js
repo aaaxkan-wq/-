@@ -77,8 +77,10 @@ function buildDayMask(rec) {
   return { origin: origin.getTime(), mask };
 }
 
-function sleepRegularityIndex(records) {
-  const masks = records.map(buildDayMask).filter(Boolean)
+// 直近days日だけで計算する（全履歴で計算すると最近の変化が薄まり、値が動かなく
+// 見えるため。SRIは元来7〜14日程度の窓で評価する指標）。
+function sleepRegularityIndex(records, days = 14) {
+  const masks = recordsWithin(records, days).map(buildDayMask).filter(Boolean)
     .sort((a, b) => a.origin - b.origin);
   if (masks.length < 2) return null;
   let total = 0, pairs = 0;
@@ -262,10 +264,21 @@ function computeDashboard(records, settings) {
   const rec = recommendTonight(records, settings);   // 負債に応じて適応した今夜の推奨
   const recBed = rec.bedMin;
 
-  // 体内時計の目安の時間帯（集団平均）: 起点は直近の起床、無ければ目標起床
-  const wakeMin = last ? (toDate(last.wake).getHours() * 60 + toDate(last.wake).getMinutes())
-                       : parseHM(settings.targetWake);
-  const hints = circadianHints(wakeMin, recBed);
+  // 「実際の睡眠スケジュール」= 直近14日の習慣的な就床・起床（円周平均）。
+  // 推奨行動・体内時計の目安は、目標/推奨ではなく "実際" に合わせる。
+  const stats = personalStats(records, 14);
+  let actualBed, actualWake, hasActualSchedule = true;
+  if (stats) {
+    actualBed = stats.avgBed; actualWake = stats.avgWake;
+  } else if (last) {
+    actualBed = bedClockMin(last); actualWake = wakeClockMin(last);
+  } else {
+    // 記録ゼロのときだけ、暫定的に推奨/目標で代用
+    actualBed = recBed; actualWake = parseHM(settings.targetWake); hasActualSchedule = false;
+  }
+
+  // 体内時計の目安は実際の起床・就床に合わせる
+  const hints = circadianHints(actualWake, actualBed);
 
   return {
     last,
@@ -276,7 +289,9 @@ function computeDashboard(records, settings) {
     recommendedBedtimeMin: recBed,
     recommendation: rec,
     hints,
-    wakeMinForHints: wakeMin,
+    actualBed,
+    actualWake,
+    hasActualSchedule,
     nights: sorted.length,
   };
 }

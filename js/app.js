@@ -264,13 +264,17 @@
     const settings = Store.loadSettings();
     const records = Store.loadRecords();
     const d = S.computeDashboard(records, settings);
-    const bedMin = d.recommendedBedtimeMin;
-    const wakeMin = S.parseHM(settings.targetWake);
+    // 推奨行動は「実際の睡眠スケジュール」(直近の平均就床・起床)に合わせる。
+    const bedMin = d.actualBed;
+    const wakeMin = d.actualWake;
     // 午後の眠気帯は集団平均の範囲(起床+6〜8h)。その開始時刻を仮眠の目安に使う。
     const dipMin = d.hints.afternoon.start;
 
     $('#planBed').textContent = S.fmtHM(bedMin);
-    $('#planWake').textContent = settings.targetWake;
+    $('#planWake').textContent = S.fmtHM(wakeMin);
+    $('#planBasis').textContent = d.hasActualSchedule
+      ? 'あなたの直近の平均的な就床・起床に合わせています'
+      : '記録がまだ無いため、目標値で暫定表示しています（記録すると実際に合わせます）';
 
     const items = window.Timeline.buildTimeline(bedMin, wakeMin, dipMin);
     $('#timeline').innerHTML = items.map(it => `
