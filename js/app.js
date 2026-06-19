@@ -11,12 +11,14 @@
     $$('.tab').forEach(s => s.hidden = s.dataset.tab !== tab);
     $$('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.go === tab));
     if (tab === 'home') renderHome();
+    if (tab === 'forecast') renderForecast(S.computeDashboard(Store.loadRecords(), Store.loadSettings()));
     if (tab === 'log') renderLog();
     if (tab === 'trend') renderTrends();
     if (tab === 'plan') renderPlan();
     if (tab === 'settings') renderSettings();
     window.scrollTo(0, 0);
   }
+  window.go = go;
   $$('.tabbtn').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
 
   /* ---------- toast ---------- */
@@ -142,16 +144,19 @@
       $('#sjlNote').textContent = '平日と休日の睡眠中央時刻のズレ';
     }
 
-    // 眠気予測（二プロセスモデル）
-    renderForecast(d);
-
-    // 睡眠時間推移
-    const recent = S.recordsWithin(records, 14);
-    const bars = recent.map(r => {
-      const w = S.toDate(r.wake);
-      return { label: `${w.getMonth() + 1}/${w.getDate()}`, min: S.durationMin(r) };
-    });
-    Charts.drawDuration($('#durationChart'), bars, settings.targetMin);
+    // 眠気予測の要約（詳細は「眠気」タブ）
+    const fc = d.forecast;
+    const fs = $('#fcSummary');
+    if (fc) {
+      const c = sCol(fc.currentScore);
+      fs.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="metric-label">いまの眠気（モデル推定）</div>
+          <div style="font-size:26px;font-weight:800;color:${c};line-height:1.1">${fc.currentScore}<span style="font-size:13px;color:var(--muted)">/100 ${sLbl(fc.currentScore)}</span></div>
+          ${fc.sleepGateMin != null ? `<div class="metric-note">🌙 ${S.fmtHM(fc.sleepGateMin)}頃に自然に眠くなる</div>` : ''}</div>
+        <div style="color:var(--accent);font-size:13px;white-space:nowrap">詳しく ›</div></div>`;
+    } else {
+      fs.innerHTML = `<div class="metric-label">眠気予測</div><div class="small muted">記録が2日分貯まると表示（詳しく ›）</div>`;
+    }
   }
 
   /* ---------- 眠気予測の表示 ---------- */
@@ -399,6 +404,13 @@
     // 睡眠ラスター図
     Charts.drawRaster($('#rasterChart'), records, 21);
 
+    // 睡眠時間の推移グラフ
+    const recent = S.recordsWithin(records, 14);
+    Charts.drawDuration($('#durationChart'), recent.map(r => {
+      const w = S.toDate(r.wake);
+      return { label: `${w.getMonth() + 1}/${w.getDate()}`, min: S.durationMin(r) };
+    }), settings.targetMin);
+
     // クロノタイプ（MSFsc）
     const ch = S.chronotypeMSFsc(records);
     if (!ch) {
@@ -540,7 +552,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v7 (2026-06-19) 眠気予測チャート見やすく';
+  const APP_VERSION = 'v8 (2026-06-19) ホーム軽量化・眠気タブ分離';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');

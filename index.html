@@ -59,6 +59,11 @@
       </div>
     </div>
 
+    <button class="card" id="fcSummary" style="width:100%;text-align:left;border:1px solid rgba(0,255,210,0);cursor:pointer;background:var(--card);color:inherit;font:inherit" onclick="go('forecast')"></button>
+  </section>
+
+  <!-- 眠気予測 -->
+  <section class="tab" data-tab="forecast" hidden>
     <div class="card">
       <div class="card-title">眠気予測（二プロセスモデル） <button class="info" data-info="forecast">?</button></div>
       <div id="forecastGauge"></div>
@@ -68,11 +73,6 @@
       <div id="forecastTimes"></div>
       <div id="alertLog"></div>
       <p class="muted small">※<strong>Borbély/Daanの二プロセスモデルによるモデル推定</strong>（実測ではありません）。あなたの実際の睡眠（直近の就床・起床）に合わせて算出。午後の眠気は基本モデルでは弱く出るため集団平均の目安を併記。個人差があります。出典: <a href="https://onlinelibrary.wiley.com/doi/10.1111/jsr.13598" target="_blank" rel="noopener">Borbély 2022</a> / <a href="https://pubmed.ncbi.nlm.nih.gov/6696142/" target="_blank" rel="noopener">Daan-Beersma 1984</a></p>
-    </div>
-
-    <div class="card">
-      <div class="card-title">睡眠時間の推移（直近14日）</div>
-      <canvas id="durationChart" height="160"></canvas>
     </div>
   </section>
 
@@ -112,6 +112,10 @@
       <div class="card-title">あなたの傾向（実データの集計） <button class="info" data-info="trend">?</button></div>
       <p class="muted small">ここは<strong>あなたが入力した記録そのものの集計</strong>です。AIの予測や推測ではありません。</p>
       <div id="statsBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">睡眠時間の推移（直近14日）</div>
+      <canvas id="durationChart" height="160"></canvas>
     </div>
     <div class="card">
       <div class="card-title">睡眠ラスター図（直近3週間）</div>
@@ -193,6 +197,7 @@
 
 <nav class="tabbar">
   <button class="tabbtn active" data-go="home">🏠<span>ホーム</span></button>
+  <button class="tabbtn" data-go="forecast">💤<span>眠気</span></button>
   <button class="tabbtn" data-go="log">✏️<span>記録</span></button>
   <button class="tabbtn" data-go="trend">📈<span>傾向</span></button>
   <button class="tabbtn" data-go="plan">📋<span>行動</span></button>
