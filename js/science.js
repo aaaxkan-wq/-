@@ -284,11 +284,33 @@ function sleepinessForecast(records) {
   };
 }
 
+/* ---------- 目標スケジュールへの段階的シフト計画 ----------
+ * 現在の実際の起床から目標起床へ、毎日 stepMin だけ近づける移行プランを生成する。
+ * 科学的根拠: 概日リズムは1日に最大約1時間しか位相が動かない。前進(早起き化)は
+ *   特に難しいので、安全側に既定15分/日。朝の光で前進を助ける。起床を軸に就床も連動。
+ */
+function signedDiffMin(fromMin, toMin) {
+  let d = (toMin - fromMin + MIN_PER_DAY) % MIN_PER_DAY;
+  if (d > MIN_PER_DAY / 2) d -= MIN_PER_DAY;
+  return d; // -720..720（from→to へ動かす符号付き分）
+}
+function shiftPlan(actualWakeMin, targetWakeMin, targetMin, onsetMin, stepMin = 15) {
+  if (actualWakeMin == null) return null;
+  const diff = signedDiffMin(actualWakeMin, targetWakeMin);
+  if (Math.abs(diff) < stepMin) return null; // すでにほぼ目標
+  const steps = Math.ceil(Math.abs(diff) / stepMin);
+  const dir = diff < 0 ? -1 : 1; // -1=前進(早く), +1=後退(遅く)
+  const days = [];
+  for (let i = 1; i <= steps; i++) {
+    const moved = Math.min(i * stepMin, Math.abs(diff));
+    let wake = (((Math.round(actualWakeMin + dir * moved)) % MIN_PER_DAY) + MIN_PER_DAY) % MIN_PER_DAY;
+    const bed = (((wake - (targetMin + onsetMin)) % MIN_PER_DAY) + MIN_PER_DAY) % MIN_PER_DAY;
+    days.push({ day: i, wake, bed });
+  }
+  return { days, totalDays: steps, advance: dir < 0, stepMin, gapMin: Math.abs(diff) };
+}
+
 /* ---------- 適応的な「今夜の推奨」 ----------
- * 固定の目標から逆算するだけでなく、積み上がった睡眠負債に応じて就床を早める。
- *
- * 科学的に確定している原則（これに厳密に従う）:
- *   1) 起床時刻は固定が正解（規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを
  *      悪化させるため不可）→ 回復は「就床を早める」方向のみ。
  *   2) 睡眠負債は1晩では返せず、数晩かけて回復する(Banks 2010, Depner 2019)。
  *   3) 就床直前は体内時計の覚醒帯(WMZ)で寝つけない → 前倒しには上限が要る。
@@ -371,6 +393,10 @@ function computeDashboard(records, settings) {
   const hints = circadianHints(actualWake, actualBed);
   // 二プロセスモデルによる眠気予測（記録2日以上で算出, モデル推定）
   const forecast = sleepinessForecast(records);
+  // 目標起床へ向けた段階的シフト計画（実績がある時のみ）
+  const shift = hasActualSchedule
+    ? shiftPlan(actualWake, parseHM(settings.targetWake), settings.targetMin, settings.onsetMin)
+    : null;
 
   return {
     last,
@@ -382,6 +408,7 @@ function computeDashboard(records, settings) {
     recommendation: rec,
     hints,
     forecast,
+    shift,
     actualBed,
     actualWake,
     hasActualSchedule,
@@ -506,7 +533,7 @@ function durationTrend(records) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, recommendTonight, circadianHints, sleepinessForecast, computeDashboard,
+  recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
   recordsWithin, toDate, AASM_MIN: 420,
 };
