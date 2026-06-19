@@ -194,6 +194,96 @@ function circadianHints(wakeMin, bedMin) {
   };
 }
 
+/* ---------- 眠気予測（二プロセスモデル） ----------
+ * Borbély(1982) / Daan & Beersma & Borbély(1984) の二プロセスモデルの素直な実装。
+ *   Process S(睡眠恒常性): 覚醒中は上限へ指数上昇、睡眠中は下限へ指数減衰
+ *                          （文献の時定数 τ覚醒≈18.2h, τ睡眠≈4.2h）
+ *   Process C(概日): 深部体温最低点(CBTmin)を基準にした余弦波
+ *   眠気スコア = f(S − C) をモデルの理論的最小〜最大で0-100に正規化（データ依存の
+ *               恣意的な正規化ではない）。
+ * ⚠️ これは「集団モデルによる推定の forecast」であり、あなたの眠気を実測したもの
+ *    ではない（個人差あり）。曲線の起点はあなたの実際の起床に合わせる。
+ */
+const TP = { tauW: 18.18, tauS: 4.2, sMax: 0.95, sMin: 0.17, cAmp: 0.15 };
+function clampN(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function tpSw(e, S) { return TP.sMax - (TP.sMax - S) * Math.exp(-e / TP.tauW); }   // 覚醒中
+function tpSs(e, S) { return TP.sMin + (S - TP.sMin) * Math.exp(-e / TP.tauS); }   // 睡眠中
+function tpCt(h, cb) { return TP.cAmp * Math.cos(2 * Math.PI * (((h - cb + 48) % 24)) / 24); }
+// 眠気 = 睡眠圧S + 概日の睡眠傾性C（CでなくCBTminで眠気が最大になる向き）。
+// 深夜(CBTmin)で最眠・夕方の覚醒帯(WMZ)で最も眠くない、という生理に一致させる。
+function tpScore(s, c) {
+  const lo = TP.sMin - TP.cAmp, hi = TP.sMax + TP.cAmp;
+  return clampN(Math.round(((s + c - lo) / (hi - lo)) * 100), 0, 100);
+}
+function tpSteady(sd, wd) {
+  const ew = Math.exp(-wd / TP.tauW), es = Math.exp(-sd / TP.tauS), d = 1 - ew * es;
+  return Math.abs(d) < 1e-9 ? 0.5 : (TP.sMin * (1 - es) + TP.sMax * (1 - ew) * es) / d;
+}
+
+function sleepinessForecast(records) {
+  const recent = recordsWithin(records, 14).filter(r => durationMin(r) != null).slice(-7);
+  if (recent.length < 2) return null;
+  const wks = [], sls = [], drs = [];
+  for (const r of recent) {
+    const w = toDate(r.wake), b = toDate(r.bed);
+    wks.push(w.getHours() + w.getMinutes() / 60);
+    sls.push(b.getHours() + b.getMinutes() / 60);
+    drs.push(durationMin(r) / 60);
+  }
+  for (let i = 0; i < drs.length; i++) if (!(drs[i] > 0 && drs[i] <= 24)) return null;
+
+  // 概日の基準: 実際の習慣的な起床(加重平均)の約2h前を CBTmin とする
+  const sched = actualSchedule(records);
+  const habW = sched && sched.wake != null ? sched.wake / 60 : wks.reduce((a, b) => a + b, 0) / wks.length;
+  const cbtMin = (habW - 2 + 24) % 24;
+
+  // 定常状態の S を反復で求め、最後の起床時点の S0 を得る
+  let S = tpSteady(drs[0], 24 - drs[0]);
+  for (let pass = 0; pass < 4; pass++) {
+    for (let i = 0; i < recent.length; i++) {
+      S = tpSs(drs[i], S);
+      const wd = i < recent.length - 1 ? ((sls[i + 1] - wks[i]) + 24) % 24
+                                       : ((sls[0] - wks[recent.length - 1]) + 48) % 24;
+      S = tpSw(wd, S);
+    }
+  }
+  for (let i = 0; i < recent.length - 1; i++) { S = tpSs(drs[i], S); S = tpSw(((sls[i + 1] - wks[i]) + 24) % 24, S); }
+  const S0 = tpSs(drs[recent.length - 1], S);
+  const wH = wks[recent.length - 1];
+
+  // 起床起点に24h投影
+  const pts = [];
+  for (let i = 0; i <= 96; i++) {
+    const t = i * 0.25, cH = (wH + t) % 24;
+    const sv = tpSw(t, S0), cv = tpCt(cH, cbtMin);
+    pts.push({
+      t, clock: cH, score: tpScore(sv, cv),
+      pressure: clampN(Math.round((sv - TP.sMin) / (TP.sMax - TP.sMin) * 100), 0, 100),
+      circ: clampN(Math.round((cv + TP.cAmp) / (2 * TP.cAmp) * 100), 0, 100),
+    });
+  }
+  // landmark: 午後の眠気(起床+5〜10h の極大), 夜の眠気ピーク(起床+14〜22h)
+  let dip = null, peak = null;
+  for (const p of pts) {
+    if (p.t >= 5 && p.t <= 10 && (!dip || p.score > dip.score)) dip = p;
+    if (p.t >= 14 && p.t <= 22 && (!peak || p.score > peak.score)) peak = p;
+  }
+  // 睡眠ゲート: 起床14h以降で眠気が一定以上に上がる最初の時刻
+  let gate = null;
+  for (const p of pts) { if (p.t >= 14 && p.score >= 55) { gate = p; break; } }
+
+  const now = new Date(), nowH = now.getHours() + now.getMinutes() / 60;
+  const elapsed = ((nowH - wH) + 24) % 24;
+  let cur = pts[0];
+  for (const p of pts) if (Math.abs(p.t - elapsed) < Math.abs(cur.t - elapsed)) cur = p;
+
+  return {
+    pts, wH, cbtMin, dip, peak, gate,
+    currentScore: cur.score, elapsed,
+    sleepGateMin: gate ? Math.round(((wH + gate.t) % 24) * 60) : null,
+  };
+}
+
 /* ---------- 適応的な「今夜の推奨」 ----------
  * 固定の目標から逆算するだけでなく、積み上がった睡眠負債に応じて就床を早める。
  *
@@ -279,6 +369,8 @@ function computeDashboard(records, settings) {
 
   // 体内時計の目安は実際の起床・就床に合わせる
   const hints = circadianHints(actualWake, actualBed);
+  // 二プロセスモデルによる眠気予測（記録2日以上で算出, モデル推定）
+  const forecast = sleepinessForecast(records);
 
   return {
     last,
@@ -289,6 +381,7 @@ function computeDashboard(records, settings) {
     recommendedBedtimeMin: recBed,
     recommendation: rec,
     hints,
+    forecast,
     actualBed,
     actualWake,
     hasActualSchedule,
@@ -413,7 +506,7 @@ function durationTrend(records) {
 window.Science = {
   durationMin, midSleepClockMin, fmtHM, fmtDur, parseHM,
   sleepRegularityIndex, regularityLabel, sleepDebt, socialJetlag,
-  recommendBedtime, recommendTonight, circadianHints, computeDashboard,
+  recommendBedtime, recommendTonight, circadianHints, sleepinessForecast, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
   recordsWithin, toDate, AASM_MIN: 420,
 };

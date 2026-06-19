@@ -5,7 +5,7 @@
  *   オフライン時のみキャッシュにフォールバックする。
  *   以前は「キャッシュ優先」で、コードを更新しても古い版が配信され続ける問題があった。
  */
-const CACHE = 'nemurilog-v4';
+const CACHE = 'nemurilog-v5';
 const ASSETS = [
   '.',
   'index.html',

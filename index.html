@@ -57,10 +57,12 @@
     </div>
 
     <div class="card">
-      <div class="card-title">体内時計の目安となる時間帯 <button class="info" data-info="hints">?</button></div>
-      <div id="hintAfternoon" class="hintrow"></div>
-      <div id="hintWmz" class="hintrow"></div>
-      <p class="muted small">※これは<strong>集団平均の一般的な目安</strong>で、あなたの起床・就床時刻に時間帯を当てはめたものです。個人の記録から計算した予測ではなく、個人差があります。出典: <a href="https://www.sleepfoundation.org/circadian-rhythm/sleep-drive-and-your-body-clock" target="_blank" rel="noopener">Sleep Foundation</a> / <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6054682/" target="_blank" rel="noopener">PMC6054682</a></p>
+      <div class="card-title">眠気予測（二プロセスモデル） <button class="info" data-info="forecast">?</button></div>
+      <div id="forecastGauge"></div>
+      <canvas id="forecastChart" height="200"></canvas>
+      <div class="legend" id="forecastLegend"></div>
+      <div id="forecastTimes"></div>
+      <p class="muted small">※<strong>Borbély/Daanの二プロセスモデルによるモデル推定</strong>（実測ではありません）。あなたの実際の睡眠（直近の就床・起床）に合わせて算出。午後の眠気は基本モデルでは弱く出るため集団平均の目安を併記。個人差があります。出典: <a href="https://onlinelibrary.wiley.com/doi/10.1111/jsr.13598" target="_blank" rel="noopener">Borbély 2022</a> / <a href="https://pubmed.ncbi.nlm.nih.gov/6696142/" target="_blank" rel="noopener">Daan-Beersma 1984</a></p>
     </div>
 
     <div class="card">

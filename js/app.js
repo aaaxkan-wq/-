@@ -125,11 +125,8 @@
       $('#sjlNote').textContent = '平日と休日の睡眠中央時刻のズレ';
     }
 
-    // 体内時計の目安となる時間帯（集団平均・出典あり）
-    $('#hintAfternoon').innerHTML =
-      `😴 <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong> 頃：午後に眠気が出やすい時間帯（起床の6〜8時間後）`;
-    $('#hintWmz').innerHTML =
-      `🛋️ <strong>${S.fmtHM(d.hints.wmz.start)}〜${S.fmtHM(d.hints.wmz.end)}</strong> 頃：体内時計の影響で寝つきにくい時間帯（就床の1〜3時間前）`;
+    // 眠気予測（二プロセスモデル）
+    renderForecast(d);
 
     // 睡眠時間推移
     const recent = S.recordsWithin(records, 14);
@@ -138,6 +135,43 @@
       return { label: `${w.getMonth() + 1}/${w.getDate()}`, min: S.durationMin(r) };
     });
     Charts.drawDuration($('#durationChart'), bars, settings.targetMin);
+  }
+
+  /* ---------- 眠気予測の表示 ---------- */
+  function sCol(s) { return s < 35 ? '#34d399' : s < 55 ? '#fbbf24' : s < 72 ? '#fb923c' : '#f87171'; }
+  function sLbl(s) { return s < 35 ? '覚醒（集中しやすい）' : s < 55 ? '普通' : s < 72 ? '眠気あり' : s < 85 ? '強い眠気' : '非常に眠い'; }
+
+  function renderForecast(d) {
+    const fc = d.forecast;
+    const gauge = $('#forecastGauge'), times = $('#forecastTimes'), legend = $('#forecastLegend');
+    const canvas = $('#forecastChart');
+    if (!fc) {
+      gauge.innerHTML = '';
+      legend.innerHTML = '';
+      canvas.style.display = 'none';
+      times.innerHTML = `<p class="muted small">眠気予測には記録が2日分以上必要です。とりあえずの目安：午後の眠気は <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong>頃、寝つきにくい帯は <strong>${S.fmtHM(d.hints.wmz.start)}〜${S.fmtHM(d.hints.wmz.end)}</strong>頃（集団平均）。</p>`;
+      return;
+    }
+    canvas.style.display = 'block';
+    const c = sCol(fc.currentScore);
+    gauge.innerHTML =
+      `<div style="text-align:center;margin-bottom:10px">
+        <div class="muted" style="font-size:11px">いまの眠気（モデル推定）</div>
+        <div style="font-size:46px;font-weight:800;line-height:1.1;color:${c}">${fc.currentScore}<span style="font-size:18px;color:var(--muted)"> /100</span></div>
+        <div style="font-size:13px;font-weight:600;color:${c}">${sLbl(fc.currentScore)}</div>
+      </div>`;
+    Charts.drawForecast(canvas, fc);
+    legend.innerHTML =
+      `<span><span class="dot" style="background:#f87171"></span>眠気スコア</span>
+       <span><span class="dot" style="background:#818cf8"></span>睡眠圧 S</span>
+       <span><span class="dot" style="background:#34d399"></span>概日リズム</span>`;
+    const rows = [];
+    if (fc.sleepGateMin != null)
+      rows.push(`🌙 <strong>${S.fmtHM(fc.sleepGateMin)}</strong> 頃：夜に自然に眠くなり始める（入眠しやすい）`);
+    if (fc.peak)
+      rows.push(`😴 <strong>${S.fmtHM(Math.round(fc.peak.clock * 60))}</strong> 頃：眠気が最も強い（深部体温の最低期）`);
+    rows.push(`☕ <strong>${S.fmtHM(d.hints.afternoon.start)}〜${S.fmtHM(d.hints.afternoon.end)}</strong> 頃：午後の眠気が出やすい（集団平均の目安）`);
+    times.innerHTML = rows.map(r => `<div class="hintrow">${r}</div>`).join('');
   }
 
   /* ---------- 記録 ---------- */
@@ -396,6 +430,7 @@
     debt: '直近14日の記録を古い順にたどり、毎晩「目標睡眠 − 実際の睡眠」を足し引きしたローリング収支です。短い夜で増え、しっかり寝た夜(回復睡眠)で減り、下限は0(寝過ぎを貯金にはしません)。回復睡眠が神経行動機能を部分的に戻すこと(Banks 2010)に基づきます。ただし1晩の寝過ぎで代謝面まで完全回復はしません(Depner 2019)。生理的な睡眠負債そのものの測定ではなく目安です。色は平均睡眠が7時間(AASM/CDC下限)未満のとき表示します。',
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
+    forecast: '二プロセスモデル(Borbély 1982 / Daan-Beersma 1984)で眠気を推定します。睡眠圧S(覚醒で蓄積・睡眠で解消, 文献の時定数τ覚醒18.2h/τ睡眠4.2h)と概日リズムC(深部体温最低点≈起床2h前で眠気最大)を合成。あなたの直近の睡眠から定常状態を解いて算出します。これは集団モデルによる推定で、あなたの眠気を実測したものではありません(個人差あり)。基本モデルでは午後の眠気が弱く出るため、その時間帯だけは集団平均の経験則を併記しています。',
     rec: '今夜の推奨就床は、目標から逆算した時刻を基準に、積み上がった睡眠負債に応じて自動で前倒しします。科学的根拠: ①起床時刻は固定が最善(規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを悪化させる)ので就床だけ早める ②負債は1晩で返せず数晩かけて回復(Banks 2010 / Depner 2019) ③総睡眠9時間は超えない(U字カーブ)。前倒しの上限45分は、就床直前の覚醒帯(WMZ)で寝つけない制約と「多晩で回復」に基づく保守的な実務目安です(検証された精密な処方ではありません)。',
     trend: 'この画面は、あなたが入力した記録そのものの集計（記述統計）です。AIによる予測や、根拠のないスコアは一切含みません。時刻の平均は、深夜をまたぐ時刻を正しく扱うため円周平均で計算しています。',
     chrono: 'あなたの休日の睡眠中央時刻から、朝型/夜型の標準的な目安(MCTQのMSFsc)を計算したものです。本来は入眠時刻を使いますが、就床時刻で代用しているためやや早めに出ます。土日を休日とみなす簡易計算で、少数の記録では不安定です。診断ではなく目安です。',
@@ -406,7 +441,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v4 (2026-06-19) 直近寄り加重平均';
+  const APP_VERSION = 'v5 (2026-06-19) 眠気予測(二プロセスモデル)';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');
