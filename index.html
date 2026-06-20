@@ -101,6 +101,24 @@
     </div>
 
     <div class="card">
+      <div class="card-title">💤 仮眠を記録 <button class="info" data-info="nap">?</button></div>
+      <label>開始日時 <input type="datetime-local" id="inNapStart"></label>
+      <label>長さ
+        <select id="inNapDur">
+          <option value="10">10分</option>
+          <option value="20" selected>20分</option>
+          <option value="30">30分</option>
+          <option value="45">45分</option>
+          <option value="60">60分</option>
+          <option value="90">90分</option>
+        </select>
+      </label>
+      <div id="napDurPreview" class="durpreview"></div>
+      <button class="btn" id="btnAddNap">仮眠を追加</button>
+      <p class="muted small">記録した仮眠は睡眠負債を減らし、眠気予測・ラスター図にも反映されます（夜の睡眠リズムの集計には混ぜません）。</p>
+    </div>
+
+    <div class="card">
       <div class="card-title">記録一覧</div>
       <div id="recordList" class="reclist"></div>
     </div>

@@ -248,7 +248,10 @@
       $('#inBed').value = localDTString(bed);
       $('#inWake').value = localDTString(now);
     }
-
+    if (!$('#inNapStart').value) {
+      $('#inNapStart').value = localDTString(new Date(Date.now() - 30 * 60000));
+    }
+    updateNapPreview();
     updateDurPreview();
 
     // 一覧（1夜ずつ、起床日を見出しにして日付またぎを「翌」で表現）
@@ -260,16 +263,20 @@
     }
     list.innerHTML = records.map(r => {
       const dur = S.durationMin(r);
+      const nap = S.isNap(r);
       const nl = nightLabel(r);
-      const short = dur != null && dur < S.AASM_MIN; // 7時間未満を控えめに示す
+      const b = S.toDate(r.bed);
+      const head = nap ? `💤 ${b.getMonth() + 1}/${b.getDate()}(${WD[b.getDay()]}) の仮眠` : nl.head;
+      const span = nap ? `${hm(b)} 〜（仮眠）${r.note ? ' ・ ' + escapeHtml(r.note) : ''}` : `${nl.span}${r.note ? ' ・ ' + escapeHtml(r.note) : ''}`;
+      const short = !nap && dur != null && dur < S.AASM_MIN; // 夜の7時間未満のみ控えめ色
       return `<div class="recitem">
         <div class="rleft">
-          <div class="rhead">${nl.head}</div>
-          <div class="rspan">${nl.span}${r.note ? ' ・ ' + escapeHtml(r.note) : ''}</div>
+          <div class="rhead">${head}</div>
+          <div class="rspan">${span}</div>
         </div>
         <div class="rright">
-          <span class="rdur${short ? ' low' : ''}">${dur == null ? '?' : S.fmtDur(dur)}</span>
-          <button class="iconbtn" data-edit="${r.id}" aria-label="編集">✎</button>
+          <span class="rdur${short ? ' low' : ''}" ${nap ? 'style="color:#fbbf24"' : ''}>${dur == null ? '?' : S.fmtDur(dur)}</span>
+          ${nap ? '' : `<button class="iconbtn" data-edit="${r.id}" aria-label="編集">✎</button>`}
           <button class="iconbtn del" data-del="${r.id}" aria-label="削除">×</button>
         </div>
       </div>`;
@@ -318,6 +325,26 @@
   function escapeHtml(s) {
     return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
+
+  /* ---------- 仮眠の記録 ---------- */
+  function updateNapPreview() {
+    const start = $('#inNapStart').value, dur = parseInt($('#inNapDur').value);
+    const el = $('#napDurPreview');
+    if (!start) { el.textContent = ''; return; }
+    const s = S.toDate(start), e = new Date(s.getTime() + dur * 60000);
+    el.className = 'durpreview';
+    el.textContent = `${hm(s)} 〜 ${hm(e)}（${dur}分の仮眠）`;
+  }
+  $('#inNapStart').addEventListener('input', updateNapPreview);
+  $('#inNapDur').addEventListener('change', updateNapPreview);
+  $('#btnAddNap').addEventListener('click', () => {
+    const start = $('#inNapStart').value, dur = parseInt($('#inNapDur').value);
+    if (!start) { toast('仮眠の開始日時を入力してください'); return; }
+    const s = S.toDate(start), e = new Date(s.getTime() + dur * 60000);
+    Store.addRecord({ bed: localDTString(s), wake: localDTString(e), note: '', kind: 'nap', source: 'manual' });
+    toast(`仮眠（${dur}分）を記録しました`);
+    renderLog();
+  });
 
   $('#btnSleepNow').addEventListener('click', () => {
     const pending = localStorage.getItem(PENDING_KEY);
@@ -404,8 +431,8 @@
     // 睡眠ラスター図
     Charts.drawRaster($('#rasterChart'), records, 21);
 
-    // 睡眠時間の推移グラフ
-    const recent = S.recordsWithin(records, 14);
+    // 睡眠時間の推移グラフ（夜の主睡眠のみ）
+    const recent = S.recordsWithin(records, 14).filter(r => !S.isNap(r));
     Charts.drawDuration($('#durationChart'), recent.map(r => {
       const w = S.toDate(r.wake);
       return { label: `${w.getMonth() + 1}/${w.getDate()}`, min: S.durationMin(r) };
@@ -540,6 +567,7 @@
     sjl: '平日と休日の睡眠中央時刻のズレ(ソーシャル時差ぼけ, Roenneberg 2012)。土日を休日とみなす簡易計算です。大きいほど肥満・抑うつ・代謝リスクとの関連が報告されていますが、明確な良い/悪いの境界はないため色分けはしません。',
     hints: 'あなたの記録から計算した個人予測ではありません。「午後の眠気は起床の6〜8時間後」「体内時計の影響で就床の1〜3時間前は寝つきにくい」という集団平均の知見(Sleep Foundation / PMC6054682)を、あなたの起床・就床時刻に当てはめて時間帯を表示しているだけです。個人差があります。',
     calib: 'ホームで記録した「今の眠気(主観)」と、二プロセスモデルの予測を突き合わせます。両者の差(平均誤差)が最小になるように、あなたの概日リズムのズレ(位相オフセット)をgrid searchで推定し、適用すると以降の眠気予測があなた個人に寄ります。あなたの記録だけに基づく調整で、恣意的な数値ではありません。最低5件、できれば色々な時間帯で記録すると精度が上がります。',
+    nap: '仮眠は実際の睡眠なので、二プロセスモデルの睡眠圧Sを下げ、睡眠負債を減らし、ラスター図にも黄色で表示されます。ただし夜の睡眠リズムの指標(規則性・睡眠中央時刻・クロノタイプ・推奨就床の基準)には混ぜません(昼寝で夜の習慣がぶれないように)。長い仮眠や夕方の仮眠は夜の入眠を遅らせるので、眠気タブの仮眠シミュレーターで影響を確認できます。',
     shift: '今の起床時刻から目標起床時刻へ、毎日少しずつ近づける移行プランです。概日リズムは強い光でも1日に最大約1時間しか位相が動かないため、安全側に1日15分ずつにしています。特に早起き化(前進)は難しいので、前倒しの日は起床直後の強い光が有効です。睡眠時間は目標どおり保ったまま、就床も連動して動かします。',
     forecast: '二プロセスモデル(Borbély 1982 / Daan-Beersma 1984)で眠気を推定します。睡眠圧S(覚醒で蓄積・睡眠で解消, 文献の時定数τ覚醒18.2h/τ睡眠4.2h)と概日リズムC(深部体温最低点≈起床2h前で眠気最大)を合成。あなたの直近の睡眠から定常状態を解いて算出します。これは集団モデルによる推定で、あなたの眠気を実測したものではありません(個人差あり)。基本モデルでは午後の眠気が弱く出るため、その時間帯だけは集団平均の経験則を併記しています。',
     rec: '今夜の推奨就床は、目標から逆算した時刻を基準に、積み上がった睡眠負債に応じて自動で前倒しします。科学的根拠: ①起床時刻は固定が最善(規則性が最重要。寝だめ=起床を遅らせるのは社会的時差ぼけを悪化させる)ので就床だけ早める ②負債は1晩で返せず数晩かけて回復(Banks 2010 / Depner 2019) ③総睡眠9時間は超えない(U字カーブ)。前倒しの上限45分は、就床直前の覚醒帯(WMZ)で寝つけない制約と「多晩で回復」に基づく保守的な実務目安です(検証された精密な処方ではありません)。',
@@ -552,7 +580,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v9 (2026-06-19) チャート膨張バグ修正';
+  const APP_VERSION = 'v10 (2026-06-19) 仮眠の記録に対応';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');

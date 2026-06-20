@@ -36,6 +36,10 @@ function durationMin(rec) {
   return d > 0 && d < MIN_PER_DAY ? Math.round(d) : null;
 }
 
+// 仮眠かどうか。kind==='nap' を仮眠、それ以外(未指定含む)を主睡眠(夜)とみなす。
+function isNap(rec) { return !!rec && rec.kind === 'nap'; }
+function mainOnly(arr) { return arr.filter(r => !isNap(r)); }
+
 // 睡眠中央時刻（mid-sleep）を「基準日0時からの分」で返す（時計上の分, 0-1440）
 function midSleepClockMin(rec) {
   const b = toDate(rec.bed), w = toDate(rec.wake);
@@ -80,7 +84,7 @@ function buildDayMask(rec) {
 // 直近days日だけで計算する（全履歴で計算すると最近の変化が薄まり、値が動かなく
 // 見えるため。SRIは元来7〜14日程度の窓で評価する指標）。
 function sleepRegularityIndex(records, days = 14) {
-  const masks = recordsWithin(records, days).map(buildDayMask).filter(Boolean)
+  const masks = mainOnly(recordsWithin(records, days)).map(buildDayMask).filter(Boolean)
     .sort((a, b) => a.origin - b.origin);
   if (masks.length < 2) return null;
   let total = 0, pairs = 0;
@@ -119,14 +123,18 @@ function regularityLabel(sri) {
  *     が、就床/起床のみの自己申告から扱える範囲の近似として収支方式を用いる。
  */
 function sleepDebt(records, targetMin, days = 14) {
-  const recent = recordsWithin(records, days); // wake昇順
+  const recent = recordsWithin(records, days); // wake昇順（仮眠も含む）
   let balance = 0, sumDur = 0, nights = 0;
   for (const r of recent) {
     const d = durationMin(r);
     if (d == null) continue;
-    nights++; sumDur += d;
-    balance += (targetMin - d);     // 不足は+、回復(余剰)は−
-    if (balance < 0) balance = 0;    // 負債の下限は0（貯金しない）
+    if (isNap(r)) {
+      balance -= d;                  // 仮眠は実睡眠なので負債を返す（回復）
+    } else {
+      nights++; sumDur += d;
+      balance += (targetMin - d);    // 夜の不足は+、長く寝れば−
+    }
+    if (balance < 0) balance = 0;     // 負債の下限は0（貯金しない）
   }
   return {
     debtMin: Math.round(balance),
@@ -147,7 +155,7 @@ function recordsWithin(records, days) {
  */
 function socialJetlag(records) {
   const wk = [], we = [];
-  for (const r of records) {
+  for (const r of mainOnly(records)) {
     const mid = midSleepClockMin(r);
     if (mid == null) continue;
     const wakeDay = toDate(r.wake).getDay(); // 0=日,6=土
@@ -220,9 +228,22 @@ function tpSteady(sd, wd) {
   return Math.abs(d) < 1e-9 ? 0.5 : (TP.sMin * (1 - es) + TP.sMax * (1 - ew) * es) / d;
 }
 
+// 仮眠を考慮した、起床からt時間後の睡眠圧S。naps=[{start,end}]（起床からの時間, 昇順）
+function sWithNaps(t, S0, naps) {
+  let S = S0, cursor = 0;
+  for (const n of (naps || [])) {
+    if (n.start >= 24 || n.end <= cursor) continue;
+    if (t <= n.start) return tpSw(t - cursor, S);
+    S = tpSw(n.start - cursor, S);
+    if (t <= n.end) return tpSs(t - n.start, S);
+    S = tpSs(n.end - n.start, S); cursor = n.end;
+  }
+  return tpSw(t - cursor, S);
+}
+
 function sleepinessForecast(records, phaseOffsetMin) {
   const phaseOff = (phaseOffsetMin || 0) / 60; // 個人補正(時間)
-  const recent = recordsWithin(records, 14).filter(r => durationMin(r) != null).slice(-7);
+  const recent = mainOnly(recordsWithin(records, 14)).filter(r => durationMin(r) != null).slice(-7);
   if (recent.length < 2) return null;
   const wks = [], sls = [], drs = [];
   for (const r of recent) {
@@ -253,11 +274,29 @@ function sleepinessForecast(records, phaseOffsetMin) {
   const S0 = tpSs(drs[recent.length - 1], S);
   const wH = wks[recent.length - 1];
 
-  // 起床起点に24h投影
+  const now = new Date(), nowH = now.getHours() + now.getMinutes() / 60;
+  const elapsed = ((nowH - wH) + 24) % 24;     // 起床起点での「今」の位置
+  const nowMs = now.getTime();
+
+  // 記録済みの仮眠を「今」を基準に t軸へ配置（直近16h以内に終わった＝今日の仮眠のみ）
+  const napIntervals = [];
+  for (const r of records) {
+    if (!isNap(r)) continue;
+    const nb = toDate(r.bed), nw = toDate(r.wake);
+    if (!nb || !nw || nw <= nb) continue;
+    const endT = elapsed - (nowMs - nw.getTime()) / 3600e3;
+    const startT = elapsed - (nowMs - nb.getTime()) / 3600e3;
+    if (endT <= elapsed - 16 || startT >= 24 || endT <= 0) continue;
+    const a = Math.max(0, startT), b = Math.min(24, endT);
+    if (b > a) napIntervals.push({ start: a, end: b });
+  }
+  napIntervals.sort((a, b) => a.start - b.start);
+
+  // 起床起点に24h投影（記録済み仮眠を反映）
   const pts = [];
   for (let i = 0; i <= 96; i++) {
     const t = i * 0.25, cH = (wH + t) % 24;
-    const sv = tpSw(t, S0), cv = tpCt(cH, cbtMin);
+    const sv = sWithNaps(t, S0, napIntervals), cv = tpCt(cH, cbtMin);
     pts.push({
       t, clock: cH, score: tpScore(sv, cv),
       pressure: clampN(Math.round((sv - TP.sMin) / (TP.sMax - TP.sMin) * 100), 0, 100),
@@ -274,13 +313,11 @@ function sleepinessForecast(records, phaseOffsetMin) {
   let gate = null;
   for (const p of pts) { if (p.t >= 14 && p.score >= 55) { gate = p; break; } }
 
-  const now = new Date(), nowH = now.getHours() + now.getMinutes() / 60;
-  const elapsed = ((nowH - wH) + 24) % 24;
   let cur = pts[0];
   for (const p of pts) if (Math.abs(p.t - elapsed) < Math.abs(cur.t - elapsed)) cur = p;
 
   return {
-    pts, wH, cbtMin, cbtMinBase, dip, peak, gate, s0: S0,
+    pts, wH, cbtMin, cbtMinBase, dip, peak, gate, s0: S0, naps: napIntervals,
     currentScore: cur.score, elapsed,
     sleepGateMin: gate ? Math.round(((wH + gate.t) % 24) * 60) : null,
   };
@@ -290,7 +327,7 @@ function sleepinessForecast(records, phaseOffsetMin) {
 function forecastNowState(fc) {
   if (!fc || fc.s0 == null) return null;
   return {
-    rawS: tpSw(fc.elapsed, fc.s0),                 // 睡眠圧（概日と独立）
+    rawS: sWithNaps(fc.elapsed, fc.s0, fc.naps),   // 睡眠圧（記録済み仮眠を反映）
     clock: (fc.wH + fc.elapsed) % 24,              // 記録時の時計時刻
     cbtMinBase: fc.cbtMinBase,                     // 補正なしの概日基準
     pred: fc.currentScore,                         // 現行モデルの予測
@@ -320,13 +357,10 @@ function fitPhaseOffset(logs) {
 function napCurve(fc, napMin) {
   if (!fc || fc.s0 == null) return null;
   const e = fc.elapsed, napH = napMin / 60;
-  const sNow = tpSw(e, fc.s0);             // 仮眠開始時のS
-  const sAfter = tpSs(napH, sNow);         // 仮眠で減衰したS
+  // 記録済みの仮眠に、今から取る仮眠を加えて再計算
+  const naps = [...(fc.naps || []), { start: e, end: e + napH }].sort((a, b) => a.start - b.start);
   const pts = fc.pts.map(p => {
-    let sv;
-    if (p.t <= e) sv = tpSw(p.t, fc.s0);
-    else if (p.t <= e + napH) sv = tpSs(p.t - e, sNow);    // 仮眠中
-    else sv = tpSw(p.t - (e + napH), sAfter);              // 仮眠後の覚醒
+    const sv = sWithNaps(p.t, fc.s0, naps);
     const cv = tpCt(p.clock, fc.cbtMin);
     return {
       t: p.t, clock: p.clock, score: tpScore(sv, cv),
@@ -432,8 +466,8 @@ function recommendTonight(records, settings) {
 
 /* ---------- まとめてダッシュボード指標を計算 ---------- */
 function computeDashboard(records, settings) {
-  const sorted = [...records].sort((a, b) => toDate(a.wake) - toDate(b.wake));
-  const last = sorted[sorted.length - 1] || null;
+  const sorted = mainOnly(records).sort((a, b) => toDate(a.wake) - toDate(b.wake));
+  const last = sorted[sorted.length - 1] || null;   // 「昨夜」は主睡眠のみ
   const sri = sleepRegularityIndex(records);
   const debt = sleepDebt(records, settings.targetMin);
   const sjl = socialJetlag(records);
@@ -506,7 +540,7 @@ function weightedCircularMeanMin(pairs) {
  *  - 体内時計は習慣的な就寝時刻で決まる（1晩では動かない）ため、平均ベースが妥当。
  */
 function actualSchedule(records, days = 7, halfLife = 3) {
-  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  const recent = mainOnly(recordsWithin(records, days)).filter(r => durationMin(r) != null);
   if (!recent.length) return null;
   const now = Date.now();
   const bedPairs = [], wakePairs = [];
@@ -542,7 +576,7 @@ function wakeClockMin(rec) { const w = toDate(rec.wake); return w ? w.getHours()
 
 // 直近days日の記述統計（時刻は円周平均、睡眠時間は通常平均）
 function personalStats(records, days = 14) {
-  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  const recent = mainOnly(recordsWithin(records, days)).filter(r => durationMin(r) != null);
   if (!recent.length) return null;
   const durs = recent.map(durationMin);
   return {
@@ -568,7 +602,7 @@ function isFreeDay(rec) { const d = toDate(rec.wake).getDay(); return d === 0 ||
  *   - 自己申告・少数夜だと不安定。あくまで目安。
  */
 function chronotypeMSFsc(records, days = 60) {
-  const recent = recordsWithin(records, days).filter(r => durationMin(r) != null);
+  const recent = mainOnly(recordsWithin(records, days)).filter(r => durationMin(r) != null);
   const free = recent.filter(isFreeDay);
   if (free.length < 1 || recent.length < 2) return null;
   const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
@@ -582,7 +616,7 @@ function chronotypeMSFsc(records, days = 60) {
 
 // 直近7日 vs その前7日 の平均睡眠時間の比較（実データの差分）
 function durationTrend(records) {
-  const inWindow = (lo, hi) => records.filter(r => {
+  const inWindow = (lo, hi) => mainOnly(records).filter(r => {
     const w = toDate(r.wake); if (!w || durationMin(r) == null) return false;
     const age = (Date.now() - w.getTime()) / 86400000;
     return age >= lo && age < hi;
@@ -600,5 +634,5 @@ window.Science = {
   recommendBedtime, recommendTonight, shiftPlan, circadianHints, sleepinessForecast, napCurve,
   forecastNowState, fitPhaseOffset, computeDashboard,
   personalStats, chronotypeMSFsc, durationTrend, circularMeanMin, actualSchedule,
-  recordsWithin, toDate, AASM_MIN: 420,
+  recordsWithin, toDate, isNap, AASM_MIN: 420,
 };

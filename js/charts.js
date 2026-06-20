@@ -172,7 +172,7 @@ function drawRaster(canvas, records, days) {
     origin.setHours(12, 0, 0, 0);
     const key = origin.getTime();
     const s = Math.max(0, (b - origin) / 60000), e = Math.min(1440, (wk - origin) / 60000);
-    (rows[key] = rows[key] || { bars: [] }).bars.push({ s, e });
+    (rows[key] = rows[key] || { bars: [] }).bars.push({ s, e, nap: r.kind === 'nap' });
   }
   const keys = Object.keys(rows).map(Number).sort((a, b) => b - a);
   const rowH = 14, padT = 16, padB = 6, padL = 40, padR = 8;
@@ -198,7 +198,7 @@ function drawRaster(canvas, records, days) {
     ctx.fillStyle = 'rgba(226,232,240,0.45)'; ctx.textAlign = 'right'; ctx.font = '9px system-ui';
     ctx.fillText((d.getMonth() + 1) + '/' + d.getDate(), padL - 4, y + rowH - 3);
     rows[k].bars.forEach(bar => {
-      ctx.fillStyle = '#818cf8';
+      ctx.fillStyle = bar.nap ? '#fbbf24' : '#818cf8';  // 仮眠は黄色
       ctx.fillRect(X(bar.s), y + 1, Math.max(1, X(bar.e) - X(bar.s)), rowH - 3);
     });
   });
