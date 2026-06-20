@@ -326,20 +326,22 @@
     return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
-  /* ---------- 仮眠の記録 ---------- */
+  /* ---------- 仮眠の記録（長さは自由入力） ---------- */
+  window.fillNapDur = function (m) { $('#inNapDur').value = m; updateNapPreview(); };
   function updateNapPreview() {
     const start = $('#inNapStart').value, dur = parseInt($('#inNapDur').value);
     const el = $('#napDurPreview');
-    if (!start) { el.textContent = ''; return; }
+    if (!start || !(dur > 0)) { el.textContent = ''; el.className = 'durpreview'; return; }
     const s = S.toDate(start), e = new Date(s.getTime() + dur * 60000);
     el.className = 'durpreview';
     el.textContent = `${hm(s)} 〜 ${hm(e)}（${dur}分の仮眠）`;
   }
   $('#inNapStart').addEventListener('input', updateNapPreview);
-  $('#inNapDur').addEventListener('change', updateNapPreview);
+  $('#inNapDur').addEventListener('input', updateNapPreview);
   $('#btnAddNap').addEventListener('click', () => {
     const start = $('#inNapStart').value, dur = parseInt($('#inNapDur').value);
     if (!start) { toast('仮眠の開始日時を入力してください'); return; }
+    if (!(dur > 0 && dur <= 600)) { toast('長さは1〜600分で入力してください'); return; }
     const s = S.toDate(start), e = new Date(s.getTime() + dur * 60000);
     Store.addRecord({ bed: localDTString(s), wake: localDTString(e), note: '', kind: 'nap', source: 'manual' });
     toast(`仮眠（${dur}分）を記録しました`);
@@ -580,7 +582,7 @@
   });
 
   /* ---------- 更新（キャッシュ消去） ---------- */
-  const APP_VERSION = 'v10 (2026-06-19) 仮眠の記録に対応';
+  const APP_VERSION = 'v11 (2026-06-19) 仮眠の長さを自由入力に';
   const av = document.getElementById('appVersion');
   if (av) av.textContent = APP_VERSION;
   const bu = document.getElementById('btnUpdate');
