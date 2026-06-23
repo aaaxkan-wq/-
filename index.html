@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手順書ナビ — マニュアル・手順書作成システム</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --ink:#1d2330; --muted:#6b7385;
+    --line:#e3e7ee; --brand:#2f6df0; --brand-d:#1f4fc4; --brand-soft:#eaf1ff;
+    --ok:#1f9d57; --warn:#d98a00; --danger:#d64545;
+    --shadow:0 1px 2px rgba(20,30,60,.06),0 6px 24px rgba(20,30,60,.06);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+    line-height:1.7; -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit}
+  a{color:var(--brand-d)}
+  .app{display:grid; grid-template-columns:320px 1fr; grid-template-rows:56px 1fr; height:100vh}
+
+  .topbar{grid-column:1 / -1; display:flex; align-items:center; gap:10px; background:var(--panel); border-bottom:1px solid var(--line); padding:0 14px; z-index:20}
+  .hamb{display:none; border:1px solid var(--line); background:#fff; border-radius:9px; width:38px; height:38px; font-size:18px; cursor:pointer}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px}
+  .logo .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa2ff); display:grid;place-items:center;color:#fff;font-size:15px}
+  .logo small{font-weight:600;color:var(--muted);font-size:12px}
+  .topbar .spacer{flex:1}
+  .btn{border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 13px; border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; white-space:nowrap; transition:.12s; display:inline-flex; align-items:center; gap:6px}
+  .btn:hover{background:#f7f9fc; border-color:#d3d9e4}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff}
+  .btn.primary:hover{background:var(--brand-d)}
+  .btn.ghost{border-color:transparent;background:transparent}
+  .btn.ghost:hover{background:#eef1f6}
+  .btn.danger{color:var(--danger);border-color:#f0d2d2}
+  .btn.danger:hover{background:#fdf2f2}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn .lbl-full{display:inline}
+
+  .sidebar{background:var(--panel); border-right:1px solid var(--line); overflow-y:auto; padding:14px 14px; display:flex; flex-direction:column; gap:13px}
+  .scrim{display:none}
+  .navseg{display:flex;gap:6px;background:#eef1f6;padding:4px;border-radius:10px}
+  .navseg button{flex:1;border:none;background:transparent;padding:8px;border-radius:7px;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer}
+  .navseg button.active{background:#fff;color:var(--brand-d);box-shadow:var(--shadow)}
+  .search{position:relative}
+  .search input{width:100%; padding:11px 12px 11px 36px; border:1px solid var(--line); border-radius:10px; font-size:15px; background:#fbfcfe; outline:none}
+  .search input:focus{border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .ico{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted)}
+  .filters{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px; padding:5px 11px; font-size:12.5px; cursor:pointer; transition:.12s; font-weight:600}
+  .chip:hover{border-color:#c9d2e0}
+  .chip.active{background:var(--brand-soft); border-color:#bcd2ff; color:var(--brand-d)}
+  .sec-title{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin:2px 4px}
+  .doclist{display:flex; flex-direction:column; gap:4px; flex:1}
+  .docgroup-label{font-size:11.5px;font-weight:700;color:var(--muted);margin:10px 4px 2px;display:flex;align-items:center;gap:6px}
+  .docitem{text-align:left; border:1px solid transparent; background:transparent; border-radius:10px; padding:9px 11px; cursor:pointer; transition:.1s; width:100%; display:flex; gap:9px; align-items:flex-start}
+  .docitem:hover{background:#f5f7fb}
+  .docitem.active{background:var(--brand-soft); border-color:#cfe0ff}
+  .docitem .di-ic{font-size:16px; line-height:1.5; flex:none}
+  .docitem .di-body{min-width:0; flex:1}
+  .docitem .t{font-weight:700; font-size:14px; display:block; color:var(--ink)}
+  .docitem .m{font-size:12px; color:var(--muted); margin-top:2px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .docitem mark{background:#fff2a8; padding:0 1px; border-radius:2px}
+  .empty-list{color:var(--muted); font-size:13px; text-align:center; padding:30px 10px}
+
+  .main{overflow-y:auto; padding:0; position:relative}
+  .reading{max-width:880px; margin:0 auto; padding:34px 40px 120px}
+
+  .breadcrumb{max-width:880px;margin:14px auto -8px;padding:0 40px}
+  .breadcrumb button{border:none;background:none;color:var(--brand-d);font-weight:700;font-size:13.5px;cursor:pointer;padding:0}
+  .breadcrumb button:hover{text-decoration:underline}
+
+  .doc-head{margin-bottom:6px}
+  .doc-badges{display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap}
+  .doc-type{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:var(--ink); background:#eef1f6; padding:4px 11px; border-radius:999px}
+  .doc-cat{display:inline-block; font-size:12px; font-weight:700; color:var(--brand-d); background:var(--brand-soft); padding:4px 11px; border-radius:999px}
+  .doc-title{font-size:30px; font-weight:800; line-height:1.3; margin:0 0 8px; letter-spacing:.01em}
+  .doc-desc{font-size:15.5px; color:var(--muted); margin:0 0 14px}
+  .doc-meta{display:flex; gap:14px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px}
+  .tags{display:flex; gap:6px; flex-wrap:wrap}
+  .tag{font-size:12px; color:#54607a; background:#eef1f6; border-radius:6px; padding:2px 9px; cursor:pointer}
+  .tag:hover{background:#dfe5ee}
+  .doc-stale{display:inline-flex;align-items:center;font-size:12px;font-weight:800;color:#8a2b2b;background:#fdeeee;border:1px solid #f6cccc;padding:4px 11px;border-radius:999px}
+  .doc-history{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;font-size:14px}
+  .doc-history summary{cursor:pointer;font-weight:700;color:var(--muted)}
+  .doc-history ul{margin:10px 0 0;padding-left:18px}
+  .doc-history li{margin:4px 0;color:#3a4256}
+  .doc-history .hd{color:var(--muted);font-size:12.5px;margin-right:6px}
+  .doc-actions{display:flex; gap:8px; margin-left:auto}
+
+  /* Checklist runner */
+  .runner{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0 22px}
+  .rn-top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px}
+  .pbar{height:9px;background:#e7ecf3;border-radius:6px;overflow:hidden}
+  .pbar-fill{height:100%;background:linear-gradient(90deg,var(--ok),#3ec97a);transition:width .25s;width:0}
+  .rn-actions{display:flex;gap:8px;margin-top:11px}
+  .rn-hist{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  .rn-hist-t{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .rn-rec{display:flex;gap:12px;font-size:12.5px;color:#54607a;padding:3px 0}
+  .rn-rec span:first-child{flex:1;font-weight:600;color:var(--ink)}
+
+  .toc{background:#fbfcfe; border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin:20px 0 26px}
+  .toc h4{margin:0 0 8px; font-size:12px; letter-spacing:.06em; color:var(--muted); text-transform:uppercase}
+  .toc ul{margin:0; padding:0; list-style:none}
+  .toc li{margin:4px 0}
+  .toc li.lvl2{margin-left:18px; font-size:.92em}
+  .toc a{color:var(--brand-d); text-decoration:none; font-weight:600; font-size:14px; cursor:pointer}
+  .toc a:hover{text-decoration:underline}
+
+  .block{margin:0 0 16px}
+  .doc-body .p{display:block}
+  .doc-body ul,.doc-body ol{margin:6px 0; padding-left:24px}
+  .doc-body li{margin:3px 0}
+  .doc-body code.ic{background:#eef1f6; border-radius:5px; padding:1px 6px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.9em}
+  .b-heading{font-weight:800; margin:30px 0 12px; scroll-margin-top:70px; border-top:1px dashed var(--line); padding-top:22px}
+  .b-heading:first-child{border-top:none;padding-top:0}
+  .b-heading.lvl1{font-size:22px}
+  .b-heading.lvl2{font-size:18px; border-top:none; padding-top:6px; margin-top:18px; color:#33405c}
+  .b-text{font-size:16px; color:#2a3142}
+  .b-step{display:flex; gap:14px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow); scroll-margin-top:70px}
+  .b-step .num{flex:none; width:30px; height:30px; border-radius:50%; background:var(--brand); color:#fff; font-weight:800; display:grid; place-items:center; font-size:14px}
+  .b-step .body{flex:1; font-size:16px; padding-top:2px; min-width:0}
+  .callout{border-radius:12px; padding:13px 16px 13px 46px; position:relative; font-size:15px}
+  .callout::before{position:absolute; left:15px; top:12px; font-size:18px; line-height:1}
+  .callout.info{background:#eef4ff; border:1px solid #d3e2ff; color:#27406e}
+  .callout.info::before{content:"\2139\FE0F"}
+  .callout.tip{background:#ecfaf1; border:1px solid #c8ecd6; color:#1c5e39}
+  .callout.tip::before{content:"\1F4A1"}
+  .callout.warning{background:#fff6e6; border:1px solid #ffe1ad; color:#7a5200}
+  .callout.warning::before{content:"\26A0\FE0F"}
+  .callout.danger{background:#fdeeee; border:1px solid #f6cccc; color:#8a2b2b}
+  .callout.danger::before{content:"\1F6AB"}
+  .callout .lbl{font-weight:800; display:block; font-size:12.5px; margin-bottom:2px; opacity:.85}
+  .b-check{display:flex; gap:10px; align-items:flex-start; font-size:15.5px; padding:7px 12px; background:#fff; border:1px solid var(--line); border-radius:9px}
+  .b-check input{margin-top:5px; width:18px; height:18px; accent-color:var(--ok); cursor:pointer}
+  .b-check.done{background:#f6fbf8;border-color:#cde9d8}
+  .b-check.done .ck-text{color:var(--muted); text-decoration:line-through}
+  .b-img{margin:6px 0}
+  .b-img img{max-width:100%; border:1px solid var(--line); border-radius:10px; display:block}
+  .b-img figcaption{font-size:12.5px; color:var(--muted); margin-top:6px; text-align:center}
+  .b-code{background:#1c2230; color:#e6ebf5; border-radius:10px; padding:14px 16px; overflow-x:auto; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.6; white-space:pre-wrap; word-break:break-word}
+  .b-field{border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; padding:11px 15px; background:#fff}
+  .b-field .bf-label{font-weight:800; font-size:13px; color:var(--brand-d); margin-bottom:3px}
+  .b-field .bf-body{font-size:15.5px}
+  .b-related{border:1px solid var(--line); border-radius:12px; padding:12px 16px; background:#fbfcfe}
+  .b-related .br-title{font-weight:800; font-size:13px; color:var(--muted); margin-bottom:6px}
+  .b-related ul{margin:0; padding-left:18px}
+  .b-related a{cursor:pointer; font-weight:600}
+  .b-related a:hover{text-decoration:underline}
+  .rel-item{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:7px 11px; margin-bottom:6px; font-size:14px}
+  .rel-add{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px; font-size:14px; font-family:inherit}
+  .qahub{max-width:880px; margin:0 auto; padding:32px 40px 110px}
+  .qahub h2{font-size:24px; margin:0}
+  .qa-card{border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:#fff; overflow:hidden; box-shadow:var(--shadow)}
+  .qa-q-btn{width:100%; text-align:left; border:none; background:none; padding:14px 40px 14px 42px; position:relative; font-weight:700; font-size:15.5px; cursor:pointer; color:var(--ink); line-height:1.5}
+  .qa-q-btn::before{content:"Q"; position:absolute; left:16px; top:14px; color:var(--brand-d); font-weight:800}
+  .qa-q-btn::after{content:"▾"; position:absolute; right:16px; top:14px; color:var(--muted); transition:transform .15s}
+  .qa-card.open .qa-q-btn::after{transform:rotate(180deg)}
+  .qa-card:hover{border-color:#cfd8e6}
+  .qa-a-body{display:none; padding:2px 16px 14px 42px; font-size:15px; color:#2a3142; position:relative}
+  .qa-a-body::before{content:"A"; position:absolute; left:16px; top:2px; color:var(--muted); font-weight:800}
+  .qa-card.open .qa-a-body{display:block}
+  .qa-a-body .src{margin-top:10px; font-size:12.5px; color:var(--muted)}
+  .qa-a-body .src a{cursor:pointer; font-weight:600; color:var(--brand-d)}
+  .qa-a-body .src a:hover{text-decoration:underline}
+  @media (max-width:900px){ .qahub{padding:22px 16px 90px} }
+
+  /* Readability: font scale + reading width */
+  body{--rfs:16px}
+  body.fs-s{--rfs:15px}
+  body.fs-m{--rfs:16px}
+  body.fs-l{--rfs:18.5px}
+  .reading{max-width:760px}
+  .b-substep{display:flex; gap:12px; align-items:flex-start; margin-left:44px; background:#fbfcfe; border:1px solid var(--line); border-radius:10px; padding:10px 14px; scroll-margin-top:70px}
+  .b-substep .snum{flex:none; min-width:32px; height:24px; padding:0 7px; border-radius:6px; background:#dfe7f5; color:var(--brand-d); font-weight:800; display:grid; place-items:center; font-size:12px}
+  .b-substep .body{flex:1; min-width:0}
+  .chunk-hint{background:#ecfaf1; border:1px solid #c8ecd6; color:#1c5e39; border-radius:10px; padding:10px 13px; font-size:13px; margin:8px 0 2px; line-height:1.6}
+
+  /* Dark mode */
+  body.theme-dark{ --bg:#0f1420; --panel:#161d2b; --ink:#e7ebf3; --muted:#9aa6bd; --line:#2a3446; --brand:#5b8def; --brand-d:#a9c4ff; --brand-soft:#1b2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.3) }
+  body.theme-dark .b-step,body.theme-dark .b-check,body.theme-dark .b-field,body.theme-dark .ed-block,body.theme-dark .modal,body.theme-dark .type-card,body.theme-dark .qa-card,body.theme-dark .store-status,body.theme-dark .btn,body.theme-dark .chip,body.theme-dark .search input,body.theme-dark .field input,body.theme-dark .field textarea,body.theme-dark .field select,body.theme-dark .ed-block textarea,body.theme-dark .ed-block input[type=text],body.theme-dark .ci-item,body.theme-dark .course-item{background:var(--panel); color:var(--ink)}
+  body.theme-dark .toc,body.theme-dark .runner,body.theme-dark .b-related,body.theme-dark .pv-pane,body.theme-dark .b-substep,body.theme-dark .ci-add select{background:#121a28}
+  body.theme-dark .doc-type,body.theme-dark .tag,body.theme-dark .b-term dt,body.theme-dark .b-table th,body.theme-dark .b-substep .snum{background:#222c40; color:var(--ink)}
+  body.theme-dark .b-table td{background:var(--panel)} body.theme-dark .b-table tr:nth-child(even) td{background:#1b2334}
+  body.theme-dark mark{background:#7a6a16; color:#fff}
+  body.theme-dark .b-qa .a{color:var(--ink)}
+
+  /* scale reading body text */
+  .doc-body .b-text,.doc-body .b-step .body,.doc-body .b-substep .body,.doc-body .callout,.doc-body .b-check,.doc-body .b-field .bf-body,.doc-body .b-qa .a,.doc-body .b-term dd{font-size:var(--rfs)}
+  .b-table{width:100%; border-collapse:collapse; font-size:14.5px; border-radius:10px; border:1px solid var(--line)}
+  .b-table th,.b-table td{border:1px solid var(--line); padding:9px 12px; text-align:left}
+  .b-table th{background:#f1f4f9; font-weight:700}
+  .b-table tr:nth-child(even) td{background:#fafbfd}
+  .b-qa{border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  .b-qa .q{background:var(--brand-soft); color:var(--brand-d); font-weight:700; padding:11px 16px 11px 40px; position:relative}
+  .b-qa .q::before{content:"Q"; position:absolute; left:15px; font-weight:800}
+  .b-qa .a{padding:12px 16px 12px 40px; position:relative; font-size:15.5px}
+  .b-qa .a::before{content:"A"; position:absolute; left:15px; font-weight:800; color:var(--muted)}
+  .b-term{display:grid; grid-template-columns:170px 1fr; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .b-term dt{background:#f6f8fb; font-weight:700; padding:11px 14px; margin:0; border-right:1px solid var(--line)}
+  .b-term dd{padding:11px 14px; margin:0; font-size:15px}
+  .b-branch{border:1px solid #d9c9f0; background:#f8f4ff; border-radius:12px; padding:14px 16px}
+  .b-branch .bq{font-weight:800; color:#5b34a8; margin-bottom:10px; padding-left:26px; position:relative}
+  .b-branch .bq::before{content:"\2754"; position:absolute; left:0}
+  .b-branch .branches{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+  .b-branch .branches li{display:flex; gap:10px; align-items:center; background:#fff; border:1px solid #e7daf7; border-radius:9px; padding:9px 12px; flex-wrap:wrap}
+  .b-branch .cond{font-weight:700; background:#efe6fb; color:#5b34a8; padding:2px 10px; border-radius:6px; font-size:13.5px}
+  .b-branch .arrow{color:#9b7fce; font-weight:800}
+  .b-branch .act{flex:1; min-width:120px}
+
+  .welcome{max-width:640px; margin:7vh auto; text-align:center; padding:0 20px}
+  .welcome .big{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,var(--brand),#7aa2ff); display:grid;place-items:center;color:#fff;font-size:34px;margin:0 auto 20px}
+  .welcome h2{font-size:24px;margin:0 0 8px}
+  .welcome p{color:var(--muted);font-size:15px;margin:0 auto 24px;max-width:480px}
+  .welcome .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .restore-banner{max-width:880px; margin:18px auto 0; background:#fff8e6; border:1px solid #ffe1ad; color:#7a5200; border-radius:11px; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .restore-banner .rb-msg{flex:1; font-size:14px; font-weight:600}
+
+  .typepick{max-width:760px; margin:6vh auto; padding:0 20px}
+  .typepick h2{font-size:22px; margin:0 0 4px}
+  .typepick p{color:var(--muted); margin:0 0 22px}
+  .type-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px}
+  .type-card{border:1px solid var(--line); background:#fff; border-radius:14px; padding:18px 16px; cursor:pointer; text-align:left; transition:.12s}
+  .type-card:hover{border-color:var(--brand); box-shadow:var(--shadow); transform:translateY(-2px)}
+  .type-card .tc-ic{font-size:26px}
+  .type-card .tc-name{font-weight:800; margin-top:8px; font-size:15px}
+  .type-card .tc-desc{font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.5}
+
+  /* Course view */
+  .course-progress{margin:14px 0 22px}
+  .course-progress .cp-top{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:8px;font-weight:600}
+  .course-item{display:flex; gap:13px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:10px}
+  .course-item.done{background:#f6fbf8; border-color:#cde9d8}
+  .course-item .ci-no{flex:none; width:28px; height:28px; border-radius:50%; background:var(--brand-soft); color:var(--brand-d); font-weight:800; display:grid; place-items:center; font-size:13px}
+  .course-item.done .ci-no{background:var(--ok); color:#fff}
+  .course-item .ci-main{flex:1; min-width:0}
+  .course-item .open{font-weight:700; color:var(--ink); cursor:pointer; text-align:left; background:none; border:none; font-size:16px; padding:0}
+  .course-item .open:hover{color:var(--brand-d)}
+  .course-item .ci-ic{font-size:15px}
+  .course-item .note{font-size:13px; color:var(--muted); margin-top:3px}
+  .course-item .chk{flex:none; display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted); cursor:pointer; white-space:nowrap}
+  .course-item .chk input{width:20px;height:20px;accent-color:var(--ok);cursor:pointer}
+
+  /* Course editor */
+  .ci-item{display:flex; gap:10px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px}
+  .ci-item .ci-no{flex:none; width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand-d);font-weight:800;display:grid;place-items:center;font-size:12px}
+  .ci-item .ci-main{flex:1; min-width:0}
+  .ci-item .ci-title{font-weight:700; font-size:14.5px}
+  .ci-item .ci-note{width:100%; border:1px solid var(--line); border-radius:7px; padding:6px 9px; font-size:13px; margin-top:5px; font-family:inherit}
+  .ci-item .iconbtn{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:34px; height:32px; cursor:pointer; color:var(--muted)}
+  .ci-item .iconbtn:disabled{opacity:.35}
+  .ci-add{display:flex; gap:8px; margin-top:12px}
+  .ci-add select{flex:1; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:14px; font-family:inherit}
+
+  .editor-tabs{display:none; gap:6px; padding:10px 16px 0; position:sticky; top:0; background:var(--bg); z-index:6}
+  .editor-tabs button{flex:1; border:1px solid var(--line); background:#fff; padding:10px; border-radius:10px 10px 0 0; font-weight:700; font-size:14px; cursor:pointer; color:var(--muted)}
+  .editor-tabs button.active{background:var(--panel); color:var(--brand-d); border-bottom-color:var(--panel)}
+  .editor-cols{display:flex; gap:0; align-items:stretch; min-height:calc(100vh - 56px)}
+  .ed-pane{flex:1 1 50%; min-width:0; padding:22px 28px 140px; overflow-y:auto}
+  .pv-pane{flex:1 1 50%; min-width:0; border-left:1px solid var(--line); background:#fbfcfe; overflow-y:auto}
+  .pv-pane .reading{padding:26px 30px 80px; max-width:none}
+  .pv-empty{color:var(--muted); text-align:center; padding:60px 20px; font-size:14px}
+  .ed-toolbar{position:sticky; top:0; background:rgba(255,255,255,.92); backdrop-filter:blur(4px); display:flex; gap:6px; padding:8px 0; margin-bottom:6px; flex-wrap:wrap; z-index:4; border-bottom:1px solid var(--line)}
+  .ed-toolbar button{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:38px; height:34px; padding:0 10px; cursor:pointer; font-size:14px; font-weight:700}
+  .ed-toolbar button:hover{background:#f3f6fb}
+  .ed-toolbar .sep{width:1px; background:var(--line); margin:2px 4px}
+  .ed-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:13px}
+  .field{flex:1; min-width:180px; display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:12px; font-weight:700; color:var(--muted)}
+  .field input, .field textarea, .field select{border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:15px; font-family:inherit; background:#fff; outline:none; width:100%}
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
+  .ed-blocks{display:flex; flex-direction:column; gap:12px; margin-top:8px}
+  .ed-block{border:1px solid var(--line); border-radius:12px; background:#fff; padding:12px; transition:box-shadow .12s}
+  .ed-block.dragging{opacity:.5}
+  .ed-block.drag-over{box-shadow:0 0 0 2px var(--brand)}
+  .ed-block .bhead{display:flex; align-items:center; gap:8px; margin-bottom:9px}
+  .ed-block .drag-h{cursor:grab; color:#b8c0cf; font-size:15px; user-select:none; padding:0 2px}
+  .ed-block .btype{font-size:12px; font-weight:800; color:var(--brand-d); background:var(--brand-soft); padding:3px 9px; border-radius:6px}
+  .ed-block .bspacer{flex:1}
+  .ed-block .iconbtn{border:1px solid var(--line); background:#fff; border-radius:8px; min-width:36px; height:34px; cursor:pointer; color:var(--muted); font-size:14px; font-weight:700}
+  .ed-block .iconbtn:hover{background:#f5f7fb; color:var(--ink)}
+  .ed-block .iconbtn:disabled{opacity:.35}
+  .ed-block textarea, .ed-block input[type=text]{width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 11px; font-size:15px; font-family:inherit; resize:vertical; min-height:46px}
+  .ed-block textarea:focus, .ed-block input[type=text]:focus{border-color:var(--brand); outline:none; box-shadow:0 0 0 3px var(--brand-soft)}
+  .ed-block .row2{display:flex; gap:8px; margin-bottom:8px}
+  .ed-block .mini{font-size:11.5px; color:var(--muted); margin:2px 0 6px}
+  .ed-block .img-preview{max-width:170px; max-height:130px; border-radius:8px; border:1px solid var(--line); margin-top:8px; display:block}
+  .branch-opt{display:flex; gap:8px; margin-bottom:7px; align-items:center}
+  .branch-opt input{min-height:auto !important; height:40px}
+  .branch-opt .c{flex:0 0 38%}
+  .branch-opt .a{flex:1}
+  .branch-opt .rm{flex:none; border:1px solid var(--line); background:#fff; border-radius:8px; width:38px; height:40px; cursor:pointer; color:var(--muted)}
+  .add-bar{margin-top:16px; padding-top:14px; border-top:1px dashed var(--line)}
+  .add-bar .lbl{font-size:12px;font-weight:700;color:var(--muted); display:block; margin-bottom:8px}
+  .add-grid{display:flex; gap:7px; flex-wrap:wrap}
+  .addbtn{border:1px dashed #c4cede; background:#fbfcff; color:var(--brand-d); border-radius:9px; padding:9px 13px; font-size:13.5px; font-weight:700; cursor:pointer}
+  .addbtn:hover{background:var(--brand-soft); border-color:var(--brand)}
+  .ed-footer{position:sticky; bottom:0; background:linear-gradient(transparent,var(--panel) 22px,var(--panel)); padding:14px 0 8px; display:flex; gap:10px; justify-content:flex-end; margin-top:14px; align-items:center}
+  .ed-footer .save-state{margin-right:auto; font-size:12px; color:var(--muted)}
+
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:10px; font-size:13.5px; font-weight:600; opacity:0; pointer-events:none; transition:.25s; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  .store-status{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;max-width:200px;overflow:hidden}
+  .store-status:hover{background:#f7f9fc;border-color:#d3d9e4}
+  .store-status .dot{width:9px;height:9px;border-radius:50%;background:#c2c9d4;flex:none}
+  .store-status.on .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(31,157,87,.15)}
+  .store-status #storeLabel{overflow:hidden;text-overflow:ellipsis}
+  .modal-scrim{position:fixed;inset:0;background:rgba(15,20,35,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#fff;border-radius:16px;max-width:520px;width:100%;padding:22px 22px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal h3{margin:0 0 8px;font-size:18px}
+  .modal p{color:#3a4256;font-size:13.5px;margin:0 0 14px;line-height:1.75}
+  .modal code{background:#eef1f6;border-radius:5px;padding:1px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em}
+  .modal .m-status{background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:13.5px;margin-bottom:14px;line-height:1.7}
+  .modal .m-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .modal .hint{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7;border-top:1px dashed var(--line);padding-top:12px}
+
+  @media (max-width:900px){ .store-status #storeLabel{display:none} .store-status{padding:7px 9px} }
+
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr}
+    .hamb{display:block}
+    .logo small{display:none}
+    .sidebar{position:fixed; top:56px; left:0; bottom:0; width:84%; max-width:330px; z-index:30; transform:translateX(-105%); transition:transform .22s; box-shadow:0 10px 40px rgba(0,0,0,.18)}
+    .app.nav-open .sidebar{transform:translateX(0)}
+    .app.nav-open .scrim{display:block; position:fixed; inset:56px 0 0 0; background:rgba(15,20,35,.4); z-index:25}
+    .reading{padding:22px 18px 90px}
+    .breadcrumb{padding:0 18px}
+    .editor-tabs{display:flex}
+    .editor-cols{display:block; min-height:0}
+    .ed-pane, .pv-pane{padding:16px 16px 120px; border-left:none}
+    .editor-wrap[data-tab="edit"] .pv-pane{display:none}
+    .editor-wrap[data-tab="preview"] .ed-pane{display:none}
+    .pv-pane .reading{padding:18px 16px 60px}
+    .doc-actions{width:100%; margin-left:0}
+    .btn .lbl-full{display:none}
+  }
+  @media print{
+    .topbar,.sidebar,.scrim,.toc,.doc-actions,.editor-tabs,.ed-pane,.ed-toolbar,.runner,.breadcrumb{display:none !important}
+    .app{display:block;height:auto}
+    .main{overflow:visible}
+    .reading{max-width:none;padding:0}
+    .b-step,.b-check,.b-img img{box-shadow:none}
+    body{background:#fff}
+    .b-heading{page-break-after:avoid}
+    .b-step,.callout,.b-qa,.b-branch{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <button class="hamb" id="hamb" title="一覧">☰</button>
+    <div class="logo"><span class="mark">📘</span><div>手順書ナビ<br><small>マニュアル・手順書作成システム</small></div></div>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="btnView" title="表示設定（文字サイズ・配色）">🌓<span class="lbl-full"> 表示</span></button>
+    <button class="store-status" id="btnStore" title="データの保存先"><span class="dot"></span><span id="storeLabel">保存先</span></button>
+    <button class="btn ghost" id="btnImport" title="JSONを読み込む">📥<span class="lbl-full"> 読込</span></button>
+    <button class="btn ghost" id="btnExport" title="JSONに書き出す">📤<span class="lbl-full"> 書出</span></button>
+    <button class="btn ghost" id="btnPrint" title="印刷 / PDF" disabled>🖨️<span class="lbl-full"> 印刷</span></button>
+    <button class="btn primary" id="btnNew">＋<span class="lbl-full"> 新規作成</span></button>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="navseg" id="navseg">
+      <button data-nav="docs" class="active">📄 文書</button>
+      <button data-nav="courses">🎓 コース</button>
+      <button data-nav="qa">❓ Q&amp;A</button>
+    </div>
+    <div id="docFilters">
+      <div class="search" style="margin-bottom:13px"><span class="ico">🔍</span><input id="search" type="search" placeholder="キーワードで検索（本文も対象）"></div>
+      <div style="margin-bottom:13px"><div class="sec-title">種類</div><div class="filters" id="typeFilters"></div></div>
+      <div><div class="sec-title">カテゴリ</div><div class="filters" id="cats"></div></div>
+    </div>
+    <div class="doclist" id="doclist"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<input type="file" id="fileInput" accept="application/json,.json" hidden>
+<div id="modalRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+(function(){
+  const STORE_KEY = "tejunsho-navi-v1";
+  const LOCAL_KEY = "tejunsho-navi-local-v1";
+  const DRAFT_KEY = "tejunsho-navi-draft-v2";
+  const SETTINGS_KEY = "tejunsho-navi-settings-v1";
+  let settings = {fontScale:"m", theme:"light"};
+  function loadSettings(){ try{ const r=localStorage.getItem(SETTINGS_KEY); if(r) settings=Object.assign(settings,JSON.parse(r)); }catch(e){} }
+  function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){} }
+  function applySettings(){ const b=document.body; b.classList.remove("fs-s","fs-m","fs-l"); b.classList.add("fs-"+(settings.fontScale||"m")); b.classList.toggle("theme-dark", settings.theme==="dark"); }
+
+  const DOC_TYPES = {
+    procedure:{label:"手順書",      icon:"📋", desc:"番号付きの作業手順を順を追って。"},
+    workflow: {label:"ワークフロー", icon:"🔀", desc:"条件分岐を含む業務の流れ。"},
+    manual:   {label:"マニュアル",   icon:"📖", desc:"章立てで体系的にまとめた解説書。"},
+    checklist:{label:"チェックリスト",icon:"✅", desc:"確認項目を漏れなく点検。"},
+    faq:      {label:"FAQ",          icon:"❓", desc:"よくある質問と回答。"},
+    glossary: {label:"用語集",       icon:"📚", desc:"専門用語と意味の一覧。"},
+    general:  {label:"一般文書",     icon:"📄", desc:"自由形式のメモ・案内。"}
+  };
+  const BLOCK_TYPES = {
+    heading:{label:"見出し",  icon:"H"}, text:{label:"本文", icon:"¶"}, field:{label:"記入欄", icon:"▤"},
+    step:{label:"手順ステップ", icon:"1."}, substep:{label:"サブステップ", icon:"a."}, callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"},
+    branch:{label:"分岐", icon:"🔀"}, qa:{label:"Q&A", icon:"Q"}, term:{label:"用語", icon:"語"},
+    table:{label:"表", icon:"⊞"}, related:{label:"関連文書", icon:"🔗"}, image:{label:"画像", icon:"🖼"}, code:{label:"コード/コマンド", icon:"</>"}
+  };
+
+  /* ---------- State ---------- */
+  let docs = [], courses = [];
+  let currentId = null, currentCourseId = null, viewFromCourse = null;
+  let mode = "welcome";       // welcome | view | edit | typepick | course | courseEdit
+  let navView = "docs";       // docs | courses | qa
+  let qaQuery = "";
+  let query = "", activeCat = "すべて", activeType = "すべて", activeTag = "";
+  let draft = null, courseDraft = null, lastFocused = null;
+
+  /* local per-user state (checks / records / course progress) */
+  let local = {checks:{}, records:{}, course:{}, viewerName:""};
+
+  /* shared data-file (File System Access) */
+  const FSA = (typeof window!=="undefined") && ("showOpenFilePicker" in window) && window.isSecureContext;
+  let fileHandle = null;     // connected FileSystemFileHandle
+  let pendingHandle = null;  // remembered handle awaiting permission re-grant
+  let loadedVersion = 0;     // meta.version we last read from file
+  let writeTimer = null;
+
+  /* ---------- Persistence ---------- */
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  function ensureBids(blocks){ (blocks||[]).forEach(b=>{ if(!b.bid) b.bid=uid(); }); }
+  function load(){
+    let parsed=null;
+    try{ const raw=localStorage.getItem(STORE_KEY); if(raw) parsed=JSON.parse(raw); }catch(e){ console.warn(e); }
+    if(parsed){
+      if(Array.isArray(parsed)){ docs=parsed; courses=[]; } else { docs=parsed.docs||[]; courses=parsed.courses||[]; }
+    } else {
+      docs = seedDocs();
+      courses = [{ id:uid(), title:"新人オンボーディング（配属初日）",
+        description:"配属初日に、上から順に読んでください。読み終えたら「完了」を押すと進み具合が分かります。",
+        items: ["この手順書ナビの使い方","来客対応の基本手順","電話の取り次ぎフロー","開店前チェックリスト"]
+          .map(t=>{ const d=docs.find(x=>x.title===t); return d?{docId:d.id,note:""}:null; }).filter(Boolean) }];
+    }
+    docs.forEach(d=>ensureBids(d.blocks));
+    loadLocal();
+    if(!parsed) save();
+  }
+  function saveLocalCache(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({docs,courses})); }
+    catch(e){ toast("保存に失敗（容量超過の可能性）。画像を減らすか書出でバックアップを"); } }
+  function save(){ saveLocalCache(); scheduleFileWrite(); }
+  function loadLocal(){ try{ const r=localStorage.getItem(LOCAL_KEY); if(r) local=Object.assign(local,JSON.parse(r)); }catch(e){} }
+  function saveLocal(){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(local)); }catch(e){} }
+
+  function saveDraftAuto(){ if(!draft) return;
+    try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({draft,t:Date.now()})); }catch(e){}
+    const st=document.querySelector(".save-state"); if(st) st.textContent="下書き自動保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}); }
+  function clearDraftAuto(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
+  function getStoredDraft(){ try{ const r=localStorage.getItem(DRAFT_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+
+  /* check / record / course-progress helpers (per-user, local) */
+  function getCheck(docId,bid){ return !!(local.checks[docId] && local.checks[docId][bid]); }
+  function setCheck(docId,bid,v){ (local.checks[docId]=local.checks[docId]||{})[bid]=v; saveLocal(); }
+  function resetChecks(docId){ delete local.checks[docId]; saveLocal(); }
+  function checkStats(d){ const ids=(d.blocks||[]).filter(b=>b.type==="check").map(b=>b.bid);
+    return {total:ids.length, done:ids.filter(id=>getCheck(d.id,id)).length}; }
+  function addRecord(docId,rec){ (local.records[docId]=local.records[docId]||[]).unshift(rec); saveLocal(); }
+  function getRecords(docId){ return local.records[docId]||[]; }
+  function courseDone(cid,docId){ return !!(local.course[cid] && local.course[cid][docId]); }
+  function setCourseDone(cid,docId,v){ (local.course[cid]=local.course[cid]||{})[docId]=v; saveLocal(); }
+
+  /* ---------- Text + markdown-lite ---------- */
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+  function inlineMd(s){
+    s=s.replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>");
+    s=s.replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<em>$2</em>");
+    s=s.replace(/`([^`\n]+)`/g,'<code class="ic">$1</code>');
+    s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s;
+  }
+  function fmt(text){
+    const lines=esc(text).split(/\n/); let html=""; let i=0;
+    while(i<lines.length){ const ln=lines[i];
+      if(/^\s*[-・]\s+/.test(ln)){ const items=[]; while(i<lines.length&&/^\s*[-・]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-・]\s+/,"")); i++; } html+="<ul>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ul>"; }
+      else if(/^\s*\d+[.)]\s+/.test(ln)){ const items=[]; while(i<lines.length&&/^\s*\d+[.)]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+[.)]\s+/,"")); i++; } html+="<ol>"+items.map(t=>"<li>"+inlineMd(t)+"</li>").join("")+"</ol>"; }
+      else { const para=[]; while(i<lines.length&&lines[i].trim()!==""&&!/^\s*[-・]\s+/.test(lines[i])&&!/^\s*\d+[.)]\s+/.test(lines[i])){ para.push(lines[i]); i++; } if(para.length) html+='<span class="p">'+para.map(inlineMd).join("<br>")+"</span>"; else i++; }
+    }
+    return html;
+  }
+  function hlWith(html,q){ if(!q) return html; const re=new RegExp("("+escapeReg(esc(q))+")","gi");
+    return html.split(/(<[^>]+>)/).map(seg=> seg.charAt(0)==="<"?seg:seg.replace(re,"<mark>$1</mark>")).join(""); }
+  function hl(html){ return hlWith(html, query); }
+  const fmtHL = t => hl(fmt(t));
+
+  /* ---------- Derived ---------- */
+  function categories(){ const set=new Set(docs.map(d=>d.category).filter(Boolean));
+    return ["すべて", ...[...set].sort((a,b)=>a.localeCompare(b,"ja"))]; }
+  function docText(d){ const parts=[d.title,d.description,d.category,d.owner,(d.tags||[]).join(" ")];
+    (d.blocks||[]).forEach(b=>{ parts.push(b.text,b.caption,b.q,b.a,b.term,b.desc,b.label); (b.options||[]).forEach(o=>parts.push(o.c,o.a)); });
+    return parts.filter(Boolean).join(" ").toLowerCase(); }
+  function filteredDocs(){ return docs.filter(d=>{
+    if(activeCat!=="すべて"&&d.category!==activeCat) return false;
+    if(activeType!=="すべて"&&(d.type||"general")!==activeType) return false;
+    if(activeTag&&!(d.tags||[]).includes(activeTag)) return false;
+    if(query&&!docText(d).includes(query.toLowerCase())) return false; return true; }); }
+  function snippet(d){ if(!query) return ""; const q=query.toLowerCase();
+    const fields=[]; (d.blocks||[]).forEach(b=>{ [b.text,b.q,b.a,b.term,b.desc,b.label,b.caption].forEach(x=>{ if(x) fields.push(x); }); });
+    fields.unshift(d.description||""); for(const f of fields){ const i=f.toLowerCase().indexOf(q); if(i>=0){ const s=Math.max(0,i-18); return (s>0?"…":"")+f.slice(s,i+q.length+30)+"…"; } } return ""; }
+
+  /* ---------- Sidebar ---------- */
+  function renderSidebar(){
+    document.querySelectorAll("#navseg button").forEach(b=>b.classList.toggle("active",b.dataset.nav===navView));
+    document.getElementById("docFilters").style.display = navView==="docs"?"":"none";
+    const box=document.getElementById("doclist");
+    if(navView==="courses"){ renderCourseList(box); return; }
+    if(navView==="qa"){ box.innerHTML='<div class="empty-list">右側で質問を検索できます。<br>全文書のQ&amp;Aをまとめて探せます。</div>'; return; }
+
+    const usedTypes=new Set(docs.map(d=>d.type||"general"));
+    document.getElementById("typeFilters").innerHTML =
+      ['<button class="chip '+(activeType==="すべて"?"active":"")+'" data-type="すべて">すべて</button>']
+      .concat(Object.keys(DOC_TYPES).filter(t=>usedTypes.has(t)).map(t=>
+        '<button class="chip '+(activeType===t?"active":"")+'" data-type="'+t+'">'+DOC_TYPES[t].icon+" "+DOC_TYPES[t].label+"</button>")).join("");
+    document.getElementById("cats").innerHTML = categories().map(c=>
+      '<button class="chip '+(c===activeCat?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>").join("");
+
+    const list=filteredDocs();
+    const tagChip = activeTag ? '<div style="margin:0 2px 8px"><button class="chip active" id="clearTag">絞り込み中: #'+esc(activeTag)+' ✕</button></div>' : "";
+    if(!list.length){ box.innerHTML=tagChip+'<div class="empty-list">'+((query||activeCat!=="すべて"||activeType!=="すべて"||activeTag)?"該当する文書がありません":"まだ文書がありません。<br>「＋ 新規作成」から作りましょう。")+"</div>"; bindClearTag(); return; }
+    const groups={}; list.forEach(d=>{ const c=d.category||"未分類"; (groups[c]=groups[c]||[]).push(d); });
+    let html=tagChip;
+    Object.keys(groups).sort((a,b)=>a.localeCompare(b,"ja")).forEach(cat=>{
+      html+='<div class="docgroup-label">'+esc(cat)+"</div>";
+      groups[cat].forEach(d=>{ const tdef=DOC_TYPES[d.type||"general"]; const steps=(d.blocks||[]).filter(b=>b.type==="step").length;
+        const sn=snippet(d);
+        const meta=sn || [tdef?tdef.label:"", steps?steps+"ステップ":"", (d.tags||[]).slice(0,2).map(t=>"#"+t).join(" ")].filter(Boolean).join(" ・ ");
+        html+='<button class="docitem '+(d.id===currentId&&mode==="view"?"active":"")+'" data-id="'+d.id+'"><span class="di-ic">'+(tdef?tdef.icon:"📄")+'</span><span class="di-body"><span class="t">'+hl(esc(d.title||"（無題）"))+'</span><span class="m">'+hl(esc(meta||d.description||""))+"</span></span></button>"; });
+    });
+    box.innerHTML=html; bindClearTag();
+  }
+  function bindClearTag(){ const c=document.getElementById("clearTag"); if(c) c.onclick=()=>{ activeTag=""; renderSidebar(); }; }
+  function renderCourseList(box){
+    let html='<button class="btn primary" id="newCourse" style="width:100%;margin-bottom:10px">＋ 新しいコース</button>';
+    if(!courses.length) html+='<div class="empty-list">コースがありません。<br>「配属初日に読むセット」のような<br>読む順・必読リストを作れます。</div>';
+    else html+=courses.map(c=>{ const items=c.items||[]; const done=items.filter(it=>courseDone(c.id,it.docId)).length;
+      return '<button class="docitem '+(c.id===currentCourseId&&mode==="course"?"active":"")+'" data-cid="'+c.id+'"><span class="di-ic">🎓</span><span class="di-body"><span class="t">'+hl(esc(c.title))+'</span><span class="m">'+done+" / "+items.length+" 完了</span></span></button>"; }).join("");
+    box.innerHTML=html;
+    const nc=document.getElementById("newCourse"); if(nc) nc.onclick=()=>{ closeNav(); openCourseEditor(null); };
+  }
+
+  /* ---------- Shared body renderer ---------- */
+  function buildToc(blocks){
+    const hs=[]; blocks.forEach((b,i)=>{ if(b.type==="heading"&&(b.text||"").trim()) hs.push({i,level:b.level||1,text:b.text}); });
+    if(hs.length<2) return "";
+    return '<nav class="toc"><h4>目次</h4><ul>'+hs.map(h=>'<li class="lvl'+(h.level||1)+'"><a data-jump="blk-'+h.i+'">'+esc(h.text)+"</a></li>").join("")+"</ul></nav>";
+  }
+  function renderBlocks(blocks, ctx){
+    let stepNo=0, subNo=0;
+    return blocks.map((b,i)=>{ switch(b.type){
+      case "heading":{ const lv=b.level||1; const tag=lv===2?"h4":"h3"; return "<"+tag+' class="block b-heading lvl'+lv+'" id="blk-'+i+'">'+hl(inlineMd(esc(b.text)))+"</"+tag+">"; }
+      case "text": return '<div class="block b-text">'+fmtHL(b.text)+"</div>";
+      case "substep":{ subNo++; const letter=String.fromCharCode(96+Math.min(subNo,26)); return '<div class="block b-substep"><div class="snum">'+(stepNo?stepNo+"-":"")+letter+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
+      case "field": return (b.label||b.text)?'<div class="block b-field"><div class="bf-label">'+hl(esc(b.label||""))+'</div><div class="bf-body">'+(fmtHL(b.text)||'<span style="color:var(--muted)">（未記入）</span>')+"</div></div>":"";
+      case "related":{ const ids=(b.ids||[]).filter(id=>docs.find(x=>x.id===id)); if(!ids.length) return "";
+        return '<div class="block b-related"><div class="br-title">🔗 関連する文書</div><ul>'+ids.map(id=>{ const dd=docs.find(x=>x.id===id); const ic=DOC_TYPES[dd.type||"general"].icon; return '<li><a data-godoc="'+id+'">'+ic+" "+esc(dd.title)+"</a></li>"; }).join("")+"</ul></div>"; }
+      case "step":{ stepNo++; subNo=0; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
+      case "callout":{ const v=b.variant||"info"; const L={info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"}; return '<div class="block callout '+v+'"><span class="lbl">'+L[v]+"</span>"+fmtHL(b.text)+"</div>"; }
+      case "check":{ const checked = ctx&&ctx.docId ? getCheck(ctx.docId,b.bid) : false;
+        return '<label class="block b-check'+(checked?" done":"")+'" data-bid="'+(b.bid||"")+'"><input type="checkbox" '+(checked?"checked":"")+'><span class="ck-text">'+fmtHL(b.text)+"</span></label>"; }
+      case "branch":{ const opts=(b.options||[]).filter(o=>(o.c||o.a));
+        return '<div class="block b-branch"><div class="bq">'+hl(esc(b.text||"条件を選んでください"))+'</div><ul class="branches">'+opts.map(o=>'<li><span class="cond">'+hl(esc(o.c||""))+'</span><span class="arrow">→</span><span class="act">'+fmtHL(o.a||"")+"</span></li>").join("")+"</ul></div>"; }
+      case "qa": return '<div class="block b-qa"><div class="q">'+fmtHL(b.q||"")+'</div><div class="a">'+fmtHL(b.a||"")+"</div></div>";
+      case "term": return '<dl class="block b-term"><dt>'+hl(esc(b.term||""))+"</dt><dd>"+fmtHL(b.desc||"")+"</dd></dl>";
+      case "table": return renderTable(b.text);
+      case "image": return b.data?'<figure class="block b-img"><img src="'+b.data+'" alt="'+esc(b.caption||"")+'">'+(b.caption?'<figcaption>'+hl(esc(b.caption))+"</figcaption>":"")+"</figure>":"";
+      case "code": return '<pre class="block b-code">'+esc(b.text)+"</pre>";
+      default: return "";
+    } }).join("");
+  }
+  function renderTable(text){
+    const rows=String(text||"").split(/\n/).map(r=>r.trim()).filter(Boolean).map(r=>r.split("|").map(c=>c.trim()));
+    if(!rows.length) return "";
+    const head=rows[0], body=rows.slice(1);
+    let h='<table class="block b-table"><thead><tr>'+head.map(c=>"<th>"+hl(inlineMd(esc(c)))+"</th>").join("")+"</tr></thead>";
+    if(body.length) h+="<tbody>"+body.map(r=>"<tr>"+r.map(c=>"<td>"+hl(inlineMd(esc(c)))+"</td>").join("")+"</tr>").join("")+"</tbody>";
+    return h+"</table>";
+  }
+  function docBodyHTML(d, ctx){ const body=renderBlocks(d.blocks||[], ctx);
+    return buildToc(d.blocks||[]) + '<div class="doc-body">'+(body||'<p class="b-text" style="color:var(--muted)">（本文がありません）</p>')+"</div>"; }
+
+  /* ---------- Main render ---------- */
+  function render(){
+    renderSidebar();
+    document.getElementById("btnPrint").disabled = !(mode==="view" && currentId);
+    const main=document.getElementById("main");
+    if(mode==="edit"){ main.innerHTML=""; main.appendChild(renderEditor()); return; }
+    if(mode==="courseEdit"){ main.innerHTML=""; main.appendChild(renderCourseEditor()); return; }
+    if(mode==="typepick"){ main.innerHTML=typePickHTML(); bindTypePick(); return; }
+    if(mode==="qahub"){ main.innerHTML=renderQaHub(); bindQaHub(); return; }
+    if(mode==="course"){ const c=courses.find(x=>x.id===currentCourseId); if(c){ main.innerHTML=renderCourseView(c); bindCourseView(c); return; } mode="welcome"; }
+    const doc=docs.find(d=>d.id===currentId);
+    if(!doc||mode==="welcome"){ main.innerHTML=welcomeHTML(); bindWelcome(); return; }
+    main.innerHTML=renderViewer(doc); bindViewer(doc);
+  }
+
+  function restoreBannerHTML(){ const sd=getStoredDraft(); if(!sd||!sd.draft) return "";
+    const t=sd.draft.title?"「"+esc(sd.draft.title)+"」":"無題の文書";
+    return '<div class="restore-banner"><span class="rb-msg">📝 前回の下書き'+t+'が残っています。編集を再開しますか？</span><button class="btn primary" id="rbResume">再開する</button><button class="btn" id="rbDiscard">破棄</button></div>'; }
+  function welcomeHTML(){ return restoreBannerHTML()+'<div class="welcome"><div class="big">📘</div><h2>手順書ナビへようこそ</h2><p>マニュアル・手順書・ワークフロー・チェックリストなどを、誰でも見やすく作成・閲覧できます。困ったら「❓ Q&amp;A」、新人の方は「🎓 コース」から読む順を確認できます。</p><div class="actions"><button class="btn primary" id="wNew">＋ 新しい文書を作る</button><button class="btn" id="wQa">❓ Q&amp;A を見る</button><button class="btn" id="wCourse">🎓 コースを見る</button></div></div>'; }
+  function bindWelcome(){ const n=document.getElementById("wNew"); if(n) n.onclick=()=>startNew();
+    const q=document.getElementById("wQa"); if(q) q.onclick=()=>{ navView="qa"; mode="qahub"; currentId=null; render(); };
+    const c=document.getElementById("wCourse"); if(c) c.onclick=()=>{ navView="courses"; const f=courses[0]; if(f){ currentCourseId=f.id; mode="course"; } render(); };
+    const r=document.getElementById("rbResume"),d=document.getElementById("rbDiscard");
+    if(r) r.onclick=()=>{ const sd=getStoredDraft(); if(sd&&sd.draft){ draft=sd.draft; mode="edit"; render(); } };
+    if(d) d.onclick=()=>{ clearDraftAuto(); render(); toast("下書きを破棄しました"); }; }
+
+  /* ---------- Document viewer ---------- */
+  function runnerHTML(d){
+    const s=checkStats(d); if(!s.total) return "";
+    const pct=s.total?Math.round(s.done/s.total*100):0; const recs=getRecords(d.id).slice(0,5);
+    return '<div class="runner"><div class="rn-top"><strong>✅ チェックの進捗</strong><span id="rnText">'+s.done+" / "+s.total+' 完了</span></div><div class="pbar"><div class="pbar-fill" id="rnFill" style="width:'+pct+'%"></div></div><div class="rn-actions"><button class="btn primary" id="rnRecord">✓ 完了を記録</button><button class="btn" id="rnReset">チェックをリセット</button></div>'
+      + (recs.length?'<div class="rn-hist"><div class="rn-hist-t">実施履歴（この端末）</div>'+recs.map(r=>'<div class="rn-rec"><span>'+esc(r.name||"匿名")+"</span><span>"+r.done+"/"+r.total+"</span><span>"+new Date(r.at).toLocaleString("ja-JP")+"</span></div>").join("")+"</div>":"")
+      + "</div>";
+  }
+  function reviewStatus(d){ if(!d.reviewEvery) return null;
+    if(!d.reviewed) return {overdue:true, never:true, next:null};
+    const next=new Date(d.reviewed); next.setMonth(next.getMonth()+d.reviewEvery);
+    return {overdue: Date.now()>next.getTime(), never:false, next:next}; }
+  function fdate(dt){ return dt.getFullYear()+"/"+(dt.getMonth()+1)+"/"+dt.getDate(); }
+  function historyHTML(d){ const h=(d.history||[]); if(!h.length) return "";
+    return '<details class="doc-history"><summary>変更履歴（'+h.length+"件）</summary><ul>"+h.slice(0,12).map(e=>'<li><span class="hd">'+new Date(e.at).toLocaleDateString("ja-JP")+"</span> "+esc(e.note||"更新")+"</li>").join("")+"</ul></details>"; }
+  function renderViewer(d){
+    const tdef=DOC_TYPES[d.type||"general"]; const meta=[]; const upd=d.updated?new Date(d.updated):null;
+    if(upd) meta.push("最終更新: "+fdate(upd));
+    if(d.owner) meta.push("オーナー: "+d.owner);
+    if(d.reviewed) meta.push("最終確認: "+d.reviewed);
+    const rs=reviewStatus(d); if(rs&&rs.next) meta.push("次回見直し: "+fdate(rs.next));
+    const steps=(d.blocks||[]).filter(b=>b.type==="step").length; if(steps) meta.push("全"+steps+"ステップ");
+    let crumb=""; if(viewFromCourse){ const c=courses.find(x=>x.id===viewFromCourse); if(c) crumb='<div class="breadcrumb"><button id="vBack">← 🎓 '+esc(c.title)+" に戻る</button></div>"; }
+    return crumb + '<article class="reading"><header class="doc-head"><div class="doc-badges">'
+      + (tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")
+      + (d.category?'<span class="doc-cat">'+esc(d.category)+"</span>":"")
+      + (rs&&rs.overdue?'<span class="doc-stale">⚠️ 要確認'+(rs.never?"（未確認）":"（見直し期限超過）")+"</span>":"") + "</div>"
+      + '<h1 class="doc-title">'+hl(esc(d.title||"（無題）"))+"</h1>"
+      + (d.description?'<p class="doc-desc">'+hl(esc(d.description))+"</p>":"")
+      + '<div class="doc-meta">'+meta.map(m=>"<span>"+esc(m)+"</span>").join("")
+      + '<span class="tags">'+(d.tags||[]).map(t=>'<span class="tag" data-tag="'+esc(t)+'">#'+esc(t)+"</span>").join("")+"</span>"
+      + '<span class="doc-actions"><button class="btn" id="vReview" title="今日付で最終確認日を更新">✅ 確認済み</button><button class="btn" id="vReport">⚠ 報告</button><button class="btn" id="vEdit">✏️ 編集</button><button class="btn" id="vDup">⧉ 複製</button><button class="btn danger" id="vDel">🗑 削除</button></span>'
+      + "</div></header>" + runnerHTML(d) + docBodyHTML(d,{docId:d.id}) + historyHTML(d) + "</article>";
+  }
+  function bindViewer(d){
+    const main=document.getElementById("main");
+    const back=main.querySelector("#vBack"); if(back) back.onclick=()=>{ currentCourseId=viewFromCourse; mode="course"; navView="courses"; render(); main.scrollTop=0; };
+    main.querySelector("#vEdit").onclick=()=>openEditor(d.id);
+    main.querySelector("#vDup").onclick=()=>duplicateDoc(d.id);
+    main.querySelector("#vDel").onclick=()=>deleteDoc(d.id);
+    main.querySelector("#vReview").onclick=()=>{ d.reviewed=new Date().toISOString().slice(0,10); d.updated=Date.now(); (d.history=d.history||[]).unshift({at:Date.now(),note:"内容を確認（最終確認日を更新）"}); d.history=d.history.slice(0,30); save(); render(); toast("確認済みにしました（最終確認日を更新）"); };
+    main.querySelector("#vReport").onclick=()=>openReportModal(d);
+    main.querySelectorAll("[data-tag]").forEach(t=>t.onclick=()=>{ activeTag=t.dataset.tag; navView="docs"; mode="welcome"; currentId=null; closeNav(); render(); toast("タグ #"+activeTag+" で絞り込み中"); });
+    const rec=main.querySelector("#rnRecord"); if(rec) rec.onclick=()=>recordChecklist(d);
+    const rs=main.querySelector("#rnReset"); if(rs) rs.onclick=()=>{ if(confirm("この端末のチェックをすべて外しますか？")){ resetChecks(d.id); render(); } };
+    bindBodyInteractions(main, d, true);
+    if(query){ const mk=main.querySelector("mark"); if(mk) setTimeout(()=>mk.scrollIntoView({behavior:"smooth",block:"center"}),60); }
+  }
+  function openReportModal(d){ const r=document.getElementById("modalRoot");
+    const txt="【手順書ナビ 報告】\n文書："+(d.title||"")+"\nオーナー："+(d.owner||"(未設定)")+"\n気になる点（古い・分かりにくい等）：\n";
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal"><h3>⚠ 気になる点を報告</h3><p>内容が古い・分かりにくい等があれば、下の文面を<b>Teamsでオーナー</b>に送ってください。LGWAN内のため、ここから自動送信はしません。</p><textarea id="repText" style="width:100%;height:150px;border:1px solid var(--line);border-radius:9px;padding:10px;font-family:inherit;font-size:14px">'+esc(txt)+'</textarea><div class="m-actions" style="margin-top:12px"><button class="btn primary" id="repCopy">コピー</button><button class="btn" id="mClose">閉じる</button></div></div></div>';
+    const $=id=>document.getElementById(id); $("mClose").onclick=closeModal; $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); };
+    $("repCopy").onclick=async()=>{ const ta=$("repText"); try{ await navigator.clipboard.writeText(ta.value); toast("コピーしました。Teamsに貼り付けてください"); }catch(e){ ta.focus(); ta.select(); try{document.execCommand("copy");}catch(_){} toast("コピーしました"); } };
+  }
+  function bindBodyInteractions(root, d, persist){
+    root.querySelectorAll("[data-jump]").forEach(a=>{ a.onclick=e=>{ e.preventDefault(); const t=root.querySelector("#"+a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); }; });
+    if(persist) root.querySelectorAll("[data-godoc]").forEach(a=>{ a.style.cursor="pointer"; a.onclick=()=>{ currentId=a.dataset.godoc; viewFromCourse=null; mode="view"; render(); document.getElementById("main").scrollTop=0; }; });
+    root.querySelectorAll(".b-check").forEach(lbl=>{ const cb=lbl.querySelector("input");
+      if(!persist||!d){ cb.disabled=true; return; }
+      cb.onchange=()=>{ setCheck(d.id, lbl.dataset.bid, cb.checked); lbl.classList.toggle("done",cb.checked); updateRunner(d); }; });
+  }
+  function updateRunner(d){ const s=checkStats(d); const fill=document.getElementById("rnFill"); const txt=document.getElementById("rnText");
+    if(fill) fill.style.width=(s.total?Math.round(s.done/s.total*100):0)+"%"; if(txt) txt.textContent=s.done+" / "+s.total+" 完了"; }
+  function recordChecklist(d){ const s=checkStats(d);
+    const name=prompt("実施者名を入力してください（記録に残ります）", local.viewerName||""); if(name===null) return;
+    local.viewerName=name; saveLocal(); addRecord(d.id,{name:name.trim(),at:Date.now(),done:s.done,total:s.total}); render(); toast("実施を記録しました"); }
+
+  /* ---------- Course view ---------- */
+  function renderCourseView(c){
+    const items=(c.items||[]); const done=items.filter(it=>courseDone(c.id,it.docId)).length;
+    const pct=items.length?Math.round(done/items.length*100):0;
+    let rows=items.map((it,i)=>{ const d=docs.find(x=>x.id===it.docId); const tdef=d?DOC_TYPES[d.type||"general"]:null; const dn=courseDone(c.id,it.docId);
+      return '<div class="course-item'+(dn?" done":"")+'"><span class="ci-no">'+(dn?"✓":(i+1))+'</span><div class="ci-main">'
+        + (d?'<button class="open" data-open="'+d.id+'"><span class="ci-ic">'+(tdef?tdef.icon:"📄")+'</span> '+esc(d.title)+"</button>":'<div class="open" style="color:var(--danger)">（削除された文書）</div>')
+        + (it.note?'<div class="note">'+esc(it.note)+"</div>":"")
+        + '</div><label class="chk"><input type="checkbox" data-cdone="'+it.docId+'" '+(dn?"checked":"")+">完了</label></div>"; }).join("");
+    if(!items.length) rows='<div class="empty-list">このコースにはまだ文書がありません。「コースを編集」から追加してください。</div>';
+    return '<article class="reading"><header class="doc-head"><div class="doc-badges"><span class="doc-type">🎓 オンボーディングコース</span></div>'
+      + '<h1 class="doc-title">'+esc(c.title)+"</h1>" + (c.description?'<p class="doc-desc">'+esc(c.description)+"</p>":"")
+      + '<div class="doc-meta"><span class="doc-actions" style="margin-left:0"><button class="btn" id="cEdit">✏️ コースを編集</button><button class="btn danger" id="cDel">🗑 削除</button></span></div></header>'
+      + '<div class="course-progress"><div class="cp-top"><span>進み具合</span><span>'+done+" / "+items.length+" 完了（"+pct+'%）</span></div><div class="pbar"><div class="pbar-fill" style="width:'+pct+'%"></div></div></div>'
+      + (items.length?'<div style="margin-bottom:14px"><button class="btn primary" id="cNext">▶ 次の未読を開く</button></div>':"")
+      + rows + "</article>";
+  }
+  function bindCourseView(c){
+    const main=document.getElementById("main");
+    main.querySelectorAll("[data-open]").forEach(b=> b.onclick=()=>{ currentId=b.dataset.open; viewFromCourse=c.id; mode="view"; render(); main.scrollTop=0; });
+    main.querySelectorAll("[data-cdone]").forEach(cb=> cb.onchange=()=>{ setCourseDone(c.id, cb.dataset.cdone, cb.checked); render(); });
+    const e=main.querySelector("#cEdit"); if(e) e.onclick=()=>openCourseEditor(c.id);
+    const del=main.querySelector("#cDel"); if(del) del.onclick=()=>{ if(confirm("コース「"+c.title+"」を削除しますか？（中の文書は消えません）")){ courses=courses.filter(x=>x.id!==c.id); currentCourseId=null; mode="welcome"; navView="docs"; save(); render(); toast("コースを削除しました"); } };
+    const nx=main.querySelector("#cNext"); if(nx) nx.onclick=()=>{ const next=(c.items||[]).find(it=>!courseDone(c.id,it.docId)); if(!next){ toast("すべて完了しています！🎉"); return; } currentId=next.docId; viewFromCourse=c.id; mode="view"; render(); main.scrollTop=0; };
+  }
+
+  /* ---------- Course editor ---------- */
+  function openCourseEditor(id){ const src=id?courses.find(c=>c.id===id):null;
+    courseDraft = src?JSON.parse(JSON.stringify(src)):{id:null,title:"",description:"",items:[]};
+    if(!courseDraft.items) courseDraft.items=[]; mode="courseEdit"; render();
+    const t=document.querySelector("#ceTitle"); if(t) t.focus(); }
+  function renderCourseEditor(){
+    const wrap=document.createElement("div"); wrap.className="reading"; const c=courseDraft;
+    wrap.innerHTML='<h2 style="margin:0 0 16px">'+(c.id?"コースを編集":"新しいコース")+"</h2>"
+      + '<div class="ed-row"><div class="field"><label>コース名 *</label><input type="text" id="ceTitle" value="'+esc(c.title)+'" placeholder="例）新人オンボーディング（配属初日）"></div></div>'
+      + '<div class="ed-row"><div class="field"><label>説明</label><textarea id="ceDesc" rows="2" placeholder="このコースの目的・対象者など">'+esc(c.description)+"</textarea></div></div>"
+      + '<div class="sec-title" style="margin:14px 4px 8px">読む順に並べる</div><div id="ceItems"></div>'
+      + '<div class="ci-add"><select id="ceAdd"></select></div>'
+      + '<div class="ed-footer" style="background:none"><button class="btn" id="ceCancel">キャンセル</button><button class="btn primary" id="ceSave">💾 保存</button></div>';
+
+    const syncMeta=()=>{ c.title=wrap.querySelector("#ceTitle").value; c.description=wrap.querySelector("#ceDesc").value; };
+    wrap.querySelector("#ceTitle").addEventListener("input",syncMeta);
+    wrap.querySelector("#ceDesc").addEventListener("input",syncMeta);
+
+    const itemsBox=wrap.querySelector("#ceItems"); const addSel=wrap.querySelector("#ceAdd");
+    const refreshAdd=()=>{ const used=new Set(c.items.map(it=>it.docId));
+      const opts=docs.filter(d=>!used.has(d.id));
+      addSel.innerHTML='<option value="">＋ 文書を追加…</option>'+opts.map(d=>'<option value="'+d.id+'">'+(DOC_TYPES[d.type||"general"].icon)+" "+esc(d.title)+"</option>").join("");
+      addSel.disabled=!opts.length; if(!opts.length) addSel.innerHTML='<option>追加できる文書がありません</option>'; };
+    const drawItems=()=>{ if(!c.items.length){ itemsBox.innerHTML='<div class="empty-list">下のメニューから文書を追加してください</div>'; return; }
+      itemsBox.innerHTML=""; c.items.forEach((it,i)=>{ const d=docs.find(x=>x.id===it.docId); const tdef=d?DOC_TYPES[d.type||"general"]:null;
+        const row=document.createElement("div"); row.className="ci-item";
+        row.innerHTML='<span class="ci-no">'+(i+1)+'</span><div class="ci-main"><div class="ci-title">'+(tdef?tdef.icon+" ":"")+esc(d?d.title:"（削除された文書）")+'</div><input type="text" class="ci-note" placeholder="補足メモ（任意・読者に表示）" value="'+esc(it.note||"")+'"></div>'
+          + '<button class="iconbtn" data-mv="up" '+(i===0?"disabled":"")+'>▲</button><button class="iconbtn" data-mv="down" '+(i===c.items.length-1?"disabled":"")+'>▼</button><button class="iconbtn" data-rm="1">✕</button>';
+        row.querySelector(".ci-note").addEventListener("input",e=>{ it.note=e.target.value; });
+        row.querySelector('[data-mv="up"]').onclick=()=>{ if(i>0){ const t=c.items[i-1]; c.items[i-1]=c.items[i]; c.items[i]=t; drawItems(); } };
+        row.querySelector('[data-mv="down"]').onclick=()=>{ if(i<c.items.length-1){ const t=c.items[i+1]; c.items[i+1]=c.items[i]; c.items[i]=t; drawItems(); } };
+        row.querySelector('[data-rm="1"]').onclick=()=>{ c.items.splice(i,1); drawItems(); refreshAdd(); };
+        itemsBox.appendChild(row); }); };
+    addSel.addEventListener("change",()=>{ if(addSel.value){ c.items.push({docId:addSel.value,note:""}); drawItems(); refreshAdd(); } });
+    drawItems(); refreshAdd();
+
+    wrap.querySelector("#ceCancel").onclick=()=>{ courseDraft=null; mode=currentCourseId?"course":"welcome"; navView="courses"; render(); };
+    wrap.querySelector("#ceSave").onclick=()=>{ syncMeta(); if(!c.title.trim()){ toast("コース名を入力してください"); return; }
+      if(c.id){ const i=courses.findIndex(x=>x.id===c.id); if(i>=0) courses[i]=c; } else { c.id=uid(); courses.unshift(c); }
+      currentCourseId=c.id; save(); mode="course"; navView="courses"; courseDraft=null; render(); toast("コースを保存しました"); };
+    return wrap;
+  }
+
+  /* ---------- Q&A hub (cross-document FAQ) ---------- */
+  function qaEntries(){ const e=[]; docs.forEach(d=>(d.blocks||[]).forEach(b=>{ if(b.type==="qa" && ((b.q||"").trim()||(b.a||"").trim())) e.push({q:b.q||"",a:b.a||"",doc:d}); })); return e; }
+  function qaListHTML(){
+    const entries=qaEntries(); const q=qaQuery.trim().toLowerCase();
+    if(!entries.length) return '<div class="empty-list">まだQ&amp;Aがありません。<br>文書に「Q&amp;A」ブロックを追加するか、種類「FAQ」で文書を作成すると、ここに集まります。</div>';
+    const filtered = q ? entries.filter(e=>(e.q+" "+e.a+" "+(e.doc.title||"")+" "+(e.doc.category||"")).toLowerCase().includes(q)) : entries;
+    if(!filtered.length) return '<div class="empty-list">「'+esc(qaQuery)+'」に一致するQ&amp;Aはありません。</div>';
+    const open=!!q;
+    return filtered.map(e=>{ const tdef=DOC_TYPES[e.doc.type||"general"];
+      return '<div class="qa-card'+(open?" open":"")+'"><button class="qa-q-btn">'+hlWith(esc(e.q||"（質問未入力）"),qaQuery)+'</button>'
+        +'<div class="qa-a-body">'+(hlWith(fmt(e.a),qaQuery)||'<span style="color:var(--muted)">（回答未入力）</span>')
+        +'<div class="src">📄 出典: <a data-godoc-q="'+e.doc.id+'">'+(tdef?tdef.icon:"📄")+" "+esc(e.doc.title)+(e.doc.category?"（"+esc(e.doc.category)+"）":"")+"</a></div></div></div>"; }).join("");
+  }
+  function renderQaHub(){ const total=qaEntries().length;
+    return '<div class="qahub"><h2>❓ よくある質問</h2><p style="color:var(--muted);margin:4px 0 16px">全文書のQ&amp;Aをまとめて検索できます（全'+total+'件）。質問をクリックすると答えが開きます。</p>'
+      +'<div class="search" style="margin-bottom:16px"><span class="ico">🔍</span><input id="qaSearch" type="search" placeholder="質問を入力（例：パスワード／打刻／電話）" value="'+esc(qaQuery)+'"></div>'
+      +'<div id="qaList">'+qaListHTML()+"</div></div>";
+  }
+  function bindQaList(main){
+    main.querySelectorAll(".qa-card").forEach(c=>{ const btn=c.querySelector(".qa-q-btn"); if(btn) btn.onclick=()=>c.classList.toggle("open"); });
+    main.querySelectorAll("[data-godoc-q]").forEach(a=>{ a.style.cursor="pointer"; a.onclick=()=>{ currentId=a.dataset.godocQ; viewFromCourse=null; navView="docs"; mode="view"; render(); document.getElementById("main").scrollTop=0; }; });
+  }
+  function bindQaHub(){ const main=document.getElementById("main"); const s=main.querySelector("#qaSearch");
+    if(s) s.oninput=()=>{ qaQuery=s.value; main.querySelector("#qaList").innerHTML=qaListHTML(); bindQaList(main); };
+    bindQaList(main);
+  }
+
+  /* ---------- Type picker ---------- */
+  function startNew(){ closeNav(); mode="typepick"; render(); }
+  function typePickHTML(){ return '<div class="typepick"><h2>どんな文書を作りますか？</h2><p>種類を選ぶと、その形式に合った雛形が入ります（あとから自由に変更できます）。</p><div class="type-grid">'
+    + Object.keys(DOC_TYPES).map(t=>{ const x=DOC_TYPES[t]; return '<button class="type-card" data-newtype="'+t+'"><div class="tc-ic">'+x.icon+'</div><div class="tc-name">'+x.label+'</div><div class="tc-desc">'+x.desc+"</div></button>"; }).join("")
+    + '</div><div style="margin-top:22px"><button class="btn" id="tpCancel">← 戻る</button></div></div>'; }
+  function bindTypePick(){ const main=document.getElementById("main");
+    main.querySelectorAll("[data-newtype]").forEach(b=>b.onclick=()=>openEditor(null,b.dataset.newtype));
+    main.querySelector("#tpCancel").onclick=()=>{ mode=currentId?"view":"welcome"; render(); }; }
+
+  /* ---------- Templates ---------- */
+  function templateFor(type){ switch(type){
+    case "procedure": return [
+      {type:"field",label:"目的（なぜ行うか）",text:""},
+      {type:"field",label:"前提・必要なもの",text:""},
+      {type:"field",label:"担当（誰が行うか）",text:""},
+      {type:"heading",text:"手順",level:1},{type:"step",text:""},{type:"step",text:""},{type:"step",text:""},
+      {type:"callout",variant:"tip",text:"完了の目安（うまくいった状態）："},
+      {type:"callout",variant:"warning",text:"うまくいかない時の対処："}];
+    case "workflow": return [
+      {type:"field",label:"目的",text:""},{type:"field",label:"担当",text:""},
+      {type:"heading",text:"判断の流れ",level:1},{type:"step",text:""},
+      {type:"branch",text:"〇〇の場合は？",options:[{c:"はい",a:""},{c:"いいえ",a:""}]},{type:"step",text:""}];
+    case "manual": return [
+      {type:"field",label:"このマニュアルの目的・対象者",text:""},
+      {type:"heading",text:"第1章 概要",level:1},{type:"text",text:""},
+      {type:"heading",text:"1-1 ポイント",level:2},{type:"text",text:""},
+      {type:"heading",text:"第2章 ",level:1},{type:"text",text:""}];
+    case "checklist": return [
+      {type:"field",label:"目的・いつ使うか",text:""},
+      {type:"text",text:"上から順に確認してください。終わったら「完了を記録」を押すと履歴が残ります。"},
+      {type:"check",text:""},{type:"check",text:""},{type:"check",text:""}];
+    case "faq": return [{type:"qa",q:"",a:""},{type:"qa",q:"",a:""}];
+    case "glossary": return [{type:"term",term:"",desc:""},{type:"term",term:"",desc:""}];
+    default: return [{type:"field",label:"目的",text:""},{type:"heading",text:"",level:1},{type:"text",text:""}];
+  } }
+
+  /* ---------- Document editor ---------- */
+  function openEditor(id, newType){ const src=id?docs.find(d=>d.id===id):null;
+    draft = src?JSON.parse(JSON.stringify(src)):{id:null,type:newType||"general",title:"",category:"",description:"",tags:[],blocks:templateFor(newType||"general")};
+    if(!draft.blocks) draft.blocks=[]; if(!draft.type) draft.type="general"; ensureBids(draft.blocks);
+    viewFromCourse=null; mode="edit"; render(); const ti=document.querySelector("#edTitle"); if(ti) ti.focus(); saveDraftAuto(); }
+
+  function renderEditor(){
+    const wrap=document.createElement("div"); wrap.className="editor-wrap"; wrap.dataset.tab="edit";
+    const catOptions=categories().filter(c=>c!=="すべて");
+    const typeOpts=Object.keys(DOC_TYPES).map(t=>'<option value="'+t+'" '+(draft.type===t?"selected":"")+">"+DOC_TYPES[t].icon+" "+DOC_TYPES[t].label+"</option>").join("");
+    wrap.innerHTML='<div class="editor-tabs"><button data-tab="edit" class="active">✏️ 編集</button><button data-tab="preview">👁 プレビュー</button></div>'
+      + '<div class="editor-cols"><div class="ed-pane">'
+      + '<div class="ed-toolbar"><button data-md="bold" title="太字"><b>B</b></button><button data-md="italic" title="斜体"><i>I</i></button><button data-md="code" title="コード">&lt;/&gt;</button><button data-md="link" title="リンク">🔗</button><span class="sep"></span><button data-md="ul" title="箇条書き">• 一覧</button><button data-md="ol" title="番号リスト">1. 番号</button></div>'
+      + '<h2 style="margin:4px 0 16px">'+(draft.id?"文書を編集":"新しい文書")+"</h2>"
+      + '<div class="ed-row"><div class="field" style="flex:2"><label>タイトル *</label><input type="text" id="edTitle" value="'+esc(draft.title)+'" placeholder="例）来客対応の手順"></div><div class="field"><label>種類</label><select id="edType">'+typeOpts+"</select></div></div>"
+      + '<div class="ed-row"><div class="field"><label>カテゴリ</label><input type="text" id="edCat" list="catList" value="'+esc(draft.category)+'" placeholder="例）接客 / 経理 / システム操作"><datalist id="catList">'+catOptions.map(c=>'<option value="'+esc(c)+'">').join("")+'</datalist></div><div class="field"><label>タグ（カンマ区切り）</label><input type="text" id="edTags" value="'+esc((draft.tags||[]).join(", "))+'" placeholder="例）新人向け, 必須"></div></div>'
+      + '<div class="ed-row"><div class="field"><label>概要（一覧・検索に表示）</label><textarea id="edDesc" rows="2" placeholder="この文書の目的を一言で">'+esc(draft.description)+"</textarea></div></div>"
+      + '<div class="ed-row"><div class="field"><label>オーナー（管理担当）</label><input type="text" id="edOwner" value="'+esc(draft.owner||"")+'" placeholder="例）総務課 / 山田"></div>'
+        + '<div class="field"><label>最終確認日</label><input type="date" id="edReviewed" value="'+esc(draft.reviewed||"")+'"></div>'
+        + '<div class="field"><label>見直し間隔</label><select id="edReviewEvery">'+[[0,"なし"],[1,"1ヶ月ごと"],[3,"3ヶ月ごと"],[6,"6ヶ月ごと"],[12,"1年ごと"]].map(function(p){return '<option value="'+p[0]+'" '+((draft.reviewEvery||0)===p[0]?"selected":"")+">"+p[1]+"</option>";}).join("")+"</select></div></div>"
+      + '<div class="ed-row"><div class="field"><label>今回の変更メモ（任意・変更履歴に残ります）</label><input type="text" id="edChangeNote" placeholder="例）連絡先を更新 / 手順3を追加"></div></div>'
+      + '<div class="sec-title" style="margin:16px 4px 4px">本文ブロック</div><div id="chunkHint"></div><div class="ed-blocks" id="edBlocks"></div>'
+      + '<div class="add-bar"><span class="lbl">ブロックを追加</span><div class="add-grid">'+Object.keys(BLOCK_TYPES).map(t=>'<button class="addbtn" data-add="'+t+'">'+BLOCK_TYPES[t].icon+" "+BLOCK_TYPES[t].label+"</button>").join("")+"</div></div>"
+      + '<div class="ed-footer"><span class="save-state"></span><button class="btn" id="edCancel">キャンセル</button><button class="btn primary" id="edSave">💾 保存</button></div></div>'
+      + '<div class="pv-pane"><div class="reading" id="previewBody"></div></div></div>';
+
+    wrap.querySelectorAll(".editor-tabs button").forEach(btn=>btn.onclick=()=>{ wrap.dataset.tab=btn.dataset.tab; wrap.querySelectorAll(".editor-tabs button").forEach(b=>b.classList.toggle("active",b===btn)); if(btn.dataset.tab==="preview") updatePreview(); });
+    const syncMeta=()=>{ draft.title=wrap.querySelector("#edTitle").value; draft.type=wrap.querySelector("#edType").value; draft.category=wrap.querySelector("#edCat").value.trim(); draft.description=wrap.querySelector("#edDesc").value; draft.tags=wrap.querySelector("#edTags").value.split(",").map(s=>s.trim()).filter(Boolean); draft.owner=wrap.querySelector("#edOwner").value.trim(); draft.reviewed=wrap.querySelector("#edReviewed").value; draft.reviewEvery=+wrap.querySelector("#edReviewEvery").value; schedulePreview(); };
+    ["#edTitle","#edType","#edCat","#edDesc","#edTags","#edOwner","#edReviewed","#edReviewEvery"].forEach(s=>wrap.querySelector(s).addEventListener("input",syncMeta));
+    wrap.querySelector("#edReviewEvery").addEventListener("change",syncMeta);
+    wrap.querySelectorAll("[data-md]").forEach(b=>b.onmousedown=e=>{ e.preventDefault(); applyMd(b.dataset.md); });
+    renderEdBlocks(wrap.querySelector("#edBlocks"));
+    wrap.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ syncMeta(); addBlock(b.dataset.add, wrap.querySelector("#edBlocks")); });
+    wrap.querySelector("#edCancel").onclick=()=>{ clearDraftAuto(); draft=null; mode=currentId?"view":"welcome"; render(); };
+    wrap.querySelector("#edSave").onclick=()=>{ syncMeta(); saveDraft(); };
+    setTimeout(updatePreview,0);
+    return wrap;
+  }
+  function addBlock(t, container){ const nb={type:t,text:""};
+    if(t==="callout") nb.variant="info"; if(t==="heading") nb.level=1; if(t==="image"){ nb.data=""; nb.caption=""; }
+    if(t==="qa"){ nb.q=""; nb.a=""; delete nb.text; } if(t==="term"){ nb.term=""; nb.desc=""; delete nb.text; }
+    if(t==="branch"){ nb.text=""; nb.options=[{c:"",a:""},{c:"",a:""}]; }
+    if(t==="field") nb.label=""; if(t==="related"){ nb.ids=[]; delete nb.text; }
+    ensureBids([nb]); draft.blocks.push(nb); renderEdBlocks(container); saveDraftAuto(); schedulePreview();
+    const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); } }
+  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; updateChunkHint(); return; }
+    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); updateChunkHint(); }
+  function updateChunkHint(){ const el=document.getElementById("chunkHint"); if(!el||!draft) return;
+    let run=0,maxRun=0; (draft.blocks||[]).forEach(b=>{ if(b.type==="step"){ run++; if(run>maxRun) maxRun=run; } else if(b.type==="heading"){ run=0; } });
+    el.innerHTML = maxRun>9 ? '<div class="chunk-hint">💡 見出しで区切らずに手順が約'+maxRun+'個並んでいます。<b>見出しで区切る</b>か<b>サブステップ</b>にまとめると覚えやすくなります（目安は5〜9個）。</div>' : "";
+  }
+  function renderEdBlock(b,i,container){
+    const el=document.createElement("div"); el.className="ed-block"; el.draggable=true; el.dataset.idx=i; const total=draft.blocks.length;
+    let head='<div class="bhead"><span class="drag-h" title="ドラッグで移動">⠿</span><span class="btype">'+(BLOCK_TYPES[b.type]?BLOCK_TYPES[b.type].label:b.type)+"</span>";
+    if(b.type==="heading") head+='<select class="h-level" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px"><option value="1" '+((b.level||1)===1?"selected":"")+'>大見出し</option><option value="2" '+(b.level===2?"selected":"")+">小見出し</option></select>";
+    if(b.type==="callout") head+='<select class="cl-variant" style="width:auto;padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:12px">'+[["info","メモ"],["tip","ヒント"],["warning","注意"],["danger","禁止/危険"]].map(([v,l])=>'<option value="'+v+'" '+(b.variant===v?"selected":"")+">"+l+"</option>").join("")+"</select>";
+    head+='<span class="bspacer"></span><button class="iconbtn" data-mv="up" '+(i===0?"disabled":"")+' title="上へ">▲</button><button class="iconbtn" data-mv="down" '+(i===total-1?"disabled":"")+' title="下へ">▼</button><button class="iconbtn" data-del="1" title="削除">✕</button></div>';
+    let bodyHTML="";
+    if(b.type==="image") bodyHTML='<input type="file" accept="image/*" class="img-file" style="font-size:13px">'+(b.data?'<img class="img-preview" src="'+b.data+'">':"")+'<input type="text" class="b-caption" placeholder="キャプション（任意）" value="'+esc(b.caption||"")+'" style="margin-top:8px">';
+    else if(b.type==="qa") bodyHTML='<input type="text" class="qa-q" placeholder="質問（例：パスワードを忘れたら？）" value="'+esc(b.q||"")+'" style="margin-bottom:8px"><textarea class="qa-a" rows="3" placeholder="回答">'+esc(b.a||"")+"</textarea>";
+    else if(b.type==="term") bodyHTML='<div class="row2"><input type="text" class="tm-term" placeholder="用語" value="'+esc(b.term||"")+'" style="flex:0 0 38%"><input type="text" class="tm-desc" placeholder="意味・説明" value="'+esc(b.desc||"")+'" style="flex:1"></div>';
+    else if(b.type==="table") bodyHTML='<div class="mini">1行＝1行、セルは縦棒 | で区切ります。1行目が見出しになります。</div><textarea class="b-text-in" rows="4" placeholder="項目 | 説明&#10;受付 | お客様対応&#10;電話 | 内線1234">'+esc(b.text||"")+"</textarea>";
+    else if(b.type==="branch") bodyHTML='<input type="text" class="br-q" placeholder="問い（例：在庫はありますか？）" value="'+esc(b.text||"")+'" style="margin-bottom:8px"><div class="mini">条件ごとの分かれ道を書きます。</div><div class="br-opts"></div><button class="addbtn br-add" style="margin-top:4px">＋ 分岐を追加</button>';
+    else if(b.type==="field") bodyHTML='<input type="text" class="bf-label-in" placeholder="項目名（例：目的 / 前提・必要なもの / 担当）" value="'+esc(b.label||"")+'" style="margin-bottom:8px;font-weight:700"><textarea class="b-text-in" rows="2" placeholder="ここに記入してください">'+esc(b.text||"")+"</textarea>";
+    else if(b.type==="related") bodyHTML='<div class="mini">関連づける文書を選びます（読者はクリックで移動できます）。</div><div class="rel-list"></div><select class="rel-add"></select>';
+    else { const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること（1ステップ＝1動作・動詞で始める）",substep:"サブステップ（前の手順の細目）",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||""; const rows=(b.type==="text"||b.type==="code")?3:2; bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>"; }
+    el.innerHTML=head+bodyHTML;
+    const bindText=(sel,key)=>{ const x=el.querySelector(sel); if(x) x.addEventListener("input",()=>{ b[key]=x.value; schedulePreview(); saveDraftAuto(); }); };
+    bindText(".b-text-in","text"); bindText(".b-caption","caption"); bindText(".qa-q","q"); bindText(".qa-a","a"); bindText(".tm-term","term"); bindText(".tm-desc","desc"); bindText(".br-q","text"); bindText(".bf-label-in","label");
+    const hlv=el.querySelector(".h-level"); if(hlv) hlv.addEventListener("change",()=>{ b.level=+hlv.value; schedulePreview(); saveDraftAuto(); });
+    const clv=el.querySelector(".cl-variant"); if(clv) clv.addEventListener("change",()=>{ b.variant=clv.value; schedulePreview(); saveDraftAuto(); });
+    const file=el.querySelector(".img-file"); if(file) file.addEventListener("change",e=>handleImage(e,b,container));
+    if(b.type==="branch"){ const optBox=el.querySelector(".br-opts");
+      const drawOpts=()=>{ optBox.innerHTML=""; (b.options||[]).forEach((o,oi)=>{ const row=document.createElement("div"); row.className="branch-opt";
+        row.innerHTML='<input type="text" class="c" placeholder="条件（例：はい）" value="'+esc(o.c||"")+'"><input type="text" class="a" placeholder="そのときどうする" value="'+esc(o.a||"")+'"><button class="rm" title="削除">✕</button>';
+        row.querySelector(".c").addEventListener("input",ev=>{ o.c=ev.target.value; schedulePreview(); saveDraftAuto(); });
+        row.querySelector(".a").addEventListener("input",ev=>{ o.a=ev.target.value; schedulePreview(); saveDraftAuto(); });
+        row.querySelector(".rm").onclick=()=>{ b.options.splice(oi,1); drawOpts(); schedulePreview(); saveDraftAuto(); }; optBox.appendChild(row); }); };
+      drawOpts(); el.querySelector(".br-add").onclick=()=>{ (b.options=b.options||[]).push({c:"",a:""}); drawOpts(); saveDraftAuto(); }; }
+    if(b.type==="related"){ const listBox=el.querySelector(".rel-list"); const addSel=el.querySelector(".rel-add");
+      const refresh=()=>{ const used=new Set(b.ids||[]); const opts=docs.filter(d=>d.id!==draft.id && !used.has(d.id));
+        addSel.innerHTML='<option value="">＋ 文書を追加…</option>'+opts.map(d=>'<option value="'+d.id+'">'+DOC_TYPES[d.type||"general"].icon+" "+esc(d.title)+"</option>").join(""); addSel.disabled=!opts.length;
+        listBox.innerHTML=(b.ids||[]).map((id,ri)=>{ const d=docs.find(x=>x.id===id); return '<div class="rel-item"><span>'+(d?DOC_TYPES[d.type||"general"].icon+" "+esc(d.title):"（削除された文書）")+'</span><button class="iconbtn" data-rrm="'+ri+'">✕</button></div>'; }).join("");
+        listBox.querySelectorAll("[data-rrm]").forEach(btn=>btn.onclick=()=>{ b.ids.splice(+btn.dataset.rrm,1); refresh(); schedulePreview(); saveDraftAuto(); }); };
+      addSel.addEventListener("change",()=>{ if(addSel.value){ (b.ids=b.ids||[]).push(addSel.value); refresh(); schedulePreview(); saveDraftAuto(); } }); refresh(); }
+    el.querySelector('[data-mv="up"]').onclick=()=>{ if(i>0){ swap(i,i-1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
+    el.querySelector('[data-mv="down"]').onclick=()=>{ if(i<total-1){ swap(i,i+1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } };
+    el.querySelector('[data-del="1"]').onclick=()=>{ draft.blocks.splice(i,1); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); };
+    el.addEventListener("dragstart",e=>{ el.classList.add("dragging"); e.dataTransfer.setData("text/plain",i); e.dataTransfer.effectAllowed="move"; });
+    el.addEventListener("dragend",()=>{ el.classList.remove("dragging"); container.querySelectorAll(".ed-block").forEach(x=>x.classList.remove("drag-over")); });
+    el.addEventListener("dragover",e=>{ e.preventDefault(); el.classList.add("drag-over"); });
+    el.addEventListener("dragleave",()=>el.classList.remove("drag-over"));
+    el.addEventListener("drop",e=>{ e.preventDefault(); const from=+e.dataTransfer.getData("text/plain"); const to=i; if(from!==to&&!isNaN(from)){ const m=draft.blocks.splice(from,1)[0]; draft.blocks.splice(to,0,m); renderEdBlocks(container); schedulePreview(); saveDraftAuto(); } });
+    return el;
+  }
+  function swap(a,b){ const t=draft.blocks[a]; draft.blocks[a]=draft.blocks[b]; draft.blocks[b]=t; }
+
+  function handleImage(e,b,container){ const f=e.target.files[0]; if(!f) return; const reader=new FileReader();
+    reader.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1280; let w=img.width,h=img.height; if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); } const cv=document.createElement("canvas"); cv.width=w; cv.height=h; cv.getContext("2d").drawImage(img,0,0,w,h); let out; try{ out=cv.toDataURL("image/jpeg",0.82); }catch(_){ out=reader.result; } if(out.length>reader.result.length) out=reader.result; b.data=out; renderEdBlocks(container); schedulePreview(); saveDraftAuto(); toast("画像を最適化して追加しました"); }; img.onerror=()=>{ b.data=reader.result; renderEdBlocks(container); schedulePreview(); saveDraftAuto(); }; img.src=reader.result; };
+    reader.readAsDataURL(f); }
+
+  let pvTimer=null;
+  function schedulePreview(){ clearTimeout(pvTimer); pvTimer=setTimeout(updatePreview,250); }
+  function updatePreview(){ const pv=document.getElementById("previewBody"); if(!pv||!draft) return; const tdef=DOC_TYPES[draft.type||"general"];
+    if(!(draft.title||"").trim() && !draft.blocks.some(b=>(b.text||b.q||b.term||b.caption||"").trim())){ pv.innerHTML='<div class="pv-empty">ここに仕上がりプレビューが表示されます。<br>左で入力してください。</div>'; return; }
+    pv.innerHTML='<div class="doc-head"><div class="doc-badges">'+(tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")+(draft.category?'<span class="doc-cat">'+esc(draft.category)+"</span>":"")+"</div>"
+      +'<h1 class="doc-title">'+esc(draft.title||"（無題）")+"</h1>"+(draft.description?'<p class="doc-desc">'+esc(draft.description)+"</p>":"")
+      +'<div class="doc-meta"><span class="tags">'+(draft.tags||[]).map(t=>'<span class="tag">#'+esc(t)+"</span>").join("")+"</span></div></div>"+docBodyHTML(draft,{docId:null});
+    bindBodyInteractions(pv, null, false); }
+
+  function applyMd(kind){ const ta=lastFocused; if(!ta||ta.tagName!=="TEXTAREA"){ toast("装飾したい入力欄を選んでから押してください"); return; }
+    const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value,sel=val.slice(s,e); let rep=sel;
+    if(kind==="bold") rep="**"+(sel||"太字")+"**"; else if(kind==="italic") rep="*"+(sel||"斜体")+"*"; else if(kind==="code") rep="`"+(sel||"コード")+"`"; else if(kind==="link") rep="["+(sel||"リンク文字")+"](https://)"; else if(kind==="ul") rep=(sel||"項目").split(/\n/).map(l=>"- "+l).join("\n"); else if(kind==="ol") rep=(sel||"項目").split(/\n/).map((l,n)=>(n+1)+". "+l).join("\n");
+    ta.value=val.slice(0,s)+rep+val.slice(e); ta.dispatchEvent(new Event("input",{bubbles:true})); ta.focus(); ta.selectionStart=s; ta.selectionEnd=s+rep.length; }
+  document.addEventListener("focusin",e=>{ if(e.target.matches("textarea,input[type=text]")) lastFocused=e.target; });
+
+  function saveDraft(){ if(!draft.title.trim()){ toast("タイトルを入力してください"); const t=document.getElementById("edTitle"); if(t){ document.querySelector(".editor-wrap").dataset.tab="edit"; t.focus(); } return; }
+    draft.blocks=draft.blocks.filter(b=>{ if(b.type==="image") return !!b.data; if(b.type==="qa") return (b.q||"").trim()||(b.a||"").trim(); if(b.type==="term") return (b.term||"").trim()||(b.desc||"").trim(); if(b.type==="branch") return (b.text||"").trim()||(b.options||[]).some(o=>o.c||o.a); if(b.type==="field") return (b.label||"").trim()||(b.text||"").trim(); if(b.type==="related") return (b.ids||[]).length; return (b.text||"").trim()!==""; });
+    ensureBids(draft.blocks); draft.updated=Date.now();
+    const noteEl=document.getElementById("edChangeNote"); const note=noteEl?noteEl.value.trim():"";
+    draft.history=draft.history||[];
+    draft.history.unshift({at:Date.now(), note: note || (draft.id?"内容を更新":"新規作成")});
+    draft.history=draft.history.slice(0,30);
+    if(draft.id){ const idx=docs.findIndex(d=>d.id===draft.id); if(idx>=0) docs[idx]=draft; } else { draft.id=uid(); draft.created=Date.now(); docs.unshift(draft); }
+    currentId=draft.id; save(); clearDraftAuto(); mode="view"; draft=null; render(); document.getElementById("main").scrollTop=0; toast("保存しました"); }
+  function duplicateDoc(id){ const s=docs.find(d=>d.id===id); if(!s) return; const c=JSON.parse(JSON.stringify(s)); c.id=uid(); c.title=s.title+"（コピー）"; c.created=c.updated=Date.now(); docs.unshift(c); currentId=c.id; viewFromCourse=null; save(); render(); toast("複製しました"); }
+  function deleteDoc(id){ const d=docs.find(x=>x.id===id); if(!d) return; if(!confirm("「"+d.title+"」を削除しますか？この操作は取り消せません。")) return; docs=docs.filter(x=>x.id!==id); if(currentId===id){ currentId=null; mode=viewFromCourse?"course":"welcome"; } save(); render(); toast("削除しました"); }
+
+  function exportJSON(){ const blob=new Blob([JSON.stringify({docs,courses},null,2)],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="手順書データ_"+new Date().toISOString().slice(0,10)+".json"; a.click(); URL.revokeObjectURL(url); toast("JSONを書き出しました"); }
+  function importJSON(file){ const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result);
+      let inDocs, inCourses=[]; if(Array.isArray(data)){ inDocs=data; } else { inDocs=data.docs||[]; inCourses=data.courses||[]; }
+      if(!Array.isArray(inDocs)) throw new Error("形式が不正です");
+      const m = docs.length ? (confirm("既存データに「追加」しますか？\n[OK]=追加 / [キャンセル]=すべて置き換え")?"merge":"replace") : "replace";
+      const incoming=inDocs.map(d=>({type:"general",...d, id:d.id||uid()})); incoming.forEach(d=>ensureBids(d.blocks));
+      if(m==="replace"){ docs=incoming; courses=inCourses; } else { const ids=new Set(docs.map(d=>d.id)); incoming.forEach(d=>{ if(ids.has(d.id)) d.id=uid(); docs.push(d); }); inCourses.forEach(c=>{ c.id=c.id||uid(); courses.push(c); }); }
+      save(); mode="welcome"; currentId=null; navView="docs"; render(); toast(incoming.length+"件の文書を読み込みました");
+    }catch(e){ toast("読み込み失敗: "+e.message); } }; r.readAsText(file); }
+
+  let toastTimer=null;
+  function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2400); }
+
+  function closeNav(){ document.getElementById("app").classList.remove("nav-open"); }
+  function bindGlobal(){
+    document.getElementById("search").addEventListener("input",e=>{ query=e.target.value; renderSidebar(); });
+    document.getElementById("typeFilters").addEventListener("click",e=>{ const c=e.target.closest("[data-type]"); if(!c) return; activeType=c.dataset.type; renderSidebar(); });
+    document.getElementById("cats").addEventListener("click",e=>{ const c=e.target.closest("[data-cat]"); if(!c) return; activeCat=c.dataset.cat; renderSidebar(); });
+    document.getElementById("navseg").addEventListener("click",e=>{ const b=e.target.closest("[data-nav]"); if(!b) return; navView=b.dataset.nav;
+      if(navView==="qa"){ mode="qahub"; currentId=null; closeNav(); render(); document.getElementById("main").scrollTop=0; }
+      else { if(mode==="qahub") mode=currentId?"view":"welcome"; render(); } });
+    document.getElementById("doclist").addEventListener("click",e=>{ const it=e.target.closest("[data-id]"); const ci=e.target.closest("[data-cid]");
+      if(it){ currentId=it.dataset.id; viewFromCourse=null; mode="view"; closeNav(); render(); document.getElementById("main").scrollTop=0; }
+      else if(ci){ currentCourseId=ci.dataset.cid; mode="course"; closeNav(); render(); document.getElementById("main").scrollTop=0; } });
+    document.getElementById("btnNew").onclick=()=>{ closeNav(); if(navView==="courses") openCourseEditor(null); else startNew(); };
+    document.getElementById("btnExport").onclick=exportJSON;
+    document.getElementById("btnPrint").onclick=()=>window.print();
+    document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
+    document.getElementById("fileInput").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) importJSON(f); e.target.value=""; });
+    document.getElementById("hamb").onclick=()=>document.getElementById("app").classList.toggle("nav-open");
+    document.getElementById("scrim").onclick=closeNav;
+    window.addEventListener("beforeunload",()=>{ if(mode==="edit"&&draft) saveDraftAuto(); });
+  }
+
+  /* ---------- Seed ---------- */
+  function seedDocs(){ const now=Date.now(); return [
+    {id:uid(),type:"manual",category:"はじめに",title:"この手順書ナビの使い方",description:"新しく配属された方がまず読むガイドです。",tags:["新人向け","必読"],owner:"総務課",reviewed:"2026-04-01",reviewEvery:6,created:now,updated:now,blocks:[
+      {type:"text",text:"このシステムは、業務マニュアル・手順書・ワークフローなどを誰でも見やすく作成・閲覧できるツールです。**インストール不要**で、このページを開くだけで使えます。"},
+      {type:"heading",text:"閲覧する",level:1},
+      {type:"step",text:"左の一覧から読みたい文書を選びます。新人の方は左上「🎓 コース」で読む順が分かります。"},
+      {type:"step",text:"上部の検索に言葉を入れると、本文まで含めて絞り込めます。"},
+      {type:"step",text:"「種類」「カテゴリ」のボタンで分類ごとに絞り込めます。"},
+      {type:"callout",variant:"tip",text:"チェックリストは、チェックの状態が**あなたの端末ごと**に保存されます（他の人には影響しません）。"},
+      {type:"heading",text:"作成・編集する",level:1},
+      {type:"step",text:"右上「＋ 新規作成」→ 文書の種類を選びます。種類ごとに雛形が入ります。"},
+      {type:"step",text:"左で入力し、右側（スマホはタブ）の**プレビュー**で仕上がりを確認します。"},
+      {type:"callout",variant:"warning",text:"データはこのブラウザ内に保存されます。共有・バックアップは右上「📤 書出」でJSON保存し、相手は「📥 読込」で取り込んでください。"}
+    ]},
+    {id:uid(),type:"procedure",category:"接客",title:"来客対応の基本手順",description:"受付でお客様をお迎えするときの標準フロー。",tags:["新人向け","接客","必須"],created:now,updated:now,blocks:[
+      {type:"callout",variant:"info",text:"合言葉は「**笑顔・正確・迅速**」。迷ったら先輩に確認しましょう。"},
+      {type:"step",text:"お客様が来られたら立ち上がり「いらっしゃいませ」と挨拶する。"},
+      {type:"step",text:"ご用件・お名前・お約束の有無を伺う。"},
+      {type:"step",text:"担当者へ内線で取り次ぐ（内線表は受付デスク右側）。"},
+      {type:"step",text:"応接室へご案内し、お茶をお出しする。"},
+      {type:"heading",text:"確認チェック",level:1},
+      {type:"check",text:"来客記録に日時・氏名・用件を記入した"},
+      {type:"check",text:"応接室の予約状況を確認した"},
+      {type:"callout",variant:"danger",text:"アポイントのない営業訪問は、担当者の許可なく取り次がないこと。"}
+    ]},
+    {id:uid(),type:"workflow",category:"接客",title:"電話の取り次ぎフロー",description:"かかってきた電話を担当へつなぐ判断の流れ。",tags:["新人向け","電話"],created:now,updated:now,blocks:[
+      {type:"step",text:"3コール以内に出て「お電話ありがとうございます、〇〇会社です」と名乗る。"},
+      {type:"step",text:"相手の会社名・氏名・用件を復唱して確認する。"},
+      {type:"branch",text:"名指しの担当者は在席している？",options:[{c:"在席",a:"「少々お待ちください」と保留にして担当へ取り次ぐ。"},{c:"不在",a:"戻り予定を伝え、伝言または折り返しを提案する。"},{c:"担当が不明",a:"用件を詳しく伺い、関係部署へ確認する。"}]},
+      {type:"step",text:"伝言は「誰から・誰へ・用件・連絡先・受けた時刻」をメモして共有する。"}
+    ]},
+    {id:uid(),type:"checklist",category:"総務",title:"開店前チェックリスト",description:"毎朝の開店前に確認する項目。",tags:["毎日","必須"],owner:"店舗管理",reviewed:"2026-01-10",reviewEvery:1,created:now,updated:now,blocks:[
+      {type:"text",text:"上から順に確認し、すべてチェックが付いたら開店します。終わったら「完了を記録」を押すと履歴が残ります。"},
+      {type:"check",text:"入口・店内の照明をつけた"},
+      {type:"check",text:"レジの釣銭を確認した"},
+      {type:"check",text:"床・テーブルの清掃を済ませた"},
+      {type:"check",text:"本日の予約・連絡事項を確認した"}
+    ]},
+    {id:uid(),type:"faq",category:"システム操作",title:"勤怠システム よくある質問",description:"打刻まわりのつまずきと対処。",tags:["全員"],created:now,updated:now,blocks:[
+      {type:"qa",q:"打刻を忘れました。どうすれば？",a:"「勤怠修正申請」から対象日・時刻・理由を入力して申請します。上長の承認後に反映されます。"},
+      {type:"qa",q:"社外でも打刻できますか？",a:"はい。スマホアプリから打刻できます。社外勤務時はアプリを使ってください。"},
+      {type:"qa",q:"パスワードを忘れました。",a:"ログイン画面の「パスワード再設定」から、社用メール宛に再設定リンクを送れます。"}
+    ]},
+    {id:uid(),type:"glossary",category:"システム操作",title:"社内用語集（基本）",description:"新人がつまずきやすい略語・用語。",tags:["新人向け"],created:now,updated:now,blocks:[
+      {type:"term",term:"ポータル",desc:"社内の各システムへの入口となるWebサイト。勤怠・申請・周知などをここから開く。"},
+      {type:"term",term:"内線",desc:"社内同士でつなぐ電話番号。受付デスク右側に内線表がある。"},
+      {type:"term",term:"稟議（りんぎ）",desc:"購入や契約などを上長に承認してもらうための申請手続き。"}
+    ]}
+  ]; }
+
+  /* ---------- Shared data file (File System Access API) ---------- */
+  function idbHandle(get, value){ return new Promise((res,rej)=>{
+    let o; try{ o=indexedDB.open("tejunsho-fs",1); }catch(e){ return rej(e); }
+    o.onupgradeneeded=()=>o.result.createObjectStore("h");
+    o.onerror=()=>rej(o.error);
+    o.onsuccess=()=>{ try{ const db=o.result; const tx=db.transaction("h", get?"readonly":"readwrite"); const st=tx.objectStore("h");
+      const rq = get ? st.get("data") : (value===null ? st.delete("data") : st.put(value,"data"));
+      rq.onsuccess=()=>res(get?rq.result:true); rq.onerror=()=>rej(rq.error);
+    }catch(e){ rej(e); } }; }); }
+  const getStoredHandle=()=>idbHandle(true).catch(()=>null);
+  const setStoredHandle=h=>idbHandle(false,h).catch(()=>{});
+  const delStoredHandle=()=>idbHandle(false,null).catch(()=>{});
+
+  function adoptData(data){
+    const fileDocs = Array.isArray(data)?data:(data.docs||[]);
+    const fileCourses = Array.isArray(data)?[]:(data.courses||[]);
+    loadedVersion = (data.meta&&data.meta.version)||0;
+    docs=fileDocs||[]; courses=fileCourses||[]; docs.forEach(d=>ensureBids(d.blocks));
+    saveLocalCache();
+  }
+  async function loadFromFile(){
+    const f=await fileHandle.getFile(); const txt=(await f.text()).trim();
+    if(!txt){ await writeDataFile(true); return; }      // empty new file -> seed with current data
+    let data; try{ data=JSON.parse(txt); }catch(e){ toast("ファイルの形式が不正です"); return; }
+    adoptData(data); currentId=null; currentCourseId=null; viewFromCourse=null; mode="welcome"; render();
+  }
+  async function fileVersion(){ try{ const f=await fileHandle.getFile(); const t=(await f.text()).trim(); if(!t) return 0; const d=JSON.parse(t); return (d.meta&&d.meta.version)||0; }catch(e){ return 0; } }
+  function scheduleFileWrite(){ if(!fileHandle) return; clearTimeout(writeTimer); writeTimer=setTimeout(()=>writeDataFile(false),700); }
+  async function writeDataFile(force){
+    if(!fileHandle) return;
+    try{
+      if(!force){ const v=await fileVersion(); if(v>loadedVersion){
+        const ow=confirm("他の人がこのデータファイルを更新しています。\n[OK] あなたの変更で上書きする / [キャンセル] 相手の最新を読み込む");
+        if(!ow){ await loadFromFile(); return; } loadedVersion=v; } }
+      loadedVersion++;
+      const payload={meta:{version:loadedVersion, savedAt:Date.now()}, docs, courses};
+      const w=await fileHandle.createWritable(); await w.write(JSON.stringify(payload,null,2)); await w.close();
+      renderFileStatus();
+    }catch(e){ toast("ファイル保存に失敗: "+e.message); }
+  }
+  async function connectExisting(){
+    try{ const picked=await window.showOpenFilePicker({multiple:false, types:[{description:"手順書データ",accept:{"application/json":[".json"]}}]});
+      const h=picked[0]; if((await h.requestPermission({mode:"readwrite"}))!=="granted"){ toast("書き込み許可が必要です"); return; }
+      fileHandle=h; pendingHandle=null; await setStoredHandle(h); await loadFromFile(); renderFileStatus(); closeModal(); toast("共有ファイルに接続しました（全員と同じ最新版）");
+    }catch(e){ if(e.name!=="AbortError") toast("接続できませんでした: "+e.message); }
+  }
+  async function connectNew(){
+    try{ const h=await window.showSaveFilePicker({suggestedName:"tejunsho-data.json", types:[{description:"手順書データ",accept:{"application/json":[".json"]}}]});
+      fileHandle=h; pendingHandle=null; await setStoredHandle(h); loadedVersion=0; await writeDataFile(true); renderFileStatus(); closeModal(); toast("共有フォルダにデータファイルを作成しました");
+    }catch(e){ if(e.name!=="AbortError") toast("作成できませんでした: "+e.message); }
+  }
+  async function reconnect(){
+    if(!pendingHandle) return;
+    try{ if((await pendingHandle.requestPermission({mode:"readwrite"}))!=="granted"){ toast("許可が必要です"); return; }
+      fileHandle=pendingHandle; pendingHandle=null; await loadFromFile(); renderFileStatus(); closeModal(); toast("再接続しました");
+    }catch(e){ toast("再接続できませんでした: "+e.message); }
+  }
+  function disconnectFile(){ fileHandle=null; pendingHandle=null; delStoredHandle(); renderFileStatus(); closeModal(); toast("接続を解除しました（この端末のみに保存）"); }
+  async function tryRestoreHandle(){
+    if(!FSA) { renderFileStatus(); return; }
+    const h=await getStoredHandle(); if(!h){ renderFileStatus(); return; }
+    try{ const perm=await h.queryPermission({mode:"readwrite"});
+      if(perm==="granted"){ fileHandle=h; await loadFromFile(); } else { pendingHandle=h; }
+    }catch(e){ pendingHandle=h; }
+    renderFileStatus();
+  }
+
+  function renderFileStatus(){
+    const btn=document.getElementById("btnStore"), lbl=document.getElementById("storeLabel"); if(!btn) return;
+    if(fileHandle){ btn.classList.add("on"); lbl.textContent="共有: "+(fileHandle.name||"data.json"); btn.title="共有ファイルに接続中（全員と同じ最新版）"; }
+    else if(pendingHandle){ btn.classList.remove("on"); lbl.textContent="再接続が必要"; btn.title="前回のファイルに再接続してください"; }
+    else { btn.classList.remove("on"); lbl.textContent="保存先"; btn.title="この端末のみに保存中"; }
+  }
+
+  /* ---------- Modal ---------- */
+  function closeModal(){ const r=document.getElementById("modalRoot"); r.innerHTML=""; }
+  function openViewModal(){
+    const r=document.getElementById("modalRoot");
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal"><h3>🌓 表示設定</h3>'
+      +'<p>読みやすさを調整できます（この端末に保存）。研究では「本文は1行50〜75字／文字は大きめ／行間広め」が読みやすいとされています。本文の幅もその目安に合わせています。</p>'
+      +'<div class="m-status"><div style="font-weight:700;margin-bottom:8px">文字サイズ</div><div class="m-actions" id="fsBtns"><button class="btn" data-fs="s">小</button><button class="btn" data-fs="m">標準</button><button class="btn" data-fs="l">大</button></div></div>'
+      +'<div class="m-status"><div style="font-weight:700;margin-bottom:8px">配色</div><div class="m-actions" id="thBtns"><button class="btn" data-th="light">☀️ ライト</button><button class="btn" data-th="dark">🌙 ダーク</button></div></div>'
+      +'<div class="m-actions"><button class="btn" id="mClose">閉じる</button></div></div></div>';
+    const mark=()=>{ document.querySelectorAll("#fsBtns .btn").forEach(b=>b.classList.toggle("primary",b.dataset.fs===settings.fontScale)); document.querySelectorAll("#thBtns .btn").forEach(b=>b.classList.toggle("primary",b.dataset.th===settings.theme)); };
+    document.querySelectorAll("#fsBtns .btn").forEach(b=>b.onclick=()=>{ settings.fontScale=b.dataset.fs; applySettings(); saveSettings(); mark(); });
+    document.querySelectorAll("#thBtns .btn").forEach(b=>b.onclick=()=>{ settings.theme=b.dataset.th; applySettings(); saveSettings(); mark(); });
+    const $=id=>document.getElementById(id); $("mClose").onclick=closeModal; $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); }; mark();
+  }
+  function openStoreModal(){
+    const r=document.getElementById("modalRoot");
+    let body;
+    if(!FSA){
+      body='<h3>📁 データの保存先</h3><p>このブラウザ環境では「共有ファイルへの自動保存」が使えません（推奨は <b>Microsoft Edge</b> で開くことです）。当面は次の運用で“最新版の共有”ができます。</p>'
+        +'<div class="m-status">① 編集担当が <b>「📤 書出」</b> で <code>data.json</code> を共有フォルダに上書き保存<br>② 他の人は <b>「📥 読込」</b> で最新を取り込む</div>'
+        +'<div class="m-actions"><button class="btn" id="mClose">閉じる</button></div>';
+    } else if(fileHandle){
+      body='<h3>📁 データの保存先</h3><p><b>共有ファイルに接続中</b>です。あなたの変更は自動でこのファイルに保存され、同じファイルを開いた全員に最新版が共有されます。</p>'
+        +'<div class="m-status">🟢 接続中: <b>'+esc(fileHandle.name||"data.json")+'</b>（版 '+loadedVersion+'）</div>'
+        +'<div class="m-actions"><button class="btn primary" id="mSaveNow">今すぐ保存</button><button class="btn" id="mReload">最新を読み込む</button><button class="btn danger" id="mDisc">接続を解除</button><button class="btn" id="mClose">閉じる</button></div>'
+        +'<div class="hint">Teamsには、このデータファイルがある<b>共有フォルダへのリンク</b>を貼って「みんなここを見て」の入口にするのがおすすめです（ファイル自体をチャットで配ると各自のコピーになり版がズレます）。</div>';
+    } else {
+      body='<h3>📁 データの保存先</h3><p>共有フォルダ上の<b>1つのデータファイル</b>に接続すると、開いた全員が「同じ最新版」を見られます（クラウド不要・LGWAN内で完結）。</p>'
+        +(pendingHandle?'<div class="m-status">前回のファイルが記憶されています。<b>再接続</b>すると続きから使えます。</div><div class="m-actions"><button class="btn primary" id="mReconnect">前回のファイルに再接続</button><button class="btn" id="mClose">閉じる</button></div>'
+          :'<div class="m-actions"><button class="btn primary" id="mConnect">既存の data.json に接続</button><button class="btn" id="mNew">共有フォルダに新規作成</button><button class="btn" id="mClose">閉じる</button></div>')
+        +'<div class="hint">初めての場合は「新規作成」で共有フォルダ（ネットワークドライブ）に <code>tejunsho-data.json</code> を作成 → 他の人は「既存の data.json に接続」で同じファイルを選びます。</div>';
+    }
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal">'+body+'</div></div>';
+    const $=id=>document.getElementById(id);
+    if($("mClose")) $("mClose").onclick=closeModal;
+    if($("mScrim")) $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); };
+    if($("mConnect")) $("mConnect").onclick=connectExisting;
+    if($("mNew")) $("mNew").onclick=connectNew;
+    if($("mReconnect")) $("mReconnect").onclick=reconnect;
+    if($("mDisc")) $("mDisc").onclick=disconnectFile;
+    if($("mSaveNow")) $("mSaveNow").onclick=async()=>{ await writeDataFile(true); toast("保存しました"); closeModal(); };
+    if($("mReload")) $("mReload").onclick=async()=>{ await loadFromFile(); toast("最新を読み込みました"); closeModal(); };
+  }
+
+  loadSettings(); applySettings();
+  load(); bindGlobal();
+  document.getElementById("btnStore").onclick=openStoreModal;
+  document.getElementById("btnView").onclick=openViewModal;
+  mode="welcome"; render(); renderFileStatus(); tryRestoreHandle();
+})();
+</script>
+</body>
+</html>
