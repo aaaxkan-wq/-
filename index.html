@@ -178,6 +178,20 @@
   .b-substep .snum{flex:none; min-width:32px; height:24px; padding:0 7px; border-radius:6px; background:#dfe7f5; color:var(--brand-d); font-weight:800; display:grid; place-items:center; font-size:12px}
   .b-substep .body{flex:1; min-width:0}
   .chunk-hint{background:#ecfaf1; border:1px solid #c8ecd6; color:#1c5e39; border-radius:10px; padding:10px 13px; font-size:13px; margin:8px 0 2px; line-height:1.6}
+  .coach{margin:6px 0 14px; border:1px solid var(--line); border-radius:11px; background:#fbfcfe; padding:10px 12px; font-size:13px}
+  .coach.ok{background:#ecfaf1; border-color:#c8ecd6; color:#1c5e39; font-weight:700}
+  .coach .coach-h{font-weight:800; color:var(--ink); margin-bottom:6px; display:flex; align-items:center; gap:8px}
+  .cf{padding:6px 9px; border-radius:8px; margin:4px 0; line-height:1.65}
+  .cf.warn{background:#fff6e6; border:1px solid #ffe1ad; color:#7a5200}
+  .cf.tip{background:#eef4ff; border:1px solid #d3e2ff; color:#27406e}
+  .cf .jump{color:var(--brand-d); font-weight:700; cursor:pointer; text-decoration:underline; margin-left:6px; white-space:nowrap}
+  .blk-warn{display:none; margin-top:6px; font-size:12px; color:#7a5200; background:#fff6e6; border:1px solid #ffe1ad; border-radius:7px; padding:5px 9px}
+  .ed-block.flash{box-shadow:0 0 0 3px var(--brand)}
+  .tips-list{font-size:14px; line-height:1.8; margin:0; padding-left:18px}
+  .tips-list li{margin:9px 0}
+  .tips-list .bad{color:#8a2b2b; font-weight:600}
+  .tips-list .good{color:#1c5e39; font-weight:600}
+  body.theme-dark .coach,body.theme-dark .chunk-hint{background:#121a28}
 
   /* Dark mode */
   body.theme-dark{ --bg:#0f1420; --panel:#161d2b; --ink:#e7ebf3; --muted:#9aa6bd; --line:#2a3446; --brand:#5b8def; --brand-d:#a9c4ff; --brand-soft:#1b2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.3) }
@@ -833,7 +847,8 @@
     wrap.innerHTML='<div class="editor-tabs"><button data-tab="edit" class="active">✏️ 編集</button><button data-tab="preview">👁 プレビュー</button></div>'
       + '<div class="editor-cols"><div class="ed-pane">'
       + '<div class="ed-toolbar"><button data-md="bold" title="太字"><b>B</b></button><button data-md="italic" title="斜体"><i>I</i></button><button data-md="code" title="コード">&lt;/&gt;</button><button data-md="link" title="リンク">🔗</button><span class="sep"></span><button data-md="ul" title="箇条書き">• 一覧</button><button data-md="ol" title="番号リスト">1. 番号</button></div>'
-      + '<h2 style="margin:4px 0 16px">'+(draft.id?"文書を編集":"新しい文書")+"</h2>"
+      + '<h2 style="margin:4px 0 12px">'+(draft.id?"文書を編集":"新しい文書")+"</h2>"
+      + '<div id="coachBox"></div>'
       + '<div class="ed-row"><div class="field" style="flex:2"><label>タイトル *</label><input type="text" id="edTitle" value="'+esc(draft.title)+'" placeholder="例）来客対応の手順"></div><div class="field"><label>種類</label><select id="edType">'+typeOpts+"</select></div></div>"
       + '<div class="ed-row"><div class="field"><label>カテゴリ</label><input type="text" id="edCat" list="catList" value="'+esc(draft.category)+'" placeholder="例）接客 / 経理 / システム操作"><datalist id="catList">'+catOptions.map(c=>'<option value="'+esc(c)+'">').join("")+'</datalist></div><div class="field"><label>タグ（カンマ区切り）</label><input type="text" id="edTags" value="'+esc((draft.tags||[]).join(", "))+'" placeholder="例）新人向け, 必須"></div></div>'
       + '<div class="ed-row"><div class="field"><label>概要（一覧・検索に表示）</label><textarea id="edDesc" rows="2" placeholder="この文書の目的を一言で">'+esc(draft.description)+"</textarea></div></div>"
@@ -855,7 +870,7 @@
     wrap.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ syncMeta(); addBlock(b.dataset.add, wrap.querySelector("#edBlocks")); });
     wrap.querySelector("#edCancel").onclick=()=>{ clearDraftAuto(); draft=null; mode=currentId?"view":"welcome"; render(); };
     wrap.querySelector("#edSave").onclick=()=>{ syncMeta(); saveDraft(); };
-    setTimeout(updatePreview,0);
+    setTimeout(()=>{ updatePreview(); updateCoach(); },0);
     return wrap;
   }
   function addBlock(t, container){ const nb={type:t,text:""};
@@ -865,8 +880,8 @@
     if(t==="field") nb.label=""; if(t==="related"){ nb.ids=[]; delete nb.text; }
     ensureBids([nb]); draft.blocks.push(nb); renderEdBlocks(container); saveDraftAuto(); schedulePreview();
     const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); } }
-  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; updateChunkHint(); return; }
-    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); updateChunkHint(); }
+  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; updateChunkHint(); updateCoach(); return; }
+    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); updateChunkHint(); updateCoach(); }
   function updateChunkHint(){ const el=document.getElementById("chunkHint"); if(!el||!draft) return;
     let run=0,maxRun=0; (draft.blocks||[]).forEach(b=>{ if(b.type==="step"){ run++; if(run>maxRun) maxRun=run; } else if(b.type==="heading"){ run=0; } });
     el.innerHTML = maxRun>9 ? '<div class="chunk-hint">💡 見出しで区切らずに手順が約'+maxRun+'個並んでいます。<b>見出しで区切る</b>か<b>サブステップ</b>にまとめると覚えやすくなります（目安は5〜9個）。</div>' : "";
@@ -892,6 +907,9 @@
     const hlv=el.querySelector(".h-level"); if(hlv) hlv.addEventListener("change",()=>{ b.level=+hlv.value; schedulePreview(); saveDraftAuto(); });
     const clv=el.querySelector(".cl-variant"); if(clv) clv.addEventListener("change",()=>{ b.variant=clv.value; schedulePreview(); saveDraftAuto(); });
     const file=el.querySelector(".img-file"); if(file) file.addEventListener("change",e=>handleImage(e,b,container));
+    if(b.type==="step"||b.type==="substep"){ const ta=el.querySelector(".b-text-in"); const w=document.createElement("div"); w.className="blk-warn"; el.appendChild(w);
+      const upd=()=>{ const t=(ta.value||"").trim(); const s=(t.match(/。/g)||[]).length; if(t.length>60||s>=2){ w.textContent="💡 1ステップ＝1動作に。長い時は分けると覚えやすくなります。"; w.style.display="block"; } else w.style.display="none"; };
+      if(ta){ ta.addEventListener("input",upd); upd(); } }
     if(b.type==="branch"){ const optBox=el.querySelector(".br-opts");
       const drawOpts=()=>{ optBox.innerHTML=""; (b.options||[]).forEach((o,oi)=>{ const row=document.createElement("div"); row.className="branch-opt";
         row.innerHTML='<input type="text" class="c" placeholder="条件（例：はい）" value="'+esc(o.c||"")+'"><input type="text" class="a" placeholder="そのときどうする" value="'+esc(o.a||"")+'"><button class="rm" title="削除">✕</button>';
@@ -922,7 +940,58 @@
     reader.readAsDataURL(f); }
 
   let pvTimer=null;
-  function schedulePreview(){ clearTimeout(pvTimer); pvTimer=setTimeout(updatePreview,250); }
+  function schedulePreview(){ clearTimeout(pvTimer); pvTimer=setTimeout(()=>{ updatePreview(); updateCoach(); },250); }
+
+  /* ---------- 書き方コーチ (live writing quality check) ---------- */
+  function analyzeDraft(){
+    if(!draft) return [];
+    const d=draft, blocks=d.blocks||[], type=d.type||"general", F=[];
+    const steps=blocks.filter(b=>b.type==="step");
+    const hasField=s=>blocks.some(b=>b.type==="field"&&(b.label||"").includes(s));
+    if(type==="procedure"||type==="workflow"){
+      if(!hasField("目的")&&!(d.description||"").trim()) F.push({level:"tip",msg:"「目的（なぜ行うか）」を書くと、新人が迷わず取りかかれます。"});
+      if(!hasField("担当")) F.push({level:"tip",msg:"「担当（誰が行うか）」を入れると役割がはっきりします。"});
+      if(!hasField("うまくいかない")&&!hasField("失敗")&&!blocks.some(b=>b.type==="callout"&&(b.variant==="warning"||b.variant==="danger"))) F.push({level:"tip",msg:"「うまくいかない時の対処」を添えると安心して進められます。"});
+      if(steps.length&&!blocks.some(b=>b.type==="image")) F.push({level:"tip",msg:"操作の手順は画面のスクショを添えると、文字＋画像で記憶に残りやすくなります。"});
+      if((d.title||"").trim()&&!/(手順|フロー|方法|対応|やり方|流れ|する|仕方)/.test(d.title)) F.push({level:"tip",msg:"タイトルは「〜の手順」「〜する方法」のように“やること”が分かる形がおすすめです。"});
+    }
+    let run=0,maxRun=0; blocks.forEach(b=>{ if(b.type==="step"){ run++; if(run>maxRun) maxRun=run; } else if(b.type==="heading"){ run=0; } });
+    if(maxRun>7) F.push({level:"warn",msg:"手順が見出し無しで"+maxRun+"個続いています。7個以内のかたまりに（見出しかサブステップで分割）。"});
+    blocks.forEach((b,i)=>{ if(b.type!=="step"&&b.type!=="substep") return; const t=(b.text||"").trim(); if(!t) return;
+      const sent=(t.match(/。/g)||[]).length;
+      if(t.length>60||sent>=2) F.push({level:"warn",msg:"このステップは長めです。1ステップ＝1動作に分けると覚えやすくなります。",idx:i});
+      if(/(適宜|適切に|きちんと|しっかり|なるべく|可能な限り|随時|臨機応変)/.test(t)) F.push({level:"tip",msg:"あいまいな表現（「適宜」「適切に」等）。具体的な対象・数値・期限に言い換えを。",idx:i});
+    });
+    const allText=blocks.map(b=>(b.text||"")+" "+(b.q||"")+" "+(b.a||"")+" "+(b.desc||"")).join(" ");
+    const acro=[...new Set((allText.match(/[A-Za-z]{3,}/g)||[]).filter(x=>/[A-Z]{2,}/.test(x)))].filter(x=>!["URL","PDF","FAQ"].includes(x));
+    if(acro.length) F.push({level:"tip",msg:"略語（"+acro.slice(0,3).join("、")+" など）は初出で説明するか「用語集」に。新人には伝わりにくいことがあります。"});
+    if(type==="checklist"){ const cs=blocks.filter(b=>b.type==="check").length; if(cs>9) F.push({level:"tip",msg:"チェックが"+cs+"個。本当に外せない項目に絞ると使われやすくなります（目安〜9）。"}); }
+    if((d.title||"").trim()&&!(d.description||"").trim()&&type!=="glossary") F.push({level:"tip",msg:"「概要」を一言入れると、一覧や検索で見つけやすくなります。"});
+    return F;
+  }
+  function updateCoach(){ const box=document.getElementById("coachBox"); if(!box||!draft) return;
+    const F=analyzeDraft();
+    if(!F.length){ box.innerHTML='<div class="coach ok">✅ 書き方コーチ：読みやすさ・覚えやすさの基本を満たしています。</div>'; return; }
+    const warns=F.filter(f=>f.level==="warn").length, tips=F.length-warns;
+    box.innerHTML='<div class="coach"><div class="coach-h">📝 書き方コーチ（直すと良い '+warns+'・ヒント '+tips+'）<button class="btn" id="coachTips" style="margin-left:auto;padding:4px 10px;font-size:12px">📖 良い書き方</button></div>'
+      + F.map(f=>'<div class="cf '+f.level+'">'+(f.level==="warn"?"⚠ ":"💡 ")+esc(f.msg)+(f.idx!=null?' <span class="jump" data-cidx="'+f.idx+'">該当箇所へ</span>':"")+"</div>").join("")+"</div>";
+    box.querySelectorAll("[data-cidx]").forEach(s=>s.onclick=()=>{ const el=document.querySelector('.ed-block[data-idx="'+s.dataset.cidx+'"]'); if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1200); } });
+    const tb=document.getElementById("coachTips"); if(tb) tb.onclick=openTipsModal;
+  }
+  function openTipsModal(){ const r=document.getElementById("modalRoot");
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal" style="max-width:560px"><h3>📖 覚えやすい手順書の書き方</h3><p>研究・技術文書の定番ルールです（Microsoftスタイルガイド／認知負荷理論ほか）。</p><ul class="tips-list">'
+      +'<li><b>動詞で始め、1ステップ＝1動作。</b><br><span class="bad">×</span> 画面を確認して設定を開き保存する　<span class="good">○</span> ①設定を開く ②保存する</li>'
+      +'<li><b>「場所→操作」の順に書く。</b><br><span class="good">○</span> 「設定」タブで「保存」を押す</li>'
+      +'<li><b>1かたまりは7手順まで。</b>多い時は見出しやサブステップで区切る（人が一度に覚えられる数の目安）。</li>'
+      +'<li><b>あいまい語を避け、具体的に。</b><br><span class="bad">×</span> 適宜対応する　<span class="good">○</span> 3日以内に上長へ報告する</li>'
+      +'<li><b>専門用語・略語は最初に説明</b>するか「用語集」に登録する。</li>'
+      +'<li><b>注意・警告は操作の“前”に置く。</b>事故やミスを未然に防げます。</li>'
+      +'<li><b>操作はスクショを添える。</b>文字＋画像は記憶に残りやすい（デュアルコーディング）。</li>'
+      +'<li><b>タイトルは“やること”。</b><span class="good">○</span> 来客対応の手順</li>'
+      +'<li><b>仕上げに、知らない人に通しでやってもらう。</b>詰まった所が改善点です。</li>'
+      +'</ul><div class="m-actions" style="margin-top:14px"><button class="btn" id="mClose">閉じる</button></div></div></div>';
+    const $=id=>document.getElementById(id); $("mClose").onclick=closeModal; $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); };
+  }
   function updatePreview(){ const pv=document.getElementById("previewBody"); if(!pv||!draft) return; const tdef=DOC_TYPES[draft.type||"general"];
     if(!(draft.title||"").trim() && !draft.blocks.some(b=>(b.text||b.q||b.term||b.caption||"").trim())){ pv.innerHTML='<div class="pv-empty">ここに仕上がりプレビューが表示されます。<br>左で入力してください。</div>'; return; }
     pv.innerHTML='<div class="doc-head"><div class="doc-badges">'+(tdef?'<span class="doc-type">'+tdef.icon+" "+tdef.label+"</span>":"")+(draft.category?'<span class="doc-cat">'+esc(draft.category)+"</span>":"")+"</div>"
