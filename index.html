@@ -167,6 +167,29 @@
   .qa-a-body .src a{cursor:pointer; font-weight:600; color:var(--brand-d)}
   .qa-a-body .src a:hover{text-decoration:underline}
   @media (max-width:900px){ .qahub{padding:22px 16px 90px} }
+
+  /* Readability: font scale + reading width */
+  body{--rfs:16px}
+  body.fs-s{--rfs:15px}
+  body.fs-m{--rfs:16px}
+  body.fs-l{--rfs:18.5px}
+  .reading{max-width:760px}
+  .b-substep{display:flex; gap:12px; align-items:flex-start; margin-left:44px; background:#fbfcfe; border:1px solid var(--line); border-radius:10px; padding:10px 14px; scroll-margin-top:70px}
+  .b-substep .snum{flex:none; min-width:32px; height:24px; padding:0 7px; border-radius:6px; background:#dfe7f5; color:var(--brand-d); font-weight:800; display:grid; place-items:center; font-size:12px}
+  .b-substep .body{flex:1; min-width:0}
+  .chunk-hint{background:#ecfaf1; border:1px solid #c8ecd6; color:#1c5e39; border-radius:10px; padding:10px 13px; font-size:13px; margin:8px 0 2px; line-height:1.6}
+
+  /* Dark mode */
+  body.theme-dark{ --bg:#0f1420; --panel:#161d2b; --ink:#e7ebf3; --muted:#9aa6bd; --line:#2a3446; --brand:#5b8def; --brand-d:#a9c4ff; --brand-soft:#1b2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.3) }
+  body.theme-dark .b-step,body.theme-dark .b-check,body.theme-dark .b-field,body.theme-dark .ed-block,body.theme-dark .modal,body.theme-dark .type-card,body.theme-dark .qa-card,body.theme-dark .store-status,body.theme-dark .btn,body.theme-dark .chip,body.theme-dark .search input,body.theme-dark .field input,body.theme-dark .field textarea,body.theme-dark .field select,body.theme-dark .ed-block textarea,body.theme-dark .ed-block input[type=text],body.theme-dark .ci-item,body.theme-dark .course-item{background:var(--panel); color:var(--ink)}
+  body.theme-dark .toc,body.theme-dark .runner,body.theme-dark .b-related,body.theme-dark .pv-pane,body.theme-dark .b-substep,body.theme-dark .ci-add select{background:#121a28}
+  body.theme-dark .doc-type,body.theme-dark .tag,body.theme-dark .b-term dt,body.theme-dark .b-table th,body.theme-dark .b-substep .snum{background:#222c40; color:var(--ink)}
+  body.theme-dark .b-table td{background:var(--panel)} body.theme-dark .b-table tr:nth-child(even) td{background:#1b2334}
+  body.theme-dark mark{background:#7a6a16; color:#fff}
+  body.theme-dark .b-qa .a{color:var(--ink)}
+
+  /* scale reading body text */
+  .doc-body .b-text,.doc-body .b-step .body,.doc-body .b-substep .body,.doc-body .callout,.doc-body .b-check,.doc-body .b-field .bf-body,.doc-body .b-qa .a,.doc-body .b-term dd{font-size:var(--rfs)}
   .b-table{width:100%; border-collapse:collapse; font-size:14.5px; border-radius:10px; border:1px solid var(--line)}
   .b-table th,.b-table td{border:1px solid var(--line); padding:9px 12px; text-align:left}
   .b-table th{background:#f1f4f9; font-weight:700}
@@ -333,6 +356,7 @@
     <button class="hamb" id="hamb" title="一覧">☰</button>
     <div class="logo"><span class="mark">📘</span><div>手順書ナビ<br><small>マニュアル・手順書作成システム</small></div></div>
     <div class="spacer"></div>
+    <button class="btn ghost" id="btnView" title="表示設定（文字サイズ・配色）">🌓<span class="lbl-full"> 表示</span></button>
     <button class="store-status" id="btnStore" title="データの保存先"><span class="dot"></span><span id="storeLabel">保存先</span></button>
     <button class="btn ghost" id="btnImport" title="JSONを読み込む">📥<span class="lbl-full"> 読込</span></button>
     <button class="btn ghost" id="btnExport" title="JSONに書き出す">📤<span class="lbl-full"> 書出</span></button>
@@ -369,6 +393,11 @@
   const STORE_KEY = "tejunsho-navi-v1";
   const LOCAL_KEY = "tejunsho-navi-local-v1";
   const DRAFT_KEY = "tejunsho-navi-draft-v2";
+  const SETTINGS_KEY = "tejunsho-navi-settings-v1";
+  let settings = {fontScale:"m", theme:"light"};
+  function loadSettings(){ try{ const r=localStorage.getItem(SETTINGS_KEY); if(r) settings=Object.assign(settings,JSON.parse(r)); }catch(e){} }
+  function saveSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){} }
+  function applySettings(){ const b=document.body; b.classList.remove("fs-s","fs-m","fs-l"); b.classList.add("fs-"+(settings.fontScale||"m")); b.classList.toggle("theme-dark", settings.theme==="dark"); }
 
   const DOC_TYPES = {
     procedure:{label:"手順書",      icon:"📋", desc:"番号付きの作業手順を順を追って。"},
@@ -381,7 +410,7 @@
   };
   const BLOCK_TYPES = {
     heading:{label:"見出し",  icon:"H"}, text:{label:"本文", icon:"¶"}, field:{label:"記入欄", icon:"▤"},
-    step:{label:"手順ステップ", icon:"1."}, callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"},
+    step:{label:"手順ステップ", icon:"1."}, substep:{label:"サブステップ", icon:"a."}, callout:{label:"注記/注意", icon:"!"}, check:{label:"チェック項目", icon:"☑"},
     branch:{label:"分岐", icon:"🔀"}, qa:{label:"Q&A", icon:"Q"}, term:{label:"用語", icon:"語"},
     table:{label:"表", icon:"⊞"}, related:{label:"関連文書", icon:"🔗"}, image:{label:"画像", icon:"🖼"}, code:{label:"コード/コマンド", icon:"</>"}
   };
@@ -533,14 +562,15 @@
     return '<nav class="toc"><h4>目次</h4><ul>'+hs.map(h=>'<li class="lvl'+(h.level||1)+'"><a data-jump="blk-'+h.i+'">'+esc(h.text)+"</a></li>").join("")+"</ul></nav>";
   }
   function renderBlocks(blocks, ctx){
-    let stepNo=0;
+    let stepNo=0, subNo=0;
     return blocks.map((b,i)=>{ switch(b.type){
       case "heading":{ const lv=b.level||1; const tag=lv===2?"h4":"h3"; return "<"+tag+' class="block b-heading lvl'+lv+'" id="blk-'+i+'">'+hl(inlineMd(esc(b.text)))+"</"+tag+">"; }
       case "text": return '<div class="block b-text">'+fmtHL(b.text)+"</div>";
+      case "substep":{ subNo++; const letter=String.fromCharCode(96+Math.min(subNo,26)); return '<div class="block b-substep"><div class="snum">'+(stepNo?stepNo+"-":"")+letter+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
       case "field": return (b.label||b.text)?'<div class="block b-field"><div class="bf-label">'+hl(esc(b.label||""))+'</div><div class="bf-body">'+(fmtHL(b.text)||'<span style="color:var(--muted)">（未記入）</span>')+"</div></div>":"";
       case "related":{ const ids=(b.ids||[]).filter(id=>docs.find(x=>x.id===id)); if(!ids.length) return "";
         return '<div class="block b-related"><div class="br-title">🔗 関連する文書</div><ul>'+ids.map(id=>{ const dd=docs.find(x=>x.id===id); const ic=DOC_TYPES[dd.type||"general"].icon; return '<li><a data-godoc="'+id+'">'+ic+" "+esc(dd.title)+"</a></li>"; }).join("")+"</ul></div>"; }
-      case "step":{ stepNo++; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
+      case "step":{ stepNo++; subNo=0; return '<div class="block b-step" id="blk-'+i+'"><div class="num">'+stepNo+'</div><div class="body">'+fmtHL(b.text)+"</div></div>"; }
       case "callout":{ const v=b.variant||"info"; const L={info:"メモ",tip:"ヒント",warning:"注意",danger:"禁止/危険"}; return '<div class="block callout '+v+'"><span class="lbl">'+L[v]+"</span>"+fmtHL(b.text)+"</div>"; }
       case "check":{ const checked = ctx&&ctx.docId ? getCheck(ctx.docId,b.bid) : false;
         return '<label class="block b-check'+(checked?" done":"")+'" data-bid="'+(b.bid||"")+'"><input type="checkbox" '+(checked?"checked":"")+'><span class="ck-text">'+fmtHL(b.text)+"</span></label>"; }
@@ -811,7 +841,7 @@
         + '<div class="field"><label>最終確認日</label><input type="date" id="edReviewed" value="'+esc(draft.reviewed||"")+'"></div>'
         + '<div class="field"><label>見直し間隔</label><select id="edReviewEvery">'+[[0,"なし"],[1,"1ヶ月ごと"],[3,"3ヶ月ごと"],[6,"6ヶ月ごと"],[12,"1年ごと"]].map(function(p){return '<option value="'+p[0]+'" '+((draft.reviewEvery||0)===p[0]?"selected":"")+">"+p[1]+"</option>";}).join("")+"</select></div></div>"
       + '<div class="ed-row"><div class="field"><label>今回の変更メモ（任意・変更履歴に残ります）</label><input type="text" id="edChangeNote" placeholder="例）連絡先を更新 / 手順3を追加"></div></div>'
-      + '<div class="sec-title" style="margin:16px 4px 4px">本文ブロック</div><div class="ed-blocks" id="edBlocks"></div>'
+      + '<div class="sec-title" style="margin:16px 4px 4px">本文ブロック</div><div id="chunkHint"></div><div class="ed-blocks" id="edBlocks"></div>'
       + '<div class="add-bar"><span class="lbl">ブロックを追加</span><div class="add-grid">'+Object.keys(BLOCK_TYPES).map(t=>'<button class="addbtn" data-add="'+t+'">'+BLOCK_TYPES[t].icon+" "+BLOCK_TYPES[t].label+"</button>").join("")+"</div></div>"
       + '<div class="ed-footer"><span class="save-state"></span><button class="btn" id="edCancel">キャンセル</button><button class="btn primary" id="edSave">💾 保存</button></div></div>'
       + '<div class="pv-pane"><div class="reading" id="previewBody"></div></div></div>';
@@ -835,8 +865,12 @@
     if(t==="field") nb.label=""; if(t==="related"){ nb.ids=[]; delete nb.text; }
     ensureBids([nb]); draft.blocks.push(nb); renderEdBlocks(container); saveDraftAuto(); schedulePreview();
     const last=container.lastElementChild; if(last){ const inp=last.querySelector("textarea,input"); if(inp) inp.focus(); } }
-  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; return; }
-    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); }
+  function renderEdBlocks(container){ if(!draft.blocks.length){ container.innerHTML='<div class="empty-list">下のボタンからブロックを追加してください</div>'; updateChunkHint(); return; }
+    container.innerHTML=""; draft.blocks.forEach((b,i)=>container.appendChild(renderEdBlock(b,i,container))); updateChunkHint(); }
+  function updateChunkHint(){ const el=document.getElementById("chunkHint"); if(!el||!draft) return;
+    let run=0,maxRun=0; (draft.blocks||[]).forEach(b=>{ if(b.type==="step"){ run++; if(run>maxRun) maxRun=run; } else if(b.type==="heading"){ run=0; } });
+    el.innerHTML = maxRun>9 ? '<div class="chunk-hint">💡 見出しで区切らずに手順が約'+maxRun+'個並んでいます。<b>見出しで区切る</b>か<b>サブステップ</b>にまとめると覚えやすくなります（目安は5〜9個）。</div>' : "";
+  }
   function renderEdBlock(b,i,container){
     const el=document.createElement("div"); el.className="ed-block"; el.draggable=true; el.dataset.idx=i; const total=draft.blocks.length;
     let head='<div class="bhead"><span class="drag-h" title="ドラッグで移動">⠿</span><span class="btype">'+(BLOCK_TYPES[b.type]?BLOCK_TYPES[b.type].label:b.type)+"</span>";
@@ -851,7 +885,7 @@
     else if(b.type==="branch") bodyHTML='<input type="text" class="br-q" placeholder="問い（例：在庫はありますか？）" value="'+esc(b.text||"")+'" style="margin-bottom:8px"><div class="mini">条件ごとの分かれ道を書きます。</div><div class="br-opts"></div><button class="addbtn br-add" style="margin-top:4px">＋ 分岐を追加</button>';
     else if(b.type==="field") bodyHTML='<input type="text" class="bf-label-in" placeholder="項目名（例：目的 / 前提・必要なもの / 担当）" value="'+esc(b.label||"")+'" style="margin-bottom:8px;font-weight:700"><textarea class="b-text-in" rows="2" placeholder="ここに記入してください">'+esc(b.text||"")+"</textarea>";
     else if(b.type==="related") bodyHTML='<div class="mini">関連づける文書を選びます（読者はクリックで移動できます）。</div><div class="rel-list"></div><select class="rel-add"></select>';
-    else { const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||""; const rows=(b.type==="text"||b.type==="code")?3:2; bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>"; }
+    else { const ph={heading:"見出しテキスト",text:"本文（**太字** *斜体* [リンク](https://...) や - 箇条書き が使えます）",step:"このステップでやること（1ステップ＝1動作・動詞で始める）",substep:"サブステップ（前の手順の細目）",callout:"注意書きの内容",check:"確認する項目",code:"コマンドやコードを貼り付け"}[b.type]||""; const rows=(b.type==="text"||b.type==="code")?3:2; bodyHTML='<textarea class="b-text-in" rows="'+rows+'" placeholder="'+ph+'">'+esc(b.text||"")+"</textarea>"; }
     el.innerHTML=head+bodyHTML;
     const bindText=(sel,key)=>{ const x=el.querySelector(sel); if(x) x.addEventListener("input",()=>{ b[key]=x.value; schedulePreview(); saveDraftAuto(); }); };
     bindText(".b-text-in","text"); bindText(".b-caption","caption"); bindText(".qa-q","q"); bindText(".qa-a","a"); bindText(".tm-term","term"); bindText(".tm-desc","desc"); bindText(".br-q","text"); bindText(".bf-label-in","label");
@@ -1074,6 +1108,18 @@
 
   /* ---------- Modal ---------- */
   function closeModal(){ const r=document.getElementById("modalRoot"); r.innerHTML=""; }
+  function openViewModal(){
+    const r=document.getElementById("modalRoot");
+    r.innerHTML='<div class="modal-scrim" id="mScrim"><div class="modal"><h3>🌓 表示設定</h3>'
+      +'<p>読みやすさを調整できます（この端末に保存）。研究では「本文は1行50〜75字／文字は大きめ／行間広め」が読みやすいとされています。本文の幅もその目安に合わせています。</p>'
+      +'<div class="m-status"><div style="font-weight:700;margin-bottom:8px">文字サイズ</div><div class="m-actions" id="fsBtns"><button class="btn" data-fs="s">小</button><button class="btn" data-fs="m">標準</button><button class="btn" data-fs="l">大</button></div></div>'
+      +'<div class="m-status"><div style="font-weight:700;margin-bottom:8px">配色</div><div class="m-actions" id="thBtns"><button class="btn" data-th="light">☀️ ライト</button><button class="btn" data-th="dark">🌙 ダーク</button></div></div>'
+      +'<div class="m-actions"><button class="btn" id="mClose">閉じる</button></div></div></div>';
+    const mark=()=>{ document.querySelectorAll("#fsBtns .btn").forEach(b=>b.classList.toggle("primary",b.dataset.fs===settings.fontScale)); document.querySelectorAll("#thBtns .btn").forEach(b=>b.classList.toggle("primary",b.dataset.th===settings.theme)); };
+    document.querySelectorAll("#fsBtns .btn").forEach(b=>b.onclick=()=>{ settings.fontScale=b.dataset.fs; applySettings(); saveSettings(); mark(); });
+    document.querySelectorAll("#thBtns .btn").forEach(b=>b.onclick=()=>{ settings.theme=b.dataset.th; applySettings(); saveSettings(); mark(); });
+    const $=id=>document.getElementById(id); $("mClose").onclick=closeModal; $("mScrim").onclick=e=>{ if(e.target.id==="mScrim") closeModal(); }; mark();
+  }
   function openStoreModal(){
     const r=document.getElementById("modalRoot");
     let body;
@@ -1104,8 +1150,10 @@
     if($("mReload")) $("mReload").onclick=async()=>{ await loadFromFile(); toast("最新を読み込みました"); closeModal(); };
   }
 
+  loadSettings(); applySettings();
   load(); bindGlobal();
   document.getElementById("btnStore").onclick=openStoreModal;
+  document.getElementById("btnView").onclick=openViewModal;
   mode="welcome"; render(); renderFileStatus(); tryRestoreHandle();
 })();
 </script>
