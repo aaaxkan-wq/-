@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アプリ一覧</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;
+    background:#f4f6f9;color:#1d2330;margin:0;display:grid;place-items:center;min-height:100vh;padding:24px;line-height:1.7}
+  .wrap{max-width:520px;width:100%}
+  .h{font-size:22px;font-weight:800;margin:0 0 4px}
+  .s{color:#6b7385;margin:0 0 22px;font-size:14px}
+  a.card{display:flex;gap:14px;align-items:center;text-decoration:none;color:#1d2330;background:#fff;
+    border:1px solid #e3e7ee;border-radius:14px;padding:18px;margin-bottom:12px;
+    box-shadow:0 1px 2px rgba(20,30,60,.06),0 6px 24px rgba(20,30,60,.06);transition:.12s}
+  a.card:hover{border-color:#2f6df0;transform:translateY(-2px)}
+  .ic{font-size:30px;flex:none}
+  .t{font-weight:800;display:block}
+  .d{font-size:13px;color:#6b7385;margin-top:2px;display:block}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="h">アプリ一覧</h1>
+    <p class="s">使うものを選んでください。</p>
+    <a class="card" href="./manual/"><span class="ic">📘</span><span><span class="t">手順書ナビ</span><span class="d">マニュアル・手順書・チェックリスト・Q&amp;Aの作成と共有</span></span></a>
+    <a class="card" href="./sleep/"><span class="ic">😴</span><span><span class="t">ねむりログ（睡眠サイクル）</span><span class="d">睡眠リズムの計画・最適化</span></span></a>
+  </div>
+</body>
+</html>
