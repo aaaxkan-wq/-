@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<!-- 外部通信をしないことをブラウザ側でも保証する（読み込み・送信をすべて禁止） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>コンディション予報</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, .10);
+    --series: #2a78d6;
+    --wash: rgba(42, 120, 214, .12);
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --grid: #2c2c2a;
+      --axis: #4a4a46;
+      --border: rgba(255, 255, 255, .10);
+      --series: #3987e5;
+      --wash: rgba(57, 135, 229, .18);
+      --critical: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.65 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  }
+  .page { max-width: 640px; margin: 0 auto; padding: 18px 12px 48px; }
+  h1 { font-size: 19px; line-height: 1.3; margin: 0; }
+  .lead { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); }
+  h2 { font-size: 14px; line-height: 1.4; margin: 0 0 10px; }
+  h3 { font-size: 13px; line-height: 1.4; margin: 14px 0 2px; }
+  h3:first-of-type { margin-top: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  .card {
+    margin-top: 12px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .status {
+    margin-top: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    background: var(--surface);
+    border: 1px solid var(--axis);
+    border-left: 4px solid var(--ink-2);
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+  }
+  .status.error { border-color: var(--critical); }
+  .note { margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+
+  /* 現在値 */
+  .now-label { font-size: 13px; color: var(--ink-2); }
+  .hero { font-size: 60px; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
+  .hero span { font-size: 26px; font-weight: 600; margin-left: 2px; }
+  .facts { margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; }
+  .facts li { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--grid); }
+  .facts .k { flex: none; width: 6.5em; color: var(--ink-2); }
+  .facts .v { font-variant-numeric: tabular-nums; }
+
+  /* グラフ */
+  #chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+  #chart text { font-size: 11px; fill: var(--ink-2); }
+  #chart .grid { stroke: var(--grid); stroke-width: 1; }
+  #chart .base { stroke: var(--axis); stroke-width: 1; }
+  #chart .band { fill: var(--wash); }
+  #chart .curve { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  #chart .event { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
+  #chart .dot { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
+  #chart .ring { fill: var(--surface); stroke: var(--series); stroke-width: 2; }
+  #chart .tag { fill: var(--ink); font-weight: 600; }
+  #chart .tag-bg { fill: var(--surface); }
+  #chart .cross { stroke: var(--ink-2); stroke-width: 1; }
+  #chart .tip-bg { fill: var(--ink); }
+  #chart .tip { fill: var(--surface); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+  .legend li { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .legend svg { flex: none; }
+  .legend .dot { fill: var(--series); }
+  .legend .ring { fill: var(--surface); stroke: var(--series); stroke-width: 2; }
+  .legend .band { fill: var(--wash); stroke: var(--series); stroke-width: 1; }
+  .legend .event { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
+
+  /* 表 */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 8px 6px; text-align: left; vertical-align: top; border-top: 1px solid var(--grid); }
+  th:first-child, td:first-child { padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+  thead th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  td.time { white-space: nowrap; font-weight: 700; font-variant-numeric: tabular-nums; }
+  td.time small { display: block; font-size: 11px; font-weight: 400; color: var(--ink-2); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  #muse-result {
+    margin: 0;
+    font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .notes { font-size: 12.5px; color: var(--ink-2); }
+  .notes ul { margin: 0; padding-left: 1.2em; }
+  .notes li { margin-top: 4px; }
+  .notes code { font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>コンディション予報</h1>
+  <p class="lead">睡眠記録から計算した、今日の注意・反応の目安</p>
+
+  <!-- 1. 状態表示（サンプル表示中・エラーのときだけ） -->
+  <p id="status" class="status" role="status" hidden></p>
+  <noscript><p class="status error">このページは JavaScript で計算します。JavaScript を有効にしてください。</p></noscript>
+
+  <!-- 2. 現在値 -->
+  <section id="sec-now" class="card" hidden>
+    <p id="now-label" class="now-label"></p>
+    <p class="hero"><b id="now-value"></b><span>%</span></p>
+    <ul id="facts" class="facts"></ul>
+  </section>
+
+  <!-- 3. 今日のグラフ -->
+  <section id="sec-chart" class="card" hidden>
+    <h2>今日のグラフ</h2>
+    <div id="chart"></div>
+    <ul id="legend" class="legend"></ul>
+  </section>
+
+  <!-- 4. 今日の通知計画 -->
+  <section id="sec-plan" class="card" hidden>
+    <h2>今日の通知計画</h2>
+    <div id="plan"></div>
+  </section>
+
+  <!-- 5. 就寝時刻の比較 -->
+  <section id="sec-compare" class="card" hidden>
+    <h2>就寝時刻の比較</h2>
+    <div id="compare"></div>
+  </section>
+
+  <!-- 6. 条件付きの項目（該当するときだけ） -->
+  <section id="sec-cond" class="card" hidden>
+    <div id="cond"></div>
+  </section>
+
+  <!-- 7. 結果ブロック（Muse が読む JSON） -->
+  <section class="card">
+    <h2>結果ブロック</h2>
+    <pre id="muse-result"></pre>
+  </section>
+
+  <!-- 8. 注記 -->
+  <section class="card notes">
+    <h2>注記</h2>
+    <ul>
+      <li>数値は集団平均にもとづく目安で、個人の実測値ではありません。医療機器ではなく、診断や治療の判断には使えません。</li>
+      <li>注意・反応％は、Hursh ら（2004）の3プロセスモデル（SAFTE）を、公開されている式と既定値のまま計算しています。目安として、77%は「18.5時間起き続けた状態」「血中アルコール濃度0.05%」と同水準とされます。</li>
+      <li>谷やピークの時刻は体内時計の位相（24時間成分の頂点を18:00に固定）で決まります。実感とずれるときは <code>shift</code> で補正します。極端な朝型や夜型、時差、交代勤務には対応しません。</li>
+      <li>筋力・筋持久力、カフェイン締切、入浴、仮眠は、モデルとは別の研究の平均値です。カフェイン締切の中間量は線形補間による近似です。</li>
+      <li>睡眠記録はURLの <code>#</code> 以降で受け取り、このページの中だけで計算します。保存も外部への送信もしません。</li>
+      <li>URLの形式：<code>#s=開始/終了,開始/終了,…&amp;now=YYYY-MM-DDTHH:MM</code>（時刻は現地時刻。各時刻は <code>YYYY-MM-DDTHH:MM</code>）</li>
+    </ul>
+    <h3>出典</h3>
+    <ul>
+      <li>モデルの式と既定値：<a rel="noopener noreferrer" href="https://fatiguescience.com/hubfs/FatigueScience_June2024/Pdf/SAFTE-Validation-in-US-Army-Soldiers.pdf?hsLang=en">Hursh ら 2004</a></li>
+      <li>77%の目安：<a rel="noopener noreferrer" href="https://www.leonsoftware.com/blog/real-time-fatigue-analysis-with-safte-fast-in-leon.html">SAFTE-FASTの説明（Leon Software）</a></li>
+      <li>注意と推論の差：<a rel="noopener noreferrer" href="https://www.med.upenn.edu/uep/assets/user-content/documents/LimDinges2010MetaAnalysis.pdf">Lim &amp; Dinges 2010</a></li>
+      <li>寝不足と運動成績：<a rel="noopener noreferrer" href="https://www.pubmed.gov/35708888/">Craven ら 2022</a></li>
+      <li>筋力と筋持久力：<a rel="noopener noreferrer" href="https://www.strongerbyscience.com/research-spotlight-sleep-loss/">同研究の解説（Stronger By Science）</a></li>
+      <li>カフェイン締切：<a rel="noopener noreferrer" href="https://www.pubmed.gov/36870101/">Gardiner ら 2023</a></li>
+      <li>入浴の条件：<a rel="noopener noreferrer" href="https://www.em-consulte.com/article/1301348/before-bedtime-passive-body-heating-by-warm-shower">Haghayegh ら 2019</a></li>
+      <li>入浴の時刻：<a rel="noopener noreferrer" href="https://cockrell.utexas.edu/?p=23504">テキサス大学の発表</a></li>
+      <li>仮眠：<a rel="noopener noreferrer" href="https://www.pubmed.gov/34639511/">Dutheil ら 2021</a></li>
+    </ul>
+  </section>
+</main>
+
+<script id="core">
+/* ============================================================
+ * コンディション予報：計算部
+ * 純粋関数だけで構成する。DOM・Date・乱数・保存領域には触れない。
+ * 時刻はすべて「分単位の通し番号」（1970-01-01T00:00 を 0 とする現地時刻）で扱う。
+ * ============================================================ */
+var ConditionForecast = (function () {
+  'use strict';
+
+  var DAY = 1440;
+
+  /* 3プロセスモデル（SAFTE）の既定パラメータ。仕様書 4.1 節 */
+  var MODEL = {
+    Rc: 2880,       // 貯蔵量の上限
+    K: 0.5,         // 覚醒中の消費（毎分）
+    f: 0.0026564,   // 不足分に比例する回復の係数（毎分）
+    as: 0.55,       // 回復に対する体内時計の重み
+    SImax: 4.4,     // 回復速度の上限（毎分）
+    p: 18,          // 24時間成分の頂点（時）
+    pPrime: 3,      // 12時間成分のずれ（時）
+    beta: 0.5,      // 12時間成分の相対振幅
+    a1: 7,          // 体内時計の振幅（基本, %）
+    a2: 5,          // 体内時計の振幅（不足時の上乗せ, %）
+    Imax: 5,        // 睡眠慣性の最大値（%）
+    i: 0.04         // 睡眠慣性の時定数
+  };
+
+  var KEYS = ['s', 'now', 'need', 'bed', 'wake', 'act', 'cafmg', 'whatif', 'gym', 'win', 'shift', 'max'];
+
+  var DEFAULTS = { need: 450, bed: 23 * 60, actStart: 8 * 60, actEnd: 17 * 60, cafmg: 107, shift: 0, max: 5 };
+
+  var RULES = {
+    minWakeSleep: 180,     // 起床時刻とみなす睡眠の最短（分）
+    episodeGap: 60,        // この分数以内の途中覚醒は、起床判定では1つの睡眠として数える
+    shortSleep: 360,       // 寝不足の日：起床までの24時間の睡眠合計がこの分数以下
+    minDays: 7,            // 睡眠記録の最低日数
+    valleyFrom: 11 * 60,   // 谷を探す範囲の開始（時刻）
+    peakLen: 90,           // ピーク時間帯の長さ（分）
+    focusLen: 60,          // 集中に向く時間帯の長さ（分）
+    grid: 5,               // 区間・谷を探す刻み（分）
+    morningWithin: 180,    // morning 通知：起床からこの分数以内
+    valleyLead: 20,        // valley 通知：谷のこの分数前
+    gymLead: 30,           // gym 通知：運動のこの分数前
+    bathLead: 90,          // 入浴・night 通知：就寝目標のこの分数前
+    napAt: 12 * 60,        // nap 通知の時刻
+    napBefore: 13 * 60,    // 仮眠はこの時刻まで
+    napMinutes: 20,
+    gymFrom: 12 * 60,      // 運動の助言を出すのは、この時刻以降の運動だけ
+    strength: 97,
+    endurance: 90,
+    maxHistoryDays: 400    // これより古い記録が混じる入力は誤りとみなす（計算量の保護）
+  };
+
+  /* パラメータなしのときに使うサンプル（固定値。ブラウザの時計に依存しない） */
+  var SAMPLE = {
+    now: '2026-11-10T07:10',
+    s: [
+      '2026-10-27T23:05/2026-10-28T06:40', '2026-10-28T23:20/2026-10-29T06:45',
+      '2026-10-29T23:00/2026-10-30T06:30', '2026-10-30T23:45/2026-10-31T07:20',
+      '2026-10-31T23:55/2026-11-01T07:40', '2026-11-01T23:10/2026-11-02T06:40',
+      '2026-11-02T23:15/2026-11-03T06:45', '2026-11-03T23:30/2026-11-04T06:45',
+      '2026-11-04T23:25/2026-11-05T06:30', '2026-11-05T23:00/2026-11-06T06:30',
+      '2026-11-06T23:50/2026-11-07T06:50', '2026-11-07T23:40/2026-11-08T07:00',
+      '2026-11-08T23:10/2026-11-09T06:45', '2026-11-09T23:40/2026-11-10T06:50'
+    ].join(',')
+  };
+
+  /* ---------- 時刻（文字列 ⇔ 分単位の通し番号） ---------- */
+
+  function mod(a, n) { return ((a % n) + n) % n; }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function daysFromCivil(y, m, d) {
+    y -= m <= 2 ? 1 : 0;
+    var era = Math.floor(y / 400);
+    var yoe = y - era * 400;
+    var doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+    var doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+    return era * 146097 + doe - 719468;
+  }
+
+  function civilFromDays(z) {
+    z += 719468;
+    var era = Math.floor(z / 146097);
+    var doe = z - era * 146097;
+    var yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+    var doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+    var mp = Math.floor((5 * doy + 2) / 153);
+    var d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+    var m = mp + (mp < 10 ? 3 : -9);
+    return { y: yoe + era * 400 + (m <= 2 ? 1 : 0), m: m, d: d };
+  }
+
+  function daysInMonth(y, m) {
+    if (m === 2) return (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 29 : 28;
+    return (m === 4 || m === 6 || m === 9 || m === 11) ? 30 : 31;
+  }
+
+  /* "YYYY-MM-DDTHH:MM"（秒が付いていれば切り捨て）→ 通し番号。不正なら null */
+  function parseDateTime(text) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(String(text).trim());
+    if (!m) return null;
+    var y = +m[1], mo = +m[2], d = +m[3], h = +m[4], mi = +m[5];
+    if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth(y, mo) || h > 23 || mi > 59) return null;
+    return daysFromCivil(y, mo, d) * DAY + h * 60 + mi;
+  }
+
+  /* "HH:MM" → 0〜1439。不正なら null */
+  function parseClock(text) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(String(text).trim());
+    if (!m) return null;
+    var h = +m[1], mi = +m[2];
+    if (h > 23 || mi > 59) return null;
+    return h * 60 + mi;
+  }
+
+  function formatClock(t) {
+    var c = mod(Math.round(t), DAY);
+    return pad2(Math.floor(c / 60)) + ':' + pad2(c % 60);
+  }
+
+  function formatDateTime(t) {
+    var c = civilFromDays(Math.floor(t / DAY));
+    return c.y + '-' + pad2(c.m) + '-' + pad2(c.d) + 'T' + formatClock(t);
+  }
+
+  function dayStart(t) { return Math.floor(t / DAY) * DAY; }
+
+  /* 時刻 clock（0〜1439）が、通し番号 after より後に最初に来る時点 */
+  function nextClock(clock, after) {
+    var t = dayStart(after) + clock;
+    return t > after ? t : t + DAY;
+  }
+
+  function ceilGrid(t) { return Math.ceil(t / RULES.grid) * RULES.grid; }
+
+  /* ---------- 入力 ---------- */
+
+  function safeDecode(text) {
+    try { return decodeURIComponent(text); } catch (e) { return text; }
+  }
+
+  function parsePairs(text) {
+    var out = {};
+    String(text || '').split('&').forEach(function (part) {
+      if (!part) return;
+      var eq = part.indexOf('=');
+      var key = safeDecode(eq < 0 ? part : part.slice(0, eq)).trim();
+      var value = safeDecode(eq < 0 ? '' : part.slice(eq + 1)).trim();
+      if (KEYS.indexOf(key) >= 0) out[key] = value;
+    });
+    return out;
+  }
+
+  /* クエリ文字列とフラグメントを読む。同じキーが両方にあればフラグメントを優先する */
+  function readParams(search, hash) {
+    var q = parsePairs(String(search || '').replace(/^\?/, ''));
+    var h = parsePairs(String(hash || '').replace(/^#/, ''));
+    var values = {};
+    var any = false;
+    KEYS.forEach(function (key) {
+      var v = Object.prototype.hasOwnProperty.call(h, key) ? h[key]
+        : Object.prototype.hasOwnProperty.call(q, key) ? q[key] : null;
+      if (v === null) return;
+      any = true;
+      if (v !== '') values[key] = v;   // 値が空のキーは未指定として扱う
+    });
+    return { any: any, values: values };
+  }
+
+  function mergeIntervals(list) {
+    var sorted = list.slice().sort(function (a, b) { return a.start - b.start || a.end - b.end; });
+    var out = [];
+    sorted.forEach(function (iv) {
+      var last = out[out.length - 1];
+      if (last && iv.start <= last.end) last.end = Math.max(last.end, iv.end);
+      else out.push({ start: iv.start, end: iv.end });
+    });
+    return out;
+  }
+
+  function parseRange(text) {
+    var m = /^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/.exec(text);
+    if (!m) return null;
+    var a = parseClock(m[1]), b = parseClock(m[2]);
+    if (a === null || b === null || a === b) return null;
+    return { start: a, end: b };
+  }
+
+  /* 文字列のパラメータを検証して数値にする。失敗したら { error } を返す */
+  function normalize(raw, clockNow) {
+    var cfg = { nowText: null };
+    function fail(message) { return { error: message, nowText: cfg.nowText }; }
+
+    var nowSource = raw.now !== undefined ? raw.now : clockNow;
+    var now = parseDateTime(nowSource === undefined || nowSource === null ? '' : nowSource);
+    if (now === null) {
+      return fail(raw.now !== undefined
+        ? 'now の書式が不正です（YYYY-MM-DDTHH:MM）：' + raw.now
+        : 'now がなく、ブラウザの時計も読めません。now=YYYY-MM-DDTHH:MM を付けてください。');
+    }
+    cfg.now = now;
+    cfg.nowText = formatDateTime(now);
+
+    if (raw.s === undefined) return fail('睡眠区間（s）がありません。s=開始/終了,開始/終了,… の形で渡してください。');
+    var intervals = [];
+    var pieces = raw.s.split(',');
+    for (var k = 0; k < pieces.length; k++) {
+      var piece = pieces[k].trim();
+      var ends = piece.split('/');
+      var a = ends.length === 2 ? parseDateTime(ends[0]) : null;
+      var b = ends.length === 2 ? parseDateTime(ends[1]) : null;
+      if (a === null || b === null) {
+        return fail('s の書式が不正です（開始/終了 を YYYY-MM-DDTHH:MM で書き、カンマで区切る）：' + (piece || '（空）'));
+      }
+      if (b <= a) return fail('s の区間で、終了が開始より後になっていません：' + piece);
+      intervals.push({ start: a, end: b });
+    }
+    cfg.intervals = mergeIntervals(intervals);
+
+    function number(key, pattern, fallback, check, hint) {
+      if (raw[key] === undefined) { cfg[key] = fallback; return true; }
+      var v = pattern.test(raw[key]) ? Number(raw[key]) : NaN;
+      if (!isFinite(v) || !check(v)) { cfg.bad = key + ' の値が不正です（' + hint + '）：' + raw[key]; return false; }
+      cfg[key] = v;
+      return true;
+    }
+    function clock(key, fallback) {
+      if (raw[key] === undefined) { cfg[key] = fallback; return true; }
+      var v = parseClock(raw[key]);
+      if (v === null) { cfg.bad = key + ' の書式が不正です（HH:MM）：' + raw[key]; return false; }
+      cfg[key] = v;
+      return true;
+    }
+    function range(key, fallback) {
+      if (raw[key] === undefined) { cfg[key] = fallback; return true; }
+      var v = parseRange(raw[key]);
+      if (v === null) { cfg.bad = key + ' の書式が不正です（HH:MM-HH:MM）：' + raw[key]; return false; }
+      cfg[key] = v;
+      return true;
+    }
+
+    var ok = number('need', /^\d+(\.\d+)?$/, DEFAULTS.need, function (v) { return v > 0 && v <= DAY; }, '分。1〜1440')
+      && clock('bed', DEFAULTS.bed)
+      && clock('wake', null)
+      && range('act', { start: DEFAULTS.actStart, end: DEFAULTS.actEnd })
+      && number('cafmg', /^\d+(\.\d+)?$/, DEFAULTS.cafmg, function (v) { return v >= 0; }, 'mg。0以上')
+      && clock('gym', null)
+      && range('win', null)
+      && number('shift', /^[+-]?\d+$/, DEFAULTS.shift, function (v) { return Math.abs(v) <= 720; }, '分。-720〜720')
+      && number('max', /^\d+$/, DEFAULTS.max, function () { return true; }, '件数。0以上の整数');
+    if (!ok) return fail(cfg.bad);
+
+    cfg.whatif = null;
+    if (raw.whatif !== undefined) {
+      var list = raw.whatif.split(',').map(function (x) { return parseClock(x); });
+      if (list.some(function (x) { return x === null; })) {
+        return fail('whatif の書式が不正です（HH:MM をカンマで区切る）：' + raw.whatif);
+      }
+      cfg.whatif = list;
+    }
+    return cfg;
+  }
+
+  /* ---------- 3プロセスモデル（仕様書 4.1 節） ---------- */
+
+  /* 体内時計 c。tHours は時刻を時単位の小数で表した値、shiftMin は位相補正（分） */
+  function circadian(tHours, shiftMin) {
+    var p = MODEL.p + (shiftMin || 0) / 60;
+    return Math.cos(2 * Math.PI * (tHours - p) / 24)
+      + MODEL.beta * Math.cos(4 * Math.PI * (tHours - p - MODEL.pPrime) / 24);
+  }
+
+  function clampE(e) { return e < 0 ? 0 : e > 100 ? 100 : e; }
+
+  /*
+   * 睡眠履歴の先頭（貯蔵量は満杯）から tEnd まで、1分刻みで E を計算する。
+   * intervals は結合済みの睡眠区間。区間の外はすべて覚醒として扱う。
+   * 返り値の e[k] は時点 t0 + k の E（0〜100 に収める前の値）。
+   */
+  function simulate(intervals, tEnd, shiftMin) {
+    var M = MODEL;
+    var cTable = new Float64Array(DAY);
+    for (var c0 = 0; c0 < DAY; c0++) cTable[c0] = circadian(c0 / 60, shiftMin);
+
+    var t0 = intervals[0].start;
+    var e = new Float64Array(Math.max(1, tEnd - t0 + 1));
+    var R = M.Rc;
+    var k = 0;
+    var lastWake = null;   // 直近の覚醒時点
+    var siWake = 0;        // その直前の回復速度 SI
+    e[0] = 100 * R / M.Rc + cTable[mod(t0, DAY)] * M.a1;
+
+    for (var t = t0 + 1; t <= tEnd; t++) {
+      var prev = t - 1;
+      while (k < intervals.length && intervals[k].end <= prev) k++;
+      var iv = k < intervals.length ? intervals[k] : null;
+      var c = cTable[mod(t, DAY)];
+
+      if (iv && iv.start <= prev) {
+        // prev → t の1分間は睡眠。各区間の最初の5分間は回復しない
+        var si = (prev - iv.start < 5) ? 0
+          : Math.min(M.SImax, Math.max(0, -M.as * c + M.f * (M.Rc - R)));
+        R = Math.min(M.Rc, R + si);
+        if (t === iv.end) { lastWake = t; siWake = si; }
+      } else {
+        R = Math.max(0, R - M.K);
+      }
+
+      var inertia = 0;
+      var asleepAtT = iv && iv.start <= t && t < iv.end;
+      if (!asleepAtT && lastWake !== null && siWake > 0 && t - lastWake <= 120) {
+        inertia = M.Imax * Math.exp(-M.i * (t - lastWake) / siWake);
+      }
+      e[t - t0] = 100 * R / M.Rc + c * (M.a1 + M.a2 * (M.Rc - R) / M.Rc) - inertia;
+    }
+    return { t0: t0, e: e };
+  }
+
+  function valueAt(sim, t) { return clampE(sim.e[t - sim.t0]); }
+
+  /* [from, to] の1分刻みの平均と最小 */
+  function stats(sim, from, to) {
+    var sum = 0, min = Infinity;
+    for (var t = from; t <= to; t++) {
+      var v = valueAt(sim, t);
+      sum += v;
+      if (v < min) min = v;
+    }
+    return { avg: sum / (to - from + 1), min: min };
+  }
+
+  /* [from, to] の中で、長さ len 分の平均が最大になる区間（開始は5分刻み） */
+  function bestWindow(sim, from, to, len) {
+    var best = null;
+    for (var s = ceilGrid(from); s + len <= to; s += RULES.grid) {
+      var avg = stats(sim, s, s + len).avg;
+      if (best === null || avg > best.avg + 1e-9) best = { start: s, end: s + len, avg: avg };
+    }
+    return best;
+  }
+
+  /* [from, to] の中で E が最小になる時点（5分刻み。両端も候補に入れる） */
+  function lowestPoint(sim, from, to) {
+    var best = null;
+    function consider(t) {
+      var v = valueAt(sim, t);
+      if (best === null || v < best.value - 1e-9) best = { t: t, value: v };
+    }
+    consider(from);
+    for (var t = ceilGrid(from + 1); t < to; t += RULES.grid) consider(t);
+    if (to > from) consider(to);
+    best.atEdge = best.t === from || best.t === to;
+    return best;
+  }
+
+  /* ---------- モデルとは独立した単純な計算 ---------- */
+
+  function overlap(intervals, from, to) {
+    var total = 0;
+    intervals.forEach(function (iv) {
+      var a = Math.max(iv.start, from), b = Math.min(iv.end, to);
+      if (b > a) total += b - a;
+    });
+    return total;
+  }
+
+  /* カフェイン締切：就寝目標の何分前か（仕様書 4.5 節） */
+  function caffeineLeadMinutes(cafmg) {
+    var hours = cafmg <= 107 ? 8.8
+      : cafmg >= 217.5 ? 13.2
+        : 8.8 + (cafmg - 107) / 110.5 * 4.4;
+    return Math.round(hours * 60);
+  }
+
+  /* 途中覚醒（間隔 episodeGap 分以内）をまたいで、ひと続きの睡眠にまとめる */
+  function episodes(intervals) {
+    var out = [];
+    intervals.forEach(function (iv) {
+      var last = out[out.length - 1];
+      if (last && iv.start - last.end <= RULES.episodeGap) {
+        last.end = iv.end;
+        last.asleep += iv.end - iv.start;
+      } else {
+        out.push({ start: iv.start, end: iv.end, asleep: iv.end - iv.start });
+      }
+    });
+    return out;
+  }
+
+  /*
+   * 当日の起床時刻：now 以前に終わった、長さ3時間以上の睡眠のうち、最後のものの終了時刻。
+   * それが24時間以上前（または無い）なら、直近24時間に終わった最後の睡眠区間の終了時刻を使う。
+   * どちらも無ければ null。
+   */
+  function findWake(intervals, now) {
+    var main = null;
+    episodes(intervals).forEach(function (ep) {
+      if (ep.end <= now && ep.asleep >= RULES.minWakeSleep) main = ep.end;
+    });
+    if (main !== null && now - main < DAY) return main;
+    var lastEnd = null;
+    intervals.forEach(function (iv) { if (iv.end <= now) lastEnd = iv.end; });
+    return (lastEnd !== null && now - lastEnd < DAY) ? lastEnd : null;
+  }
+
+  /* 1日を正午から翌正午で区切ったときの日番号 */
+  function noonDay(t) { return Math.floor((t - 720) / DAY); }
+  function noonDayStart(index) { return index * DAY + 720; }
+
+  function median(values) {
+    var v = values.slice().sort(function (a, b) { return a - b; });
+    var mid = Math.floor(v.length / 2);
+    return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2);
+  }
+
+  /* ---------- 文面（仕様書 6 章） ---------- */
+
+  function textMorning(avg, peak, valley, debtMin) {
+    var range = formatClock(peak.start) + '〜' + formatClock(peak.end);
+    var text = '今日の注意・反応は日中平均' + avg + '%です。' + range + 'が最も高く、'
+      + formatClock(valley.t) + 'ごろに谷が来ます。重い作業は' + range + 'に回してください。';
+    if (debtMin > 0) text += '睡眠負債は' + Math.floor(debtMin / 60) + '時間' + (debtMin % 60) + '分です。';
+    return text;
+  }
+
+  function textValley(beforeCutoff, cutoff) {
+    var head = 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。';
+    return beforeCutoff
+      ? head + 'カフェインを摂るなら' + formatClock(cutoff) + 'までです。'
+      : head + 'カフェインは締切（' + formatClock(cutoff) + '）を過ぎているため、控えてください。';
+  }
+
+  var TEXT_NAP = '昨夜の睡眠が6時間以下でした。13:00までに20分前後の仮眠をおすすめします。起きてから30分は重要な作業を避けてください。';
+  var TEXT_GYM = '寝不足のため、筋力は約97%、筋持久力は約90%の見込みです。重量は維持し、回数とセット数を控えめにしてください。';
+  var TEXT_NAP_ADVICE = '13:00までに20分前後（30分未満）の仮眠をおすすめします。起きてから30分は重要な作業を避けてください。';
+  var TEXT_GYM_ADVICE = '重量は維持し、回数とセット数を控えめにしてください。';
+
+  function textNight(compare) {
+    var text = '入浴の時間です（40〜42.5℃で10分以上）。';
+    var rows = compare.filter(function (row) { return row.next_day_avg !== null; });
+    if (!rows.length) return text;
+    rows.forEach(function (row, n) {
+      text += (n ? '、' : '') + row.bed + (n ? 'なら' : 'に寝ると明日の日中は平均') + row.next_day_avg + '%';
+    });
+    return text + 'の見込みです。';
+  }
+
+  /* ---------- 本体 ---------- */
+
+  var KIND_PRIORITY = ['valley', 'morning', 'night', 'nap', 'gym'];
+
+  function forecast(cfg) {
+    var iv = cfg.intervals;
+    var now = cfg.now;
+
+    if (iv[iv.length - 1].end > now) {
+      return { error: 'now（' + formatDateTime(now) + '）より後に終わる睡眠区間があります。now を現地時刻で指定してください。' };
+    }
+    if (now - iv[0].start > RULES.maxHistoryDays * DAY) {
+      return { error: '睡眠区間の日付が now から離れすぎています。s と now の日付を確認してください。' };
+    }
+
+    var wake = findWake(iv, now);
+    if (wake === null) {
+      return { error: 'now（' + formatDateTime(now) + '）の直前24時間に終わった睡眠区間がありません。最新の睡眠記録が含まれているか確認してください。' };
+    }
+
+    // 睡眠負債：正午区切りで、起床時刻を含む日までの7日
+    var lastDay = noonDay(wake - 1);
+    var firstDay = lastDay - (RULES.minDays - 1);
+    var covered = lastDay - noonDay(iv[0].start) + 1;
+    if (covered < RULES.minDays) {
+      return { error: '睡眠記録が' + RULES.minDays + '日分に足りません（' + covered + '日分）。直近14日分を渡してください。' };
+    }
+    var debt = 0;
+    var wakeOffsets = [];
+    var eps = episodes(iv);
+    for (var d = firstDay; d <= lastDay; d++) {
+      var from = noonDayStart(d);
+      debt += cfg.need - overlap(iv, from, from + DAY);
+      var dayWake = null;
+      eps.forEach(function (ep) {
+        if (ep.asleep >= RULES.minWakeSleep && ep.end <= now && noonDay(ep.end - 1) === d) dayWake = ep.end - from;
+      });
+      if (dayWake !== null) wakeOffsets.push(dayWake);
+    }
+    debt = Math.max(0, Math.round(debt));
+
+    var shortSleep = overlap(iv, wake - DAY, wake) <= RULES.shortSleep;
+
+    // 就寝目標・翌朝の起床予定
+    var bedTarget = nextClock(cfg.bed, wake);
+    var wakeClock = cfg.wake !== null ? cfg.wake
+      : wakeOffsets.length ? mod(720 + median(wakeOffsets), DAY) : mod(wake, DAY);
+    var nextWake = nextClock(wakeClock, bedTarget);
+
+    // 今日の範囲
+    var day0 = dayStart(wake);
+    var actStart = day0 + cfg.act.start;
+    var actEnd = day0 + cfg.act.end + (cfg.act.end <= cfg.act.start ? DAY : 0);
+    var win = null;
+    if (cfg.win) {
+      win = { start: day0 + cfg.win.start, end: day0 + cfg.win.end + (cfg.win.end <= cfg.win.start ? DAY : 0) };
+      if (win.end <= wake) { win.start += DAY; win.end += DAY; }
+    }
+
+    // now より後は覚醒が続くものとして計算する
+    var horizon = Math.max(now, bedTarget, win ? win.end : 0);
+    var sim = simulate(iv, horizon, cfg.shift);
+
+    // 集計範囲：活動時間帯のうち、今日のカーブ（起床〜就寝目標）に入る部分
+    var from0 = Math.max(actStart, wake);
+    var to0 = Math.min(actEnd, bedTarget);
+    var dayAvg = to0 > from0 ? stats(sim, from0, to0).avg : null;
+    var peak = to0 - from0 >= RULES.peakLen ? bestWindow(sim, from0, to0, RULES.peakLen) : null;
+    var valleyFrom = Math.max(from0, day0 + RULES.valleyFrom);
+    var valley = valleyFrom <= to0 && to0 > from0 ? lowestPoint(sim, valleyFrom, to0) : null;
+
+    var cutoff = bedTarget - caffeineLeadMinutes(cfg.cafmg);
+    var bath = bedTarget - RULES.bathLead;
+
+    // 就寝時刻の比較
+    var bedtimes = cfg.whatif
+      ? cfg.whatif.map(function (c) { return nextClock(c, wake); })
+      : [bedTarget, bedTarget + 60, bedTarget + 90];
+    var day1 = dayStart(nextWake);
+    var act1Start = Math.max(day1 + cfg.act.start, nextWake);
+    var act1End = day1 + cfg.act.end + (cfg.act.end <= cfg.act.start ? DAY : 0);
+    var compare = [];
+    bedtimes.forEach(function (bed) {
+      if (bed < now || bed >= nextWake) return;   // 過ぎた時刻、起床予定より後の時刻は比べない
+      var row = { bed: formatClock(bed), next_day_avg: null, next_day_min: null };
+      if (act1End > act1Start) {
+        var next = simulate(mergeIntervals(iv.concat([{ start: bed, end: nextWake }])), act1End, cfg.shift);
+        var st = stats(next, act1Start, act1End);
+        row.next_day_avg = Math.round(st.avg);
+        row.next_day_min = Math.round(st.min);
+      }
+      compare.push(row);
+    });
+
+    // 条件付きの項目
+    var gymOn = cfg.gym !== null && shortSleep && cfg.gym >= RULES.gymFrom;
+    var physical = gymOn ? { strength: RULES.strength, endurance: RULES.endurance, advice: TEXT_GYM_ADVICE } : null;
+    var napAdvice = shortSleep
+      ? { before: formatClock(RULES.napBefore), minutes: RULES.napMinutes, text: TEXT_NAP_ADVICE } : null;
+    var focus = null;
+    if (win) {
+      var fw = bestWindow(sim, Math.max(win.start, now), win.end, RULES.focusLen);
+      if (fw) focus = { start: formatClock(fw.start), end: formatClock(fw.end), avg: Math.round(fw.avg) };
+    }
+
+    // 通知計画
+    var avgInt = dayAvg === null ? null : Math.round(dayAvg);
+    var plan = [];
+    if (now - wake <= RULES.morningWithin && dayAvg !== null && peak && valley) {
+      plan.push({ t: now, kind: 'morning', text: textMorning(avgInt, peak, valley, debt) });
+    }
+    if (valley) {
+      var vt = valley.t - RULES.valleyLead;
+      plan.push({ t: vt, kind: 'valley', text: textValley(vt < cutoff, cutoff) });
+    }
+    if (shortSleep) plan.push({ t: day0 + RULES.napAt, kind: 'nap', text: TEXT_NAP });
+    if (gymOn) plan.push({ t: day0 + cfg.gym - RULES.gymLead, kind: 'gym', text: TEXT_GYM });
+    plan.push({ t: bath, kind: 'night', text: textNight(compare) });
+
+    function priority(item) { return KIND_PRIORITY.indexOf(item.kind); }
+    plan = plan.filter(function (item) { return item.t >= now; })
+      .sort(function (a, b) { return priority(a) - priority(b); })
+      .slice(0, cfg.max)
+      .sort(function (a, b) { return a.t - b.t || priority(a) - priority(b); });
+
+    // 今日のカーブ（起床から就寝目標まで5分刻み。now が就寝目標を過ぎていれば now まで）
+    var chartEnd = Math.max(bedTarget, now);
+    var curve = [];
+    for (var t = wake; t < chartEnd; t = t === wake ? ceilGrid(wake + 1) : t + RULES.grid) {
+      curve.push({ t: t, e: valueAt(sim, t) });
+    }
+    curve.push({ t: chartEnd, e: valueAt(sim, chartEnd) });
+
+    var result = {
+      status: 'ok',
+      error: null,
+      demo: false,
+      now: formatDateTime(now),
+      wake_time: formatClock(wake),
+      attention_now: Math.round(valueAt(sim, now)),
+      attention_day_avg: avgInt,
+      peak: peak ? { start: formatClock(peak.start), end: formatClock(peak.end), avg: Math.round(peak.avg) } : null,
+      valley: valley ? { time: formatClock(valley.t), value: Math.round(valley.value), at_edge: valley.atEdge } : null,
+      sleep_debt_min: debt,
+      short_sleep: shortSleep,
+      caffeine_cutoff: formatClock(cutoff),
+      bath_time: formatClock(bath),
+      bedtime_compare: compare,
+      physical: physical,
+      nap_advice: napAdvice,
+      focus_window: focus,
+      notifications: plan.map(function (item) { return { time: formatClock(item.t), kind: item.kind, text: item.text }; })
+    };
+
+    var view = {
+      now: now, wake: wake, bedTarget: bedTarget, chartEnd: chartEnd, curve: curve,
+      nowValue: valueAt(sim, now),
+      peak: peak, valley: valley, cutoff: cutoff, bath: bath,
+      nextWake: nextWake,
+      gym: cfg.gym === null ? null : day0 + cfg.gym,
+      plan: result.notifications
+    };
+    return { result: result, view: view };
+  }
+
+  function errorOutput(message, nowText) {
+    return {
+      result: {
+        status: 'error', error: message, demo: false, now: nowText || null,
+        wake_time: null, attention_now: null, attention_day_avg: null, peak: null, valley: null,
+        sleep_debt_min: null, short_sleep: null, caffeine_cutoff: null, bath_time: null,
+        bedtime_compare: [], physical: null, nap_advice: null, focus_window: null, notifications: []
+      },
+      view: null
+    };
+  }
+
+  /*
+   * 入口。search はクエリ文字列、hash はフラグメント、clockNow は now が無いときに使う
+   * 現在時刻（YYYY-MM-DDTHH:MM）。{ result, view } を返す。result が結果ブロックの中身。
+   */
+  function run(search, hash, clockNow) {
+    try {
+      var params = readParams(search, hash);
+      var demo = !params.any;
+      var cfg = normalize(demo ? { s: SAMPLE.s, now: SAMPLE.now } : params.values, clockNow);
+      if (cfg.error) return errorOutput(cfg.error, cfg.nowText);
+      var out = forecast(cfg);
+      if (out.error) return errorOutput(out.error, cfg.nowText);
+      if (demo) {
+        // サンプル表示：結果ブロックには通知を出さない（画面には見本として残す）
+        out.result.demo = true;
+        out.result.notifications = [];
+      }
+      return out;
+    } catch (problem) {
+      // 想定外の入力でも、結果ブロックは必ず読める形で返す
+      return errorOutput('計算できませんでした：' + (problem && problem.message ? problem.message : problem), null);
+    }
+  }
+
+  /* 結果ブロックの文字列。キーの順序は result の定義順のまま */
+  function formatResult(result) {
+    function inline(value) {
+      if (value === null || typeof value !== 'object') return JSON.stringify(value);
+      return '{ ' + Object.keys(value).map(function (key) {
+        return JSON.stringify(key) + ': ' + JSON.stringify(value[key]);
+      }).join(', ') + ' }';
+    }
+    var lines = Object.keys(result).map(function (key) {
+      var value = result[key];
+      if (!Array.isArray(value)) return '  ' + JSON.stringify(key) + ': ' + inline(value);
+      if (!value.length) return '  ' + JSON.stringify(key) + ': []';
+      return '  ' + JSON.stringify(key) + ': [\n'
+        + value.map(function (item) { return '    ' + inline(item); }).join(',\n') + '\n  ]';
+    });
+    return '{\n' + lines.join(',\n') + '\n}';
+  }
+
+  return {
+    MODEL: MODEL, RULES: RULES, SAMPLE: SAMPLE,
+    parseDateTime: parseDateTime, parseClock: parseClock,
+    formatClock: formatClock, formatDateTime: formatDateTime,
+    readParams: readParams, mergeIntervals: mergeIntervals,
+    circadian: circadian, simulate: simulate, clampE: clampE,
+    caffeineLeadMinutes: caffeineLeadMinutes, findWake: findWake,
+    run: run, formatResult: formatResult
+  };
+})();
+</script>
+
+<script id="ui">
+/* ============================================================
+ * コンディション予報：画面部
+ * 計算は ConditionForecast.run() に任せ、結果を描画するだけ。
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var CF = ConditionForecast;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var KIND_LABEL = { morning: '朝', valley: '谷の前', nap: '仮眠', gym: '運動の前', night: '夜' };
+  var current = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function svgEl(tag, attrs, text) {
+    var node = document.createElementNS(SVG_NS, tag);
+    Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  /*
+   * now が渡されないときの既定値（仕様書 3 章）。ブラウザの時計を現地時刻として読む。
+   * 時計に頼るのはここだけで、now が渡されていればこの値は使われない。
+   */
+  function clockNow() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function duration(min) { return Math.floor(min / 60) + '時間' + (min % 60) + '分'; }
+
+  /* ---------- 2. 現在値 ---------- */
+
+  function renderNow(r, v) {
+    $('now-label').textContent = '注意・反応（' + CF.formatClock(v.now) + ' 時点・起床 ' + r.wake_time + '）';
+    $('now-value').textContent = r.attention_now;
+    var facts = $('facts');
+    clear(facts);
+    function fact(key, value) {
+      var li = el('li');
+      li.appendChild(el('span', 'k', key));
+      li.appendChild(el('span', 'v', value));
+      facts.appendChild(li);
+    }
+    fact('ピーク時間帯', r.peak ? r.peak.start + '〜' + r.peak.end + '（平均' + r.peak.avg + '%）' : '—');
+    fact('谷', r.valley
+      ? r.valley.time + '（' + r.valley.value + '%）' + (r.valley.at_edge ? '※活動時間帯の端' : '') : '—');
+    fact('睡眠負債', r.sleep_debt_min > 0 ? duration(r.sleep_debt_min) + '（直近7日）' : 'なし（直近7日）');
+  }
+
+  /* ---------- 3. 今日のグラフ ---------- */
+
+  function textWidth(text, size) {
+    var w = 0;
+    for (var k = 0; k < text.length; k++) w += text.charCodeAt(k) > 0x2e7f ? size : size * 0.62;
+    return w;
+  }
+
+  function renderChart(v) {
+    var host = $('chart');
+    clear(host);
+    var W = Math.max(280, Math.min(host.clientWidth || 320, 760));
+    var H = 244, L = 38, R = 14, T = 48, B = 26, FS = 11;
+    var plotW = W - L - R, plotH = H - T - B, bottom = T + plotH;
+    var x0 = v.wake, x1 = v.chartEnd;
+    function X(t) { return L + (t - x0) / (x1 - x0) * plotW; }
+    function Y(e) { return T + (100 - Math.max(50, Math.min(100, e))) / 50 * plotH; }
+    function inside(t) { return t >= x0 && t <= x1; }
+
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    svg.appendChild(svgEl('title', {}, '起床から就寝目標までの注意・反応％。縦軸は50〜100%。'));
+
+    // 目盛り（横線は実線の細線、縦軸は50〜100%）
+    for (var e = 50; e <= 100; e += 10) {
+      svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: Y(e), y2: Y(e), 'class': e === 50 ? 'base' : 'grid' }));
+      svg.appendChild(svgEl('text', { x: L - 6, y: Y(e) + 4, 'text-anchor': 'end' }, e + '%'));
+    }
+    var hours = (x1 - x0) / 60;
+    var step = hours <= 6 ? 1 : hours <= 12 ? 2 : hours <= 20 ? 3 : 6;
+    for (var t = Math.ceil(x0 / 60) * 60; t <= x1; t += 60) {
+      var hour = ((t % 1440) + 1440) % 1440 / 60;
+      if (hour % step) continue;
+      svg.appendChild(svgEl('line', { x1: X(t), x2: X(t), y1: bottom, y2: bottom + 4, 'class': 'base' }));
+      svg.appendChild(svgEl('text', { x: X(t), y: bottom + 17, 'text-anchor': 'middle' }, hour + '時'));
+    }
+
+    // ピーク時間帯（帯）
+    var tags = [];
+    if (v.peak && v.peak.end > x0 && v.peak.start < x1) {
+      var a = X(Math.max(v.peak.start, x0)), b = X(Math.min(v.peak.end, x1));
+      svg.appendChild(svgEl('rect', { x: a, y: T, width: b - a, height: plotH, 'class': 'band' }));
+      tags.push({ x: (a + b) / 2, text: 'ピーク', line: false });
+    }
+    if (inside(v.cutoff)) tags.push({ x: X(v.cutoff), text: 'カフェイン締切', line: true });
+    if (inside(v.bath)) tags.push({ x: X(v.bath), text: '入浴', line: true });
+    if (inside(v.bedTarget)) tags.push({ x: X(v.bedTarget), text: '就寝目標', line: true });
+
+    // 上の余白に、重ならない段を選んで印の名前を置く
+    var laneEnd = [-Infinity, -Infinity, -Infinity];
+    tags.sort(function (p, q) { return p.x - q.x; });
+    tags.forEach(function (tag) {
+      tag.w = textWidth(tag.text, FS);
+      tag.cx = Math.max(2 + tag.w / 2, Math.min(W - 2 - tag.w / 2, tag.x));
+      var lane = 0;
+      while (lane < laneEnd.length - 1 && tag.cx - tag.w / 2 < laneEnd[lane] + 6) lane++;
+      laneEnd[lane] = tag.cx + tag.w / 2;
+      tag.y = T - 8 - lane * 14;
+      if (tag.line) svg.appendChild(svgEl('line', { x1: tag.x, x2: tag.x, y1: tag.y + 3, y2: bottom, 'class': 'event' }));
+    });
+
+    // 曲線
+    var path = v.curve.map(function (p, n) { return (n ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.e).toFixed(1); }).join('');
+    svg.appendChild(svgEl('path', { d: path, 'class': 'curve' }));
+
+    // 谷と現在位置（点）。名前は点の下、入らなければ上に置く
+    var points = [];
+    if (v.valley && inside(v.valley.t)) points.push({ t: v.valley.t, e: v.valley.value, text: '谷', cls: 'ring', r: 4.5 });
+    if (inside(v.now)) points.push({ t: v.now, e: v.nowValue, text: '現在', cls: 'dot', r: 5 });
+    var placed = [];
+    points.forEach(function (p) {
+      var px = X(p.t), py = Y(p.e);
+      var w = textWidth(p.text, FS);
+      var cx = Math.max(L + w / 2, Math.min(W - 2 - w / 2, px));
+      var ty = py + 20 <= bottom - 4 ? py + 20 : py - 11;
+      placed.forEach(function (q) {
+        if (Math.abs(q.cx - cx) < (q.w + w) / 2 + 4 && Math.abs(q.ty - ty) < 13) ty = q.ty + 14 <= bottom - 4 ? q.ty + 14 : q.ty - 14;
+      });
+      placed.push({ cx: cx, w: w, ty: ty });
+      p.px = px; p.py = py; p.cx = cx; p.w = w; p.ty = ty;
+    });
+
+    // 文字は線より後に描き、下地を敷いて読めるようにする
+    tags.forEach(function (tag) {
+      svg.appendChild(svgEl('rect', { x: tag.cx - tag.w / 2 - 2, y: tag.y - 10, width: tag.w + 4, height: 13, 'class': 'tag-bg' }));
+      svg.appendChild(svgEl('text', { x: tag.cx, y: tag.y, 'text-anchor': 'middle', 'class': 'tag' }, tag.text));
+    });
+    points.forEach(function (p) {
+      svg.appendChild(svgEl('rect', { x: p.cx - p.w / 2 - 2, y: p.ty - 10, width: p.w + 4, height: 13, 'class': 'tag-bg' }));
+      svg.appendChild(svgEl('text', { x: p.cx, y: p.ty, 'text-anchor': 'middle', 'class': 'tag' }, p.text));
+      svg.appendChild(svgEl('circle', { cx: p.px, cy: p.py, r: p.r, 'class': p.cls }));
+    });
+
+    // なぞると、その時刻の値を出す（無くても全項目は読める。補助の表示）
+    var probe = svgEl('g', { visibility: 'hidden' });
+    var cross = svgEl('line', { y1: T, y2: bottom, 'class': 'cross' });
+    var probeDot = svgEl('circle', { r: 4, 'class': 'dot' });
+    var tipBg = svgEl('rect', { height: 20, rx: 4, 'class': 'tip-bg' });
+    var tip = svgEl('text', { 'text-anchor': 'middle', 'class': 'tip' });
+    [cross, probeDot, tipBg, tip].forEach(function (node) { probe.appendChild(node); });
+    svg.appendChild(probe);
+    function show(ev) {
+      var box = svg.getBoundingClientRect();
+      var want = x0 + ((ev.clientX - box.left) * W / box.width - L) / plotW * (x1 - x0);
+      var best = v.curve[0];
+      v.curve.forEach(function (p) { if (Math.abs(p.t - want) < Math.abs(best.t - want)) best = p; });
+      var px = X(best.t), py = Y(best.e);
+      var label = Math.round(best.e) + '%  ' + CF.formatClock(best.t);
+      var w = textWidth(label, FS) + 14;
+      var cx = Math.max(L + w / 2, Math.min(W - R - w / 2, px));
+      var top = py > T + plotH / 2 ? T + 6 : bottom - 28;
+      cross.setAttribute('x1', px); cross.setAttribute('x2', px);
+      probeDot.setAttribute('cx', px); probeDot.setAttribute('cy', py);
+      tipBg.setAttribute('x', cx - w / 2); tipBg.setAttribute('y', top); tipBg.setAttribute('width', w);
+      tip.setAttribute('x', cx); tip.setAttribute('y', top + 14);
+      tip.textContent = label;
+      probe.setAttribute('visibility', 'visible');
+    }
+    svg.addEventListener('pointermove', show);
+    svg.addEventListener('pointerdown', show);
+    svg.addEventListener('pointerleave', function () { probe.setAttribute('visibility', 'hidden'); });
+
+    host.appendChild(svg);
+  }
+
+  function renderLegend(r, v) {
+    var legend = $('legend');
+    clear(legend);
+    function item(shape, text) {
+      var li = el('li');
+      var key = svgEl('svg', { width: 16, height: 12, viewBox: '0 0 16 12', 'aria-hidden': 'true' });
+      if (shape === 'dot') key.appendChild(svgEl('circle', { cx: 8, cy: 6, r: 4.5, 'class': 'dot' }));
+      if (shape === 'ring') key.appendChild(svgEl('circle', { cx: 8, cy: 6, r: 3.5, 'class': 'ring' }));
+      if (shape === 'band') key.appendChild(svgEl('rect', { x: 2.5, y: 1.5, width: 11, height: 9, 'class': 'band' }));
+      if (shape === 'event') key.appendChild(svgEl('line', { x1: 8, x2: 8, y1: 0, y2: 12, 'class': 'event' }));
+      li.appendChild(key);
+      li.appendChild(el('span', '', text));
+      legend.appendChild(li);
+    }
+    item('dot', '現在 ' + CF.formatClock(v.now) + '（' + r.attention_now + '%）');
+    if (r.peak) item('band', 'ピーク時間帯 ' + r.peak.start + '〜' + r.peak.end);
+    if (r.valley) item('ring', '谷 ' + r.valley.time);
+    item('event', 'カフェイン締切 ' + r.caffeine_cutoff);
+    item('event', '入浴 ' + r.bath_time);
+    item('event', '就寝目標 ' + CF.formatClock(v.bedTarget));
+  }
+
+  /* ---------- 4〜6. 表と条件付きの項目 ---------- */
+
+  function table(headers, rows) {
+    var t = el('table');
+    var head = el('tr');
+    headers.forEach(function (h) { head.appendChild(el('th', h.cls, h.text)); });
+    t.appendChild(el('thead')).appendChild(head);
+    var body = t.appendChild(el('tbody'));
+    rows.forEach(function (cells) {
+      var tr = el('tr');
+      cells.forEach(function (cell, n) {
+        var td = el('td', headers[n].cls, cell.text);
+        if (cell.small) td.appendChild(el('small', '', cell.small));
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    return t;
+  }
+
+  function renderPlan(r, v) {
+    var host = $('plan');
+    clear(host);
+    if (!v.plan.length) {
+      host.appendChild(el('p', 'note', 'これから送る通知はありません。'));
+      return;
+    }
+    host.appendChild(table(
+      [{ text: '時刻', cls: 'time' }, { text: '文面' }],
+      v.plan.map(function (n) { return [{ text: n.time, small: KIND_LABEL[n.kind] }, { text: n.text }]; })
+    ));
+    if (r.demo) host.appendChild(el('p', 'note', 'サンプルの見本です。結果ブロックの notifications は空にしています。'));
+  }
+
+  function renderCompare(r, v) {
+    var host = $('compare');
+    clear(host);
+    if (!r.bedtime_compare.length) {
+      host.appendChild(el('p', 'note', '比べられる就寝時刻がありません（過ぎた時刻は比べません）。'));
+      return;
+    }
+    function pct(x) { return x === null ? '—' : x + '%'; }
+    host.appendChild(table(
+      [{ text: '就寝', cls: 'time' }, { text: '翌日の平均', cls: 'num' }, { text: '翌日の最低', cls: 'num' }],
+      r.bedtime_compare.map(function (row) {
+        return [{ text: row.bed }, { text: pct(row.next_day_avg) }, { text: pct(row.next_day_min) }];
+      })
+    ));
+    host.appendChild(el('p', 'note', CF.formatClock(v.nextWake) + ' に起きる想定で、翌日の活動時間帯を計算しています。'));
+  }
+
+  function renderCond(r, v) {
+    var host = $('cond');
+    clear(host);
+    function block(title, text) {
+      host.appendChild(el('h3', '', title));
+      host.appendChild(el('p', '', text));
+    }
+    if (r.physical) {
+      block('運動の助言（' + CF.formatClock(v.gym) + '）',
+        '寝不足のため、筋力は約' + r.physical.strength + '%、筋持久力は約' + r.physical.endurance + '%の見込みです。' + r.physical.advice);
+    }
+    if (r.nap_advice) block('仮眠の助言', r.nap_advice.text);
+    if (r.focus_window) {
+      block('集中に向く時間帯', r.focus_window.start + '〜' + r.focus_window.end + '（平均' + r.focus_window.avg + '%）');
+    }
+  }
+
+  /* ---------- 全体 ---------- */
+
+  function render() {
+    var out = CF.run(location.search, location.hash, clockNow());
+    var r = out.result, v = out.view;
+    current = out;
+
+    $('muse-result').textContent = CF.formatResult(r);
+
+    var status = $('status');
+    status.hidden = r.status === 'ok' && !r.demo;
+    status.className = r.status === 'ok' ? 'status' : 'status error';
+    status.textContent = r.status !== 'ok' ? '⚠ エラー：' + r.error
+      : r.demo ? 'ⓘ サンプル表示中：URLに睡眠記録（s）がないため、サンプルの記録で計算しています。' : '';
+
+    var ok = r.status === 'ok';
+    ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare'].forEach(function (id) { $(id).hidden = !ok; });
+    $('sec-cond').hidden = !(ok && (r.physical || r.nap_advice || r.focus_window));
+
+    if (!ok) {
+      document.title = 'エラー ｜ コンディション予報';
+      return;
+    }
+    document.title = (r.demo ? '［サンプル］' : '') + '注意・反応 ' + r.attention_now + '%'
+      + (r.valley ? ' ｜ 谷 ' + r.valley.time : '');
+    renderNow(r, v);
+    renderChart(v);
+    renderLegend(r, v);
+    renderPlan(r, v);
+    renderCompare(r, v);
+    renderCond(r, v);
+  }
+
+  render();
+  // 同じタブで # 以降だけが変わったときも、計算し直す
+  window.addEventListener('hashchange', render);
+  window.addEventListener('resize', function () { if (current && current.view) renderChart(current.view); });
+})();
+</script>
+</body>
+</html>
