@@ -2,6 +2,7 @@
  * コンディション予報：ブラウザでの確認（Playwright が使える環境だけで動く）
  *   実行： node --test forecast/test/*.test.js
  * 画面の要件（幅360px、外部通信なし、同期描画、# の変更で再計算）を、実際のブラウザで確かめる。
+ * 睡眠記録はすべて合成データ。
  */
 'use strict';
 
@@ -29,6 +30,9 @@ const HASH = {
   sample: '',
   normal: `#s=${GOOD}&now=${NOW}`,
   short: `#s=${SHORT}&now=${NOW}&gym=18:30&win=19:00-22:30&whatif=22:30,23:00,23:30,00:00,00:30,01:00`,
+  imputed: `#s=${GOOD.filter((_, k) => k !== 4 && k !== 11)}&now=${NOW}`,
+  waiting: `#s=${GOOD.slice(0, 13)}&now=${NOW}`,
+  sleepless: `#s=${GOOD.slice(0, 13)}&now=${NOW}&none=2026-03-15`,
   error: `#s=${'x'.repeat(300)}&now=${NOW}`
 };
 
@@ -100,6 +104,10 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare']);
   assert.equal(await page.title(), '注意・反応 93% ｜ 谷 14:30');
   assert.equal(await page.locator('#now-value').textContent(), '93');
+  assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床 07:00）');
+  assert.deepEqual(await page.locator('#facts .k').allTextContents(), ['ピーク時間帯', '谷', '睡眠負債', '見落とし予告']);
+  assert.deepEqual(await page.locator('#facts .v').allTextContents(),
+    ['08:40〜10:10（平均96%）', '14:30（93%）', 'なし（直近7日）', 'なし']);
   assert.equal(await page.locator('#plan tbody tr').count(), 3);
   assert.equal(await page.locator('#compare tbody tr').count(), 3);
   assert.equal(await page.locator('#chart svg path.curve').count(), 1);
@@ -117,9 +125,28 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   assert.match(await page.title(), /^［サンプル］注意・反応 \d+% ｜ 谷 \d\d:\d\d$/);
   await context.close();
 
+  ({ context, page } = await open(HASH.imputed));
+  assert.deepEqual(await visible(page), ['status', 'sec-now', 'sec-chart', 'sec-plan', 'sec-compare']);
+  assert.match(await page.locator('#status').textContent(), /記録が欠けた晩を、普段の睡眠で補って計算しています（3\/6、3\/13 の朝までの晩）/);
+  await context.close();
+
+  ({ context, page } = await open(HASH.waiting));
+  assert.deepEqual(await visible(page), ['status']);
+  assert.match(await page.locator('#status').textContent(), /昨夜の記録待ち：昨夜の睡眠記録がありません/);
+  assert.equal(await page.title(), '昨夜の記録待ち ｜ コンディション予報');
+  assert.equal((await readResult(page)).status, 'need_last_night');
+  await context.close();
+
+  ({ context, page } = await open(HASH.sleepless));
+  assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
+  assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床の記録なし）');
+  assert.match((await page.locator('#facts .v').allTextContents())[3], /^あり（日中平均が普段より[\d.]+ポイント低い）$/);
+  await context.close();
+
   ({ context, page } = await open(HASH.error));
   assert.deepEqual(await visible(page), ['status']);
   assert.match(await page.locator('#status').textContent(), /エラー：s の書式が不正/);
+  assert.equal(await page.title(), 'エラー ｜ コンディション予報');
   await context.close();
 });
 
@@ -144,28 +171,28 @@ test('クエリ文字列でも受け付け、フラグメントを優先する',
   await context.close();
 });
 
-test('now が無いときだけブラウザの時計を使う。now があれば時計やタイムゾーンに左右されない', { skip }, async () => {
-  // 東京で 2026-03-15 07:10 のとき、ブラウザの時計は UTC では 2026-03-14 22:10
-  const tokyo = await browser.newContext({ timezoneId: 'Asia/Tokyo' });
-  let page = await tokyo.newPage();
-  await page.clock.setFixedTime(new Date('2026-03-14T22:10:00Z'));
-  await page.goto(`${url}#s=${GOOD}`);
-  assert.equal((await readResult(page)).now, NOW);
-  await tokyo.close();
+test('now が無いときは時計の絶対時刻を tz で換算する。ブラウザのタイムゾーン設定には左右されない', { skip }, async () => {
+  // 絶対時刻 2026-03-14T22:10Z は、tz の既定（+09:00）で 2026-03-15 07:10
+  const results = [];
+  for (const timezoneId of ['Asia/Tokyo', 'UTC', 'America/Los_Angeles']) {
+    const context = await browser.newContext({ timezoneId });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(new Date('2026-03-14T22:10:00Z'));
+    await page.goto(`${url}#s=${GOOD}`);
+    results.push(await readResult(page));
+    await context.close();
+  }
+  assert.equal(results[0].now, NOW);
+  assert.equal(results[0].status, 'ok');
+  assert.deepEqual(results[1], results[0]);
+  assert.deepEqual(results[2], results[0]);
+  assert.deepEqual(results[0], JSON.parse(JSON.stringify(CF.run('', HASH.normal, null).result)));
 
-  // クラウド上のブラウザ（UTC・別の日時）でも、now を渡せば結果は同じ
-  const cloud = await browser.newContext({ timezoneId: 'UTC' });
-  page = await cloud.newPage();
+  // now を渡せば、時計がいつを指していても結果は同じ
+  const context = await browser.newContext({ timezoneId: 'UTC' });
+  const page = await context.newPage();
   await page.clock.setFixedTime(new Date('2031-07-01T03:00:00Z'));
   await page.goto(url + HASH.normal);
-  assert.deepEqual(await readResult(page), JSON.parse(JSON.stringify(CF.run('', HASH.normal, null).result)));
-
-  // now を渡さず、時計が現地時刻とずれていると、黙って誤った値を出さずにエラーにする
-  await page.goto('about:blank');
-  await page.clock.setFixedTime(new Date('2026-03-14T22:10:00Z'));
-  await page.goto(`${url}#s=${GOOD}`);
-  const result = await readResult(page);
-  assert.equal(result.status, 'error');
-  assert.match(result.error, /now/);
-  await cloud.close();
+  assert.deepEqual(await readResult(page), results[0]);
+  await context.close();
 });

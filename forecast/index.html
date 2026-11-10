@@ -132,7 +132,7 @@
   <h1>コンディション予報</h1>
   <p class="lead">睡眠記録から計算した、今日の注意・反応の目安</p>
 
-  <!-- 1. 状態表示（サンプル表示中・エラーのときだけ） -->
+  <!-- 1. 状態表示（サンプル表示中・エラー・昨夜の記録待ち・記録を補った晩があるときだけ） -->
   <p id="status" class="status" role="status" hidden></p>
   <noscript><p class="status error">このページは JavaScript で計算します。JavaScript を有効にしてください。</p></noscript>
 
@@ -179,22 +179,30 @@
     <ul>
       <li>数値は集団平均にもとづく目安で、個人の実測値ではありません。医療機器ではなく、診断や治療の判断には使えません。</li>
       <li>注意・反応％は、Hursh ら（2004）の3プロセスモデル（SAFTE）を、公開されている式と既定値のまま計算しています。目安として、77%は「18.5時間起き続けた状態」「血中アルコール濃度0.05%」と同水準とされます。</li>
-      <li>谷やピークの時刻は体内時計の位相（24時間成分の頂点を18:00に固定）で決まります。実感とずれるときは <code>shift</code> で補正します。極端な朝型や夜型、時差、交代勤務には対応しません。</li>
-      <li>筋力・筋持久力、カフェイン締切、入浴、仮眠は、モデルとは別の研究の平均値です。カフェイン締切の中間量は線形補間による近似です。</li>
+      <li>谷やピークの時刻を決める体内時計の位置は、起きている時間帯から推定しています。光の浴び方は考慮しません。時差や夜勤には対応しません。同じ寝起きの時間帯でも個人差があるため、実感とずれるときは <code>shift</code> で補正します。</li>
+      <li>睡眠記録は、間が10分未満の中断をつないで計算します。記録が実際の睡眠より短い夜は、寝不足として計算されます。記録が欠けた晩は普段の睡眠で補うため、その晩の実際とは異なります。</li>
+      <li>見落とし予告は、日中平均が直前7日の中央値より2ポイント以上低い日と、直近7晩の睡眠が平均6時間以下の日に出します。</li>
+      <li>筋力・筋持久力、カフェイン締切、入浴、仮眠、食べすぎ注意は、モデルとは別の研究の平均値です。カフェイン締切の中間量は線形補間による近似です。</li>
       <li>睡眠記録はURLの <code>#</code> 以降で受け取り、このページの中だけで計算します。保存も外部への送信もしません。</li>
-      <li>URLの形式：<code>#s=開始/終了,開始/終了,…&amp;now=YYYY-MM-DDTHH:MM</code>（時刻は現地時刻。各時刻は <code>YYYY-MM-DDTHH:MM</code>）</li>
+      <li>URLの形式：<code>#s=開始/終了,開始/終了,…&amp;now=YYYY-MM-DDTHH:MM</code>（各時刻は <code>YYYY-MM-DDTHH:MM</code>。末尾に <code>Z</code> や <code>+09:00</code> を付けてもよい。付けない時刻は <code>tz</code>（既定 <code>+09:00</code>）の現地時刻として扱う）</li>
     </ul>
     <h3>出典</h3>
     <ul>
       <li>モデルの式と既定値：<a rel="noopener noreferrer" href="https://fatiguescience.com/hubfs/FatigueScience_June2024/Pdf/SAFTE-Validation-in-US-Army-Soldiers.pdf?hsLang=en">Hursh ら 2004</a></li>
+      <li>体内時計の位置の調整規則：<a rel="noopener noreferrer" href="https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/7118530">SAFTEの特許（US 7118530）</a></li>
+      <li>週末の寝坊：<a rel="noopener noreferrer" href="https://www.patientcareonline.com/view/sleep-sleeping-late-weekends-induces-monday-fatigue">Taylor ら 2008の紹介記事</a></li>
+      <li>寝る時刻と体内時計：<a rel="noopener noreferrer" href="https://epub.ub.uni-muenchen.de/58750/1/Kantermann_Comparing_the_morningness-eveningness_questionnaire.pdf">Kantermann ら 2015</a></li>
       <li>77%の目安：<a rel="noopener noreferrer" href="https://www.leonsoftware.com/blog/real-time-fatigue-analysis-with-safte-fast-in-leon.html">SAFTE-FASTの説明（Leon Software）</a></li>
       <li>注意と推論の差：<a rel="noopener noreferrer" href="https://www.med.upenn.edu/uep/assets/user-content/documents/LimDinges2010MetaAnalysis.pdf">Lim &amp; Dinges 2010</a></li>
+      <li>睡眠不足の蓄積：<a rel="noopener noreferrer" href="https://ntrs.nasa.gov/citations/20040087752">Van Dongen ら 2003（概要）</a>、<a rel="noopener noreferrer" href="https://www.gwern.net/doc/melatonin/2003-vandongen.pdf">論文PDF</a></li>
       <li>寝不足と運動成績：<a rel="noopener noreferrer" href="https://www.pubmed.gov/35708888/">Craven ら 2022</a></li>
       <li>筋力と筋持久力：<a rel="noopener noreferrer" href="https://www.strongerbyscience.com/research-spotlight-sleep-loss/">同研究の解説（Stronger By Science）</a></li>
+      <li>睡眠不足と食事：<a rel="noopener noreferrer" href="https://www.nature.com/articles/ejcn2016201.pdf">Al Khatib ら 2017</a>、<a rel="noopener noreferrer" href="https://www.news-medical.net/news/20161102/Sleep-deprived-people-may-consume-extra-calories-study-finds.aspx">紹介記事</a></li>
       <li>カフェイン締切：<a rel="noopener noreferrer" href="https://www.pubmed.gov/36870101/">Gardiner ら 2023</a></li>
       <li>入浴の条件：<a rel="noopener noreferrer" href="https://www.em-consulte.com/article/1301348/before-bedtime-passive-body-heating-by-warm-shower">Haghayegh ら 2019</a></li>
       <li>入浴の時刻：<a rel="noopener noreferrer" href="https://cockrell.utexas.edu/?p=23504">テキサス大学の発表</a></li>
       <li>仮眠：<a rel="noopener noreferrer" href="https://www.pubmed.gov/34639511/">Dutheil ら 2021</a></li>
+      <li>ヘルスケアの睡眠記録の形式：<a rel="noopener noreferrer" href="https://developer.apple.com/documentation/healthkit/hkcategoryvaluesleepanalysis.md">Appleの開発者向け資料</a>、<a rel="noopener noreferrer" href="https://developer.apple.com/forums/thread/766977">Appleの回答</a></li>
     </ul>
   </section>
 </main>
@@ -202,43 +210,54 @@
 <script id="core">
 /* ============================================================
  * コンディション予報：計算部
- * 純粋関数だけで構成する。DOM・Date・乱数・保存領域には触れない。
- * 時刻はすべて「分単位の通し番号」（1970-01-01T00:00 を 0 とする現地時刻）で扱う。
+ * 純粋関数だけで構成する。DOM・時計・乱数・保存領域には触れない。
+ * 時刻はすべて「分単位の通し番号」（1970-01-01T00:00 を 0 とする）で扱い、
+ * 入力の時刻は tz の現地時刻に直してから計算する。
  * ============================================================ */
 var ConditionForecast = (function () {
   'use strict';
 
   var DAY = 1440;
 
-  /* 3プロセスモデル（SAFTE）の既定パラメータ。仕様書 4.1 節 */
+  /* 3プロセスモデル（SAFTE）の既定パラメータ。仕様書 4.1 節・4.12 節 */
   var MODEL = {
-    Rc: 2880,       // 貯蔵量の上限
-    K: 0.5,         // 覚醒中の消費（毎分）
-    f: 0.0026564,   // 不足分に比例する回復の係数（毎分）
-    as: 0.55,       // 回復に対する体内時計の重み
-    SImax: 4.4,     // 回復速度の上限（毎分）
-    p: 18,          // 24時間成分の頂点（時）
-    pPrime: 3,      // 12時間成分のずれ（時）
-    beta: 0.5,      // 12時間成分の相対振幅
-    a1: 7,          // 体内時計の振幅（基本, %）
-    a2: 5,          // 体内時計の振幅（不足時の上乗せ, %）
-    Imax: 5,        // 睡眠慣性の最大値（%）
-    i: 0.04         // 睡眠慣性の時定数
+    Rc: 2880,              // 貯蔵量の上限
+    K: 0.5,                // 覚醒中の消費（毎分）
+    f: 0.0026564,          // 不足分に比例する回復の係数（毎分）
+    as: 0.55,              // 回復に対する体内時計の重み
+    SImax: 4.4,            // 回復速度の上限（毎分）
+    pPrime: 3,             // 12時間成分のずれ（時）
+    beta: 0.5,             // 12時間成分の相対振幅
+    a1: 7,                 // 体内時計の振幅（基本, %）
+    a2: 5,                 // 体内時計の振幅（不足時の上乗せ, %）
+    Imax: 5,               // 睡眠慣性の最大値（%）
+    i: 0.04,               // 睡眠慣性の時定数
+    goalOffset: 3,         // 体内時計の目標位置：起きている時間帯の中央 + 3時間
+    delayPerDay: 1 / 3,    // 遅れる向きの調整の速さ（時/日）
+    advancePerDay: 2 / 9,  // 早まる向きの調整の速さ（時/日）
+    minAwake: 60,          // 位置の調整に使う覚醒区間の最短（分）
+    fallbackPeak: 18       // 覚醒区間が1つも無いときの位置（時）
   };
 
-  var KEYS = ['s', 'now', 'need', 'bed', 'wake', 'act', 'cafmg', 'whatif', 'gym', 'win', 'shift', 'max'];
+  var KEYS = ['s', 'now', 'tz', 'need', 'bed', 'wake', 'act', 'cafmg', 'whatif', 'gym', 'win', 'shift', 'none', 'max'];
 
-  var DEFAULTS = { need: 450, bed: 23 * 60, actStart: 8 * 60, actEnd: 17 * 60, cafmg: 107, shift: 0, max: 5 };
+  var DEFAULTS = { tz: 540, need: 450, bed: 23 * 60, actStart: 8 * 60, actEnd: 17 * 60, cafmg: 107, shift: 0, max: 5 };
 
   var RULES = {
+    joinTotal: 1,          // 睡眠合計：間がこの分数以下の記録をつなぐ
+    joinModel: 10,         // モデル計算：間がこの分数未満の記録をつなぐ
+    missingNight: 180,     // 睡眠合計がこの分数未満の晩は「記録の欠け」
     minWakeSleep: 180,     // 起床時刻とみなす睡眠の最短（分）
-    episodeGap: 60,        // この分数以内の途中覚醒は、起床判定では1つの睡眠として数える
+    episodeGap: 60,        // この分数以内の途中覚醒は、就寝・起床の判定ではひと続きの睡眠として数える
     shortSleep: 360,       // 寝不足の日：起床までの24時間の睡眠合計がこの分数以下
-    minDays: 7,            // 睡眠記録の最低日数
+    overeat: 330,          // 食べすぎ注意：昨夜の睡眠合計がこの分数以下
+    cautionDrop: 2,        // 見落とし予告（急な低下）：普段よりこのポイント以上低い
+    cautionSleep: 360,     // 見落とし予告（不足の蓄積）：直近7晩の平均がこの分数以下
+    days: 7,               // 睡眠負債・見落とし予告で見る日数。睡眠記録の最低日数でもある
     valleyFrom: 11 * 60,   // 谷を探す範囲の開始（時刻）
     peakLen: 90,           // ピーク時間帯の長さ（分）
     focusLen: 60,          // 集中に向く時間帯の長さ（分）
-    grid: 5,               // 区間・谷を探す刻み（分）
+    grid: 5,               // ピーク時間帯・集中に向く時間帯・グラフの刻み（分）
     morningWithin: 180,    // morning 通知：起床からこの分数以内
     valleyLead: 20,        // valley 通知：谷のこの分数前
     gymLead: 30,           // gym 通知：運動のこの分数前
@@ -252,19 +271,21 @@ var ConditionForecast = (function () {
     maxHistoryDays: 400    // これより古い記録が混じる入力は誤りとみなす（計算量の保護）
   };
 
-  /* パラメータなしのときに使うサンプル（固定値。ブラウザの時計に依存しない） */
+  /* パラメータなしのときに使うサンプル（合成データ。固定値で、時計に依存しない） */
   var SAMPLE = {
-    now: '2026-11-10T07:10',
+    now: '2026-11-11T07:10',
     s: [
-      '2026-10-27T23:05/2026-10-28T06:40', '2026-10-28T23:20/2026-10-29T06:45',
-      '2026-10-29T23:00/2026-10-30T06:30', '2026-10-30T23:45/2026-10-31T07:20',
-      '2026-10-31T23:55/2026-11-01T07:40', '2026-11-01T23:10/2026-11-02T06:40',
-      '2026-11-02T23:15/2026-11-03T06:45', '2026-11-03T23:30/2026-11-04T06:45',
-      '2026-11-04T23:25/2026-11-05T06:30', '2026-11-05T23:00/2026-11-06T06:30',
-      '2026-11-06T23:50/2026-11-07T06:50', '2026-11-07T23:40/2026-11-08T07:00',
-      '2026-11-08T23:10/2026-11-09T06:45', '2026-11-09T23:40/2026-11-10T06:50'
+      '2026-10-28T23:05/2026-10-29T06:40', '2026-10-29T23:20/2026-10-30T06:45',
+      '2026-10-30T23:00/2026-10-31T06:30', '2026-10-31T23:45/2026-11-01T07:20',
+      '2026-11-01T23:55/2026-11-02T07:40', '2026-11-02T23:10/2026-11-03T06:40',
+      '2026-11-03T23:15/2026-11-04T06:45', '2026-11-04T23:30/2026-11-05T06:45',
+      '2026-11-05T23:25/2026-11-06T06:30', '2026-11-06T23:00/2026-11-07T06:30',
+      '2026-11-07T23:50/2026-11-08T06:50', '2026-11-08T23:40/2026-11-09T07:00',
+      '2026-11-09T23:00/2026-11-10T06:45', '2026-11-10T23:50/2026-11-11T06:50'
     ].join(',')
   };
+
+  var TEXT_NEED_LAST_NIGHT = '昨夜の睡眠記録がありません';
 
   /* ---------- 時刻（文字列 ⇔ 分単位の通し番号） ---------- */
 
@@ -297,13 +318,51 @@ var ConditionForecast = (function () {
     return (m === 4 || m === 6 || m === 9 || m === 11) ? 30 : 31;
   }
 
-  /* "YYYY-MM-DDTHH:MM"（秒が付いていれば切り捨て）→ 通し番号。不正なら null */
-  function parseDateTime(text) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(String(text).trim());
+  /* "YYYY-MM-DD" → 日の通し番号。不正なら null */
+  function parseDate(text) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(text).trim());
+    if (!m) return null;
+    var y = +m[1], mo = +m[2], d = +m[3];
+    if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth(y, mo)) return null;
+    return daysFromCivil(y, mo, d);
+  }
+
+  /* 時差 "+HH:MM"（"Z"・"-HH:MM"・"+HHMM" も可。+ が空白に変わっていてもよい）→ 分。不正なら null */
+  function parseOffset(text) {
+    var t = String(text).trim();
+    if (/^z$/i.test(t)) return 0;
+    var m = /^([+\-]?)(\d{1,2})(?::?(\d{2}))?$/.exec(t);
+    if (!m) return null;
+    var h = +m[2], mi = m[3] === undefined ? 0 : +m[3];
+    if (h > 14 || mi > 59) return null;
+    return (m[1] === '-' ? -1 : 1) * (h * 60 + mi);
+  }
+
+  function formatOffset(minutes) {
+    var a = Math.abs(minutes);
+    return (minutes < 0 ? '-' : '+') + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
+  }
+
+  /*
+   * "YYYY-MM-DDTHH:MM"（秒は切り捨て）。末尾に Z や +09:00 が付いていれば tz の時刻に換算し、
+   * 付いていなければ tz の現地時刻として扱う。+ が空白に変わっていても + として読む。
+   * 返り値は tz の現地時刻の通し番号。不正なら null
+   */
+  function parseDateTime(text, tz) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:(Z)|([+\- ])(\d{2})(?::?(\d{2}))?)?$/i
+      .exec(String(text).trim());
     if (!m) return null;
     var y = +m[1], mo = +m[2], d = +m[3], h = +m[4], mi = +m[5];
     if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth(y, mo) || h > 23 || mi > 59) return null;
-    return daysFromCivil(y, mo, d) * DAY + h * 60 + mi;
+    var wall = daysFromCivil(y, mo, d) * DAY + h * 60 + mi;
+    if (!m[6] && !m[7]) return wall;
+    var offset = 0;
+    if (m[7]) {
+      var oh = +m[8], om = m[9] === undefined ? 0 : +m[9];
+      if (oh > 14 || om > 59) return null;
+      offset = (m[7] === '-' ? -1 : 1) * (oh * 60 + om);
+    }
+    return wall - offset + (tz === undefined ? DEFAULTS.tz : tz);
   }
 
   /* "HH:MM" → 0〜1439。不正なら null */
@@ -320,10 +379,12 @@ var ConditionForecast = (function () {
     return pad2(Math.floor(c / 60)) + ':' + pad2(c % 60);
   }
 
-  function formatDateTime(t) {
-    var c = civilFromDays(Math.floor(t / DAY));
-    return c.y + '-' + pad2(c.m) + '-' + pad2(c.d) + 'T' + formatClock(t);
+  function formatDate(day) {
+    var c = civilFromDays(day);
+    return c.y + '-' + pad2(c.m) + '-' + pad2(c.d);
   }
+
+  function formatDateTime(t) { return formatDate(Math.floor(t / DAY)) + 'T' + formatClock(t); }
 
   function dayStart(t) { return Math.floor(t / DAY) * DAY; }
 
@@ -335,12 +396,17 @@ var ConditionForecast = (function () {
 
   function ceilGrid(t) { return Math.ceil(t / RULES.grid) * RULES.grid; }
 
+  /* 晩の番号。1晩は正午から翌正午まで。番号 k の晩は、通し番号 k+1 の日の朝に終わる */
+  function nightOf(t) { return Math.floor((t - 720) / DAY); }
+  function nightStart(k) { return k * DAY + 720; }
+
   /* ---------- 入力 ---------- */
 
   function safeDecode(text) {
     try { return decodeURIComponent(text); } catch (e) { return text; }
   }
 
+  /* & と = で区切り、decodeURIComponent で復号する（+ を空白に変えない） */
   function parsePairs(text) {
     var out = {};
     String(text || '').split('&').forEach(function (part) {
@@ -369,12 +435,13 @@ var ConditionForecast = (function () {
     return { any: any, values: values };
   }
 
-  function mergeIntervals(list) {
+  /* 重なる区間と、間が maxGap 分以下の区間をつなぐ（仕様書 4.10 節） */
+  function joinIntervals(list, maxGap) {
     var sorted = list.slice().sort(function (a, b) { return a.start - b.start || a.end - b.end; });
     var out = [];
     sorted.forEach(function (iv) {
       var last = out[out.length - 1];
-      if (last && iv.start <= last.end) last.end = Math.max(last.end, iv.end);
+      if (last && iv.start - last.end <= maxGap) last.end = Math.max(last.end, iv.end);
       else out.push({ start: iv.start, end: iv.end });
     });
     return out;
@@ -388,36 +455,47 @@ var ConditionForecast = (function () {
     return { start: a, end: b };
   }
 
-  /* 文字列のパラメータを検証して数値にする。失敗したら { error } を返す */
-  function normalize(raw, clockNow) {
-    var cfg = { nowText: null };
-    function fail(message) { return { error: message, nowText: cfg.nowText }; }
+  /*
+   * 文字列のパラメータを検証して数値にする。失敗したら { error } を返す。
+   * clockMs は now が無いときに使う絶対時刻（1970-01-01T00:00Z からのミリ秒）
+   */
+  function normalize(raw, clockMs) {
+    var cfg = { nowText: null, tzText: null };
+    function fail(message) { return { error: message, nowText: cfg.nowText, tzText: cfg.tzText }; }
 
-    var nowSource = raw.now !== undefined ? raw.now : clockNow;
-    var now = parseDateTime(nowSource === undefined || nowSource === null ? '' : nowSource);
-    if (now === null) {
-      return fail(raw.now !== undefined
-        ? 'now の書式が不正です（YYYY-MM-DDTHH:MM）：' + raw.now
-        : 'now がなく、ブラウザの時計も読めません。now=YYYY-MM-DDTHH:MM を付けてください。');
+    cfg.tz = DEFAULTS.tz;
+    if (raw.tz !== undefined) {
+      cfg.tz = parseOffset(raw.tz);
+      if (cfg.tz === null) return fail('tz の書式が不正です（+HH:MM）：' + raw.tz);
+    }
+    cfg.tzText = formatOffset(cfg.tz);
+
+    var now = null;
+    if (raw.now !== undefined) {
+      now = parseDateTime(raw.now, cfg.tz);
+      if (now === null) return fail('now の書式が不正です（YYYY-MM-DDTHH:MM）：' + raw.now);
+    } else if (typeof clockMs === 'number' && isFinite(clockMs)) {
+      now = Math.floor(clockMs / 60000) + cfg.tz;   // 絶対時刻を tz で換算する
+    } else {
+      return fail('now がなく、時計も読めません。now=YYYY-MM-DDTHH:MM を付けてください。');
     }
     cfg.now = now;
     cfg.nowText = formatDateTime(now);
 
-    if (raw.s === undefined) return fail('睡眠区間（s）がありません。s=開始/終了,開始/終了,… の形で渡してください。');
-    var intervals = [];
+    if (raw.s === undefined) return fail('睡眠記録（s）がありません。s=開始/終了,開始/終了,… の形で渡してください。');
+    cfg.records = [];
     var pieces = raw.s.split(',');
     for (var k = 0; k < pieces.length; k++) {
       var piece = pieces[k].trim();
       var ends = piece.split('/');
-      var a = ends.length === 2 ? parseDateTime(ends[0]) : null;
-      var b = ends.length === 2 ? parseDateTime(ends[1]) : null;
+      var a = ends.length === 2 ? parseDateTime(ends[0], cfg.tz) : null;
+      var b = ends.length === 2 ? parseDateTime(ends[1], cfg.tz) : null;
       if (a === null || b === null) {
         return fail('s の書式が不正です（開始/終了 を YYYY-MM-DDTHH:MM で書き、カンマで区切る）：' + (piece || '（空）'));
       }
       if (b <= a) return fail('s の区間で、終了が開始より後になっていません：' + piece);
-      intervals.push({ start: a, end: b });
+      cfg.records.push({ start: a, end: b });
     }
-    cfg.intervals = mergeIntervals(intervals);
 
     function number(key, pattern, fallback, check, hint) {
       if (raw[key] === undefined) { cfg[key] = fallback; return true; }
@@ -460,102 +538,19 @@ var ConditionForecast = (function () {
       }
       cfg.whatif = list;
     }
+
+    cfg.none = [];
+    if (raw.none !== undefined) {
+      var days = raw.none.split(',').map(function (x) { return parseDate(x); });
+      if (days.some(function (x) { return x === null; })) {
+        return fail('none の書式が不正です（YYYY-MM-DD をカンマで区切る）：' + raw.none);
+      }
+      cfg.none = days;
+    }
     return cfg;
   }
 
-  /* ---------- 3プロセスモデル（仕様書 4.1 節） ---------- */
-
-  /* 体内時計 c。tHours は時刻を時単位の小数で表した値、shiftMin は位相補正（分） */
-  function circadian(tHours, shiftMin) {
-    var p = MODEL.p + (shiftMin || 0) / 60;
-    return Math.cos(2 * Math.PI * (tHours - p) / 24)
-      + MODEL.beta * Math.cos(4 * Math.PI * (tHours - p - MODEL.pPrime) / 24);
-  }
-
-  function clampE(e) { return e < 0 ? 0 : e > 100 ? 100 : e; }
-
-  /*
-   * 睡眠履歴の先頭（貯蔵量は満杯）から tEnd まで、1分刻みで E を計算する。
-   * intervals は結合済みの睡眠区間。区間の外はすべて覚醒として扱う。
-   * 返り値の e[k] は時点 t0 + k の E（0〜100 に収める前の値）。
-   */
-  function simulate(intervals, tEnd, shiftMin) {
-    var M = MODEL;
-    var cTable = new Float64Array(DAY);
-    for (var c0 = 0; c0 < DAY; c0++) cTable[c0] = circadian(c0 / 60, shiftMin);
-
-    var t0 = intervals[0].start;
-    var e = new Float64Array(Math.max(1, tEnd - t0 + 1));
-    var R = M.Rc;
-    var k = 0;
-    var lastWake = null;   // 直近の覚醒時点
-    var siWake = 0;        // その直前の回復速度 SI
-    e[0] = 100 * R / M.Rc + cTable[mod(t0, DAY)] * M.a1;
-
-    for (var t = t0 + 1; t <= tEnd; t++) {
-      var prev = t - 1;
-      while (k < intervals.length && intervals[k].end <= prev) k++;
-      var iv = k < intervals.length ? intervals[k] : null;
-      var c = cTable[mod(t, DAY)];
-
-      if (iv && iv.start <= prev) {
-        // prev → t の1分間は睡眠。各区間の最初の5分間は回復しない
-        var si = (prev - iv.start < 5) ? 0
-          : Math.min(M.SImax, Math.max(0, -M.as * c + M.f * (M.Rc - R)));
-        R = Math.min(M.Rc, R + si);
-        if (t === iv.end) { lastWake = t; siWake = si; }
-      } else {
-        R = Math.max(0, R - M.K);
-      }
-
-      var inertia = 0;
-      var asleepAtT = iv && iv.start <= t && t < iv.end;
-      if (!asleepAtT && lastWake !== null && siWake > 0 && t - lastWake <= 120) {
-        inertia = M.Imax * Math.exp(-M.i * (t - lastWake) / siWake);
-      }
-      e[t - t0] = 100 * R / M.Rc + c * (M.a1 + M.a2 * (M.Rc - R) / M.Rc) - inertia;
-    }
-    return { t0: t0, e: e };
-  }
-
-  function valueAt(sim, t) { return clampE(sim.e[t - sim.t0]); }
-
-  /* [from, to] の1分刻みの平均と最小 */
-  function stats(sim, from, to) {
-    var sum = 0, min = Infinity;
-    for (var t = from; t <= to; t++) {
-      var v = valueAt(sim, t);
-      sum += v;
-      if (v < min) min = v;
-    }
-    return { avg: sum / (to - from + 1), min: min };
-  }
-
-  /* [from, to] の中で、長さ len 分の平均が最大になる区間（開始は5分刻み） */
-  function bestWindow(sim, from, to, len) {
-    var best = null;
-    for (var s = ceilGrid(from); s + len <= to; s += RULES.grid) {
-      var avg = stats(sim, s, s + len).avg;
-      if (best === null || avg > best.avg + 1e-9) best = { start: s, end: s + len, avg: avg };
-    }
-    return best;
-  }
-
-  /* [from, to] の中で E が最小になる時点（5分刻み。両端も候補に入れる） */
-  function lowestPoint(sim, from, to) {
-    var best = null;
-    function consider(t) {
-      var v = valueAt(sim, t);
-      if (best === null || v < best.value - 1e-9) best = { t: t, value: v };
-    }
-    consider(from);
-    for (var t = ceilGrid(from + 1); t < to; t += RULES.grid) consider(t);
-    if (to > from) consider(to);
-    best.atEdge = best.t === from || best.t === to;
-    return best;
-  }
-
-  /* ---------- モデルとは独立した単純な計算 ---------- */
+  /* ---------- 小さな道具 ---------- */
 
   function overlap(intervals, from, to) {
     var total = 0;
@@ -566,12 +561,10 @@ var ConditionForecast = (function () {
     return total;
   }
 
-  /* カフェイン締切：就寝目標の何分前か（仕様書 4.5 節） */
-  function caffeineLeadMinutes(cafmg) {
-    var hours = cafmg <= 107 ? 8.8
-      : cafmg >= 217.5 ? 13.2
-        : 8.8 + (cafmg - 107) / 110.5 * 4.4;
-    return Math.round(hours * 60);
+  function median(values) {
+    var v = values.slice().sort(function (a, b) { return a - b; });
+    var mid = Math.floor(v.length / 2);
+    return v.length % 2 ? v[mid] : (v[mid - 1] + v[mid]) / 2;
   }
 
   /* 途中覚醒（間隔 episodeGap 分以内）をまたいで、ひと続きの睡眠にまとめる */
@@ -589,47 +582,264 @@ var ConditionForecast = (function () {
     return out;
   }
 
+  /* ---------- 記録の欠けの補完（仕様書 4.11 節） ---------- */
+
   /*
-   * 当日の起床時刻：now 以前に終わった、長さ3時間以上の睡眠のうち、最後のものの終了時刻。
-   * それが24時間以上前（または無い）なら、直近24時間に終わった最後の睡眠区間の終了時刻を使う。
-   * どちらも無ければ null。
+   * totals は、間が1分以下の記録をつないだ区間（睡眠合計の元）。
+   * 返り値：
+   *   { status: 'need_last_night' }                      昨夜が欠けている
+   *   { status: 'ok', intervals, imputed, usualWake }    古い欠けを普段の睡眠で補った区間、補った晩の日、普段の起床時刻
    */
-  function findWake(intervals, now) {
-    var main = null;
-    episodes(intervals).forEach(function (ep) {
-      if (ep.end <= now && ep.asleep >= RULES.minWakeSleep) main = ep.end;
-    });
-    if (main !== null && now - main < DAY) return main;
-    var lastEnd = null;
-    intervals.forEach(function (iv) { if (iv.end <= now) lastEnd = iv.end; });
-    return (lastEnd !== null && now - lastEnd < DAY) ? lastEnd : null;
+  function fillGaps(totals, now, noneDays) {
+    var lastNight = Math.floor(now / DAY) - 1;       // 昨夜＝now の日付の正午までの晩
+    var firstNight = nightOf(totals[0].start);
+    var eps = episodes(totals);
+
+    // 欠けていない晩について、就寝と起床（その晩でいちばん長く重なる睡眠の始まりと終わり）を集める
+    var beds = [], wakes = [], missing = [];
+    for (var k = firstNight; k <= lastNight; k++) {
+      var from = nightStart(k);
+      if (overlap(totals, from, from + DAY) < RULES.missingNight) { missing.push(k); continue; }
+      var main = null, best = 0;
+      eps.forEach(function (ep) {
+        var o = Math.min(ep.end, from + DAY) - Math.max(ep.start, from);
+        if (o > best) { best = o; main = ep; }
+      });
+      beds.push(main.start - from);
+      wakes.push(main.end - from);
+    }
+    var usualBed = beds.length ? Math.round(median(beds)) : null;
+    var usualWake = wakes.length ? Math.round(median(wakes)) : null;
+
+    // 昨夜の欠けは、普段の睡眠の中央の時刻を過ぎてから判定する（それより前は、まだ寝る前とみなす）
+    var midSleep = usualBed === null ? 15 * 60 : (usualBed + usualWake) / 2;
+    var judged = now >= nightStart(lastNight) + midSleep;
+
+    var intervals = totals.slice();
+    var imputed = [];
+    for (var n = 0; n < missing.length; n++) {
+      var night = missing[n];
+      if (noneDays.indexOf(night + 1) >= 0) continue;          // 利用者が「寝ていない」と確認した晩
+      if (night === lastNight) {
+        if (judged) return { status: 'need_last_night' };
+        continue;
+      }
+      if (usualBed === null || usualWake <= usualBed) continue;  // 補う元になる晩が無い
+      var start = nightStart(night) + usualBed;
+      var end = Math.min(nightStart(night) + usualWake, now);
+      if (end <= start) continue;
+      intervals.push({ start: start, end: end });
+      imputed.push(night + 1);
+    }
+    return {
+      status: 'ok',
+      intervals: joinIntervals(intervals, RULES.joinTotal),
+      imputed: imputed,
+      usualWake: usualWake === null ? null : mod(720 + usualWake, DAY),
+      lastNight: lastNight,
+      lastNightJudged: judged
+    };
   }
 
-  /* 1日を正午から翌正午で区切ったときの日番号 */
-  function noonDay(t) { return Math.floor((t - 720) / DAY); }
-  function noonDayStart(index) { return index * DAY + 720; }
+  /* ---------- 3プロセスモデル（仕様書 4.1 節・4.12 節） ---------- */
 
-  function median(values) {
-    var v = values.slice().sort(function (a, b) { return a - b; });
-    var mid = Math.floor(v.length / 2);
-    return v.length % 2 ? v[mid] : Math.round((v[mid - 1] + v[mid]) / 2);
+  /* 体内時計 c。tHours は時刻（時単位の小数）、peak は24時間成分の頂点の時刻（時） */
+  function circadian(tHours, peak) {
+    return Math.cos(2 * Math.PI * (tHours - peak) / 24)
+      + MODEL.beta * Math.cos(4 * Math.PI * (tHours - peak - MODEL.pPrime) / 24);
+  }
+
+  function clampE(e) { return e < 0 ? 0 : e > 100 ? 100 : e; }
+
+  /* 時刻の差を、24時間の周期を考えて ±12時間以内に直す */
+  function wrap12(hours) { return hours - 24 * Math.round(hours / 24); }
+
+  /* 覚醒区間 [from, to] の中央の時刻 AH（時）と重み w。1時間未満なら null */
+  function awakeSpan(from, to) {
+    var length = to - from;
+    if (length < MODEL.minAwake) return null;
+    var middle = length > DAY ? to - DAY / 2 : (from + to) / 2;   // 24時間を超えるときは最後の24時間の中央
+    return { ah: mod(middle, DAY) / 60, w: Math.max(1, length / 120) };
+  }
+
+  /* 直近3つの覚醒区間（spans の末尾が直前）から、体内時計の目標位置 GA を求める */
+  function goalPhase(spans) {
+    var n = spans.length;
+    if (!n) return null;
+    var latest = spans[n - 1];
+    var weights = [latest.w, 0.67, 0.33];
+    var sum = 0, total = 0;
+    for (var k = 0; k < 3 && k < n; k++) {
+      sum += weights[k] * (latest.ah + wrap12(spans[n - 1 - k].ah - latest.ah));
+      total += weights[k];
+    }
+    return sum / total + MODEL.goalOffset;
+  }
+
+  /*
+   * 睡眠履歴の先頭（貯蔵量は満杯）から tEnd まで、1分刻みで計算する。
+   * intervals はモデル用につないだ睡眠区間。区間の外はすべて覚醒として扱う。
+   * 返り値：e[k] は時点 t0 + k の E（0〜100 に収める前）、cp[k] は体内時計の位置（時）、
+   *         asleep[k] は時点 t0 + k が睡眠中なら 1
+   */
+  function simulate(intervals, tEnd, shiftMin) {
+    var M = MODEL;
+    var t0 = intervals[0].start;
+    var n = Math.max(1, tEnd - t0 + 1);
+    var e = new Float64Array(n), cp = new Float64Array(n), asleep = new Uint8Array(n);
+
+    // 体内時計の位置の初期値：履歴の最初の3つの覚醒区間から求めた目標位置
+    var spans = [];
+    for (var j = 1; j < intervals.length && spans.length < 3; j++) {
+      var first = awakeSpan(intervals[j - 1].end, intervals[j].start);
+      if (first) spans.push(first);
+    }
+    var goal = goalPhase(spans);
+    if (goal === null) goal = M.fallbackPeak;
+    var CP = goal;
+    spans = [];
+
+    var shiftHours = (shiftMin || 0) / 60;
+    var R = M.Rc;
+    var k = 0;
+    var lastWake = null;   // 直近の覚醒時点
+    var siWake = 0;        // その直前の回復速度 SI
+    cp[0] = CP;
+    asleep[0] = 1;
+    e[0] = 100 * R / M.Rc + circadian(mod(t0, DAY) / 60, CP + shiftHours) * M.a1;
+
+    for (var t = t0 + 1; t <= tEnd; t++) {
+      var prev = t - 1;
+      while (k < intervals.length && intervals[k].end <= prev) k++;
+      var iv = k < intervals.length ? intervals[k] : null;
+
+      // 入眠のたびに、直前までの覚醒区間から目標位置を求め直す
+      if (iv && prev === iv.start && k > 0) {
+        var span = awakeSpan(intervals[k - 1].end, iv.start);
+        if (span) {
+          spans.push(span);
+          goal = goalPhase(spans);
+        }
+      }
+      // 毎分、位置を目標に近づける。差が1時間を超える間は一定の速さ、1時間以内は差に比例
+      var d = wrap12(goal - CP);
+      if (d > 0) CP += Math.min(d, 1) * M.delayPerDay / DAY;
+      else if (d < 0) CP += Math.max(d, -1) * M.advancePerDay / DAY;
+
+      var c = circadian(mod(t, DAY) / 60, CP + shiftHours);
+
+      if (iv && iv.start <= prev) {
+        // prev → t の1分間は睡眠。各区間の最初の5分間は回復しない
+        var si = (prev - iv.start < 5) ? 0
+          : Math.min(M.SImax, Math.max(0, -M.as * c + M.f * (M.Rc - R)));
+        R = Math.min(M.Rc, R + si);
+        if (t === iv.end) { lastWake = t; siWake = si; }
+      } else {
+        R = Math.max(0, R - M.K);
+      }
+
+      var inertia = 0;
+      var asleepAtT = iv && iv.start <= t && t < iv.end;
+      if (!asleepAtT && lastWake !== null && siWake > 0 && t - lastWake <= 120) {
+        inertia = M.Imax * Math.exp(-M.i * (t - lastWake) / siWake);
+      }
+      e[t - t0] = 100 * R / M.Rc + c * (M.a1 + M.a2 * (M.Rc - R) / M.Rc) - inertia;
+      cp[t - t0] = CP;
+      asleep[t - t0] = asleepAtT ? 1 : 0;
+    }
+    return { t0: t0, e: e, cp: cp, asleep: asleep };
+  }
+
+  function valueAt(sim, t) { return clampE(sim.e[t - sim.t0]); }
+
+  /* [from, to] の1分刻みの平均（区間の平均が最大になる場所を探すのに使う） */
+  function windowAvg(sim, from, to) {
+    var sum = 0;
+    for (var t = from; t <= to; t++) sum += valueAt(sim, t);
+    return sum / (to - from + 1);
+  }
+
+  /* [from, to] のうち起きている分だけの、平均と最小。1分も無ければ null */
+  function awakeStats(sim, from, to) {
+    var sum = 0, count = 0, min = Infinity;
+    for (var t = Math.max(from, sim.t0); t <= to; t++) {
+      if (sim.asleep[t - sim.t0]) continue;
+      var v = valueAt(sim, t);
+      sum += v;
+      count++;
+      if (v < min) min = v;
+    }
+    return count ? { avg: sum / count, min: min } : null;
+  }
+
+  /* [from, to] の中で、長さ len 分の平均が最大になる区間（開始は5分刻み） */
+  function bestWindow(sim, from, to, len) {
+    var best = null;
+    for (var s = ceilGrid(from); s + len <= to; s += RULES.grid) {
+      var avg = windowAvg(sim, s, s + len);
+      if (best === null || avg > best.avg + 1e-9) best = { start: s, end: s + len, avg: avg };
+    }
+    return best;
+  }
+
+  /* [from, to] の中で E が最小になる時点（1分刻み） */
+  function lowestPoint(sim, from, to) {
+    var best = null;
+    for (var t = from; t <= to; t++) {
+      var v = valueAt(sim, t);
+      if (best === null || v < best.value - 1e-9) best = { t: t, value: v };
+    }
+    best.atEdge = best.t === from || best.t === to;
+    return best;
+  }
+
+  /* ---------- モデルとは独立した単純な計算 ---------- */
+
+  /* カフェイン締切：就寝目標の何分前か（仕様書 4.5 節） */
+  function caffeineLeadMinutes(cafmg) {
+    var hours = cafmg <= 107 ? 8.8
+      : cafmg >= 217.5 ? 13.2
+        : 8.8 + (cafmg - 107) / 110.5 * 4.4;
+    return Math.round(hours * 60);
+  }
+
+  /* 当日の起床時刻：now 以前に終わった、3時間以上の睡眠のうち、最後のものの終了時刻。無ければ null */
+  function findWake(intervals, now) {
+    var wake = null;
+    episodes(intervals).forEach(function (ep) {
+      if (ep.end <= now && ep.asleep >= RULES.minWakeSleep) wake = ep.end;
+    });
+    return wake;
   }
 
   /* ---------- 文面（仕様書 6 章） ---------- */
 
-  function textMorning(avg, peak, valley, debtMin) {
+  function hoursMinutes(min) { return Math.floor(min / 60) + '時間' + (min % 60) + '分'; }
+
+  function textMorning(avg, peak, valley, debtMin, caution) {
     var range = formatClock(peak.start) + '〜' + formatClock(peak.end);
     var text = '今日の注意・反応は日中平均' + avg + '%です。' + range + 'が最も高く、'
       + formatClock(valley.t) + 'ごろに谷が来ます。重い作業は' + range + 'に回してください。';
-    if (debtMin > 0) text += '睡眠負債は' + Math.floor(debtMin / 60) + '時間' + (debtMin % 60) + '分です。';
+    if (debtMin > 0) text += '睡眠負債は' + hoursMinutes(debtMin) + 'です。';
+    if (caution.type === 'drop') {
+      text += '今日は普段より見落としが増えやすい日です（日中平均が普段より' + caution.drop
+        + 'ポイント低い見込み）。提出・入力・送信の前に見直しを1回足してください。';
+    }
+    if (caution.type === 'accumulated') {
+      text += '直近7日の睡眠は平均' + hoursMinutes(caution.avg7_sleep_min)
+        + 'です。この状態が続くと、自覚がなくても見落としが増えます。提出・入力・送信の前に見直しを1回足してください。';
+    }
     return text;
   }
 
-  function textValley(beforeCutoff, cutoff) {
-    var head = 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。';
-    return beforeCutoff
-      ? head + 'カフェインを摂るなら' + formatClock(cutoff) + 'までです。'
-      : head + 'カフェインは締切（' + formatClock(cutoff) + '）を過ぎているため、控えてください。';
+  function textValley(beforeCutoff, cutoff, caution, overeat) {
+    var text = 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。';
+    text += beforeCutoff
+      ? 'カフェインを摂るなら' + formatClock(cutoff) + 'までです。'
+      : 'カフェインは締切（' + formatClock(cutoff) + '）を過ぎているため、控えてください。';
+    if (caution.flag) text += '見落としが増えやすい日です。提出の前に見直しを。';
+    if (overeat) text += '睡眠が5.5時間以下の翌日は、食べる量が増えやすくなります（研究では平均385kcal増）。間食の量に気をつけてください。';
+    return text;
   }
 
   var TEXT_NAP = '昨夜の睡眠が6時間以下でした。13:00までに20分前後の仮眠をおすすめします。起きてから30分は重要な作業を避けてください。';
@@ -652,91 +862,139 @@ var ConditionForecast = (function () {
   var KIND_PRIORITY = ['valley', 'morning', 'night', 'nap', 'gym'];
 
   function forecast(cfg) {
-    var iv = cfg.intervals;
     var now = cfg.now;
 
-    if (iv[iv.length - 1].end > now) {
-      return { error: 'now（' + formatDateTime(now) + '）より後に終わる睡眠区間があります。now を現地時刻で指定してください。' };
+    // 前処理（4.10 節）：重なる記録と、間が1分以下の記録をつなぐ。この長さが「睡眠合計」の元
+    var totals = joinIntervals(cfg.records, RULES.joinTotal);
+    if (totals[totals.length - 1].end > now) {
+      return { error: 'now（' + formatDateTime(now) + '）より後に終わる睡眠記録があります。now と tz を確認してください。' };
     }
-    if (now - iv[0].start > RULES.maxHistoryDays * DAY) {
-      return { error: '睡眠区間の日付が now から離れすぎています。s と now の日付を確認してください。' };
+    if (now - totals[0].start > RULES.maxHistoryDays * DAY) {
+      return { error: '睡眠記録の日付が now から離れすぎています。s と now の日付を確認してください。' };
     }
 
+    // 記録の欠け（4.11 節）
+    var filled = fillGaps(totals, now, cfg.none);
+    if (filled.status === 'need_last_night') return { status: 'need_last_night', error: TEXT_NEED_LAST_NIGHT };
+    totals = filled.intervals;
+
+    // モデル計算では、さらに間が10分未満の記録もつなぐ
+    var iv = joinIntervals(totals, RULES.joinModel - 1);
+
+    // 当日の起床時刻
     var wake = findWake(iv, now);
-    if (wake === null) {
-      return { error: 'now（' + formatDateTime(now) + '）の直前24時間に終わった睡眠区間がありません。最新の睡眠記録が含まれているか確認してください。' };
+    var lastFrom = nightStart(filled.lastNight);
+    var lastTotal = overlap(totals, lastFrom, lastFrom + DAY);
+    if (filled.lastNightJudged && lastTotal >= RULES.missingNight && (wake === null || wake <= lastFrom)) {
+      // 昨夜の記録はあるが、3時間以上続いた睡眠が無い：昨夜の最後の記録の終わりを起床時刻にする
+      iv.forEach(function (x) { if (x.end > lastFrom && x.end <= Math.min(now, lastFrom + DAY)) wake = x.end; });
     }
+    // 利用者が「寝ていない」と確認した晩の翌朝は、普段の起床時刻から1日が始まるものとする
+    var usualWake = cfg.wake !== null ? cfg.wake : filled.usualWake;
+    var anchor = wake;
+    if (usualWake !== null) {
+      cfg.none.forEach(function (day) {
+        var from = nightStart(day - 1);
+        var morning = day * DAY + usualWake;
+        if (morning <= now && overlap(totals, from, from + DAY) < RULES.missingNight && (anchor === null || morning > anchor)) {
+          anchor = morning;
+        }
+      });
+    }
+    if (anchor === null) {
+      return { error: '3時間以上の睡眠記録がありません。睡眠記録が取得できているか確認してください。' };
+    }
+    var woke = anchor === wake;
 
-    // 睡眠負債：正午区切りで、起床時刻を含む日までの7日
-    var lastDay = noonDay(wake - 1);
-    var firstDay = lastDay - (RULES.minDays - 1);
-    var covered = lastDay - noonDay(iv[0].start) + 1;
-    if (covered < RULES.minDays) {
-      return { error: '睡眠記録が' + RULES.minDays + '日分に足りません（' + covered + '日分）。直近14日分を渡してください。' };
+    // 睡眠負債（4.2 節）：正午区切りで、当日の朝までの7晩
+    var lastDay = nightOf(anchor - 1);
+    var firstDay = lastDay - (RULES.days - 1);
+    var covered = lastDay - nightOf(totals[0].start) + 1;
+    if (covered < RULES.days) {
+      return { error: '睡眠記録が' + RULES.days + '日分に足りません（' + covered + '日分）。直近14日分を渡してください。' };
     }
-    var debt = 0;
+    var slept7 = 0;
     var wakeOffsets = [];
     var eps = episodes(iv);
     for (var d = firstDay; d <= lastDay; d++) {
-      var from = noonDayStart(d);
-      debt += cfg.need - overlap(iv, from, from + DAY);
+      var from = nightStart(d);
+      slept7 += overlap(totals, from, from + DAY);
       var dayWake = null;
       eps.forEach(function (ep) {
-        if (ep.asleep >= RULES.minWakeSleep && ep.end <= now && noonDay(ep.end - 1) === d) dayWake = ep.end - from;
+        if (ep.asleep >= RULES.minWakeSleep && ep.end <= now && nightOf(ep.end - 1) === d) dayWake = ep.end - from;
       });
       if (dayWake !== null) wakeOffsets.push(dayWake);
     }
-    debt = Math.max(0, Math.round(debt));
+    var debt = Math.max(0, Math.round(RULES.days * cfg.need - slept7));
+    var avg7 = Math.round(slept7 / RULES.days);
+    var lastNightMin = overlap(totals, nightStart(lastDay), nightStart(lastDay) + DAY);
 
-    var shortSleep = overlap(iv, wake - DAY, wake) <= RULES.shortSleep;
+    var shortSleep = overlap(totals, anchor - DAY, anchor) <= RULES.shortSleep;
+    var overeat = lastNightMin <= RULES.overeat;
 
     // 就寝目標・翌朝の起床予定
-    var bedTarget = nextClock(cfg.bed, wake);
+    var bedTarget = nextClock(cfg.bed, anchor);
     var wakeClock = cfg.wake !== null ? cfg.wake
-      : wakeOffsets.length ? mod(720 + median(wakeOffsets), DAY) : mod(wake, DAY);
+      : wakeOffsets.length ? mod(720 + Math.round(median(wakeOffsets)), DAY)
+        : filled.usualWake !== null ? filled.usualWake : mod(anchor, DAY);
     var nextWake = nextClock(wakeClock, bedTarget);
 
     // 今日の範囲
-    var day0 = dayStart(wake);
+    var day0 = dayStart(anchor);
+    var actLen = mod(cfg.act.end - cfg.act.start, DAY);
     var actStart = day0 + cfg.act.start;
-    var actEnd = day0 + cfg.act.end + (cfg.act.end <= cfg.act.start ? DAY : 0);
+    var actEnd = actStart + actLen;
     var win = null;
     if (cfg.win) {
-      win = { start: day0 + cfg.win.start, end: day0 + cfg.win.end + (cfg.win.end <= cfg.win.start ? DAY : 0) };
-      if (win.end <= wake) { win.start += DAY; win.end += DAY; }
+      win = { start: day0 + cfg.win.start, end: day0 + cfg.win.start + mod(cfg.win.end - cfg.win.start, DAY) };
+      if (win.end <= anchor) { win.start += DAY; win.end += DAY; }
     }
 
     // now より後は覚醒が続くものとして計算する
-    var horizon = Math.max(now, bedTarget, win ? win.end : 0);
+    var horizon = Math.max(now, bedTarget, day0 + DAY, win ? win.end : 0);
     var sim = simulate(iv, horizon, cfg.shift);
 
     // 集計範囲：活動時間帯のうち、今日のカーブ（起床〜就寝目標）に入る部分
-    var from0 = Math.max(actStart, wake);
+    var from0 = Math.max(actStart, anchor);
     var to0 = Math.min(actEnd, bedTarget);
-    var dayAvg = to0 > from0 ? stats(sim, from0, to0).avg : null;
+    var today = to0 > from0 ? awakeStats(sim, from0, to0) : null;
+    var dayAvg = today ? today.avg : null;
     var peak = to0 - from0 >= RULES.peakLen ? bestWindow(sim, from0, to0, RULES.peakLen) : null;
     var valleyFrom = Math.max(from0, day0 + RULES.valleyFrom);
     var valley = valleyFrom <= to0 && to0 > from0 ? lowestPoint(sim, valleyFrom, to0) : null;
 
+    // 見落とし予告（4.13 節）：直前7日の日中平均の中央値と比べる
+    var usual = [];
+    for (var back = 1; back <= RULES.days; back++) {
+      var past = awakeStats(sim, actStart - back * DAY, actEnd - back * DAY);
+      if (past && actStart - back * DAY >= sim.t0) usual.push(past.avg);
+    }
+    var drop = dayAvg !== null && usual.length ? Math.round((median(usual) - dayAvg) * 10) / 10 : null;
+    var cautionType = avg7 <= RULES.cautionSleep ? 'accumulated'
+      : drop !== null && drop >= RULES.cautionDrop ? 'drop' : null;
+    var caution = { flag: cautionType !== null, type: cautionType, drop: drop, avg7_sleep_min: avg7 };
+
     var cutoff = bedTarget - caffeineLeadMinutes(cfg.cafmg);
     var bath = bedTarget - RULES.bathLead;
 
-    // 就寝時刻の比較
+    // 就寝時刻の比較（4.8 節）
     var bedtimes = cfg.whatif
-      ? cfg.whatif.map(function (c) { return nextClock(c, wake); })
+      ? cfg.whatif.map(function (c) { return nextClock(c, anchor); })
       : [bedTarget, bedTarget + 60, bedTarget + 90];
     var day1 = dayStart(nextWake);
     var act1Start = Math.max(day1 + cfg.act.start, nextWake);
-    var act1End = day1 + cfg.act.end + (cfg.act.end <= cfg.act.start ? DAY : 0);
+    var act1End = day1 + cfg.act.start + actLen;
     var compare = [];
     bedtimes.forEach(function (bed) {
       if (bed < now || bed >= nextWake) return;   // 過ぎた時刻、起床予定より後の時刻は比べない
       var row = { bed: formatClock(bed), next_day_avg: null, next_day_min: null };
       if (act1End > act1Start) {
-        var next = simulate(mergeIntervals(iv.concat([{ start: bed, end: nextWake }])), act1End, cfg.shift);
-        var st = stats(next, act1Start, act1End);
-        row.next_day_avg = Math.round(st.avg);
-        row.next_day_min = Math.round(st.min);
+        var next = simulate(joinIntervals(iv.concat([{ start: bed, end: nextWake }]), RULES.joinModel - 1), act1End, cfg.shift);
+        var st = awakeStats(next, act1Start, act1End);
+        if (st) {
+          row.next_day_avg = Math.round(st.avg);
+          row.next_day_min = Math.round(st.min);
+        }
       }
       compare.push(row);
     });
@@ -752,30 +1010,34 @@ var ConditionForecast = (function () {
       if (fw) focus = { start: formatClock(fw.start), end: formatClock(fw.end), avg: Math.round(fw.avg) };
     }
 
-    // 通知計画
+    // 通知計画（6 章）
     var avgInt = dayAvg === null ? null : Math.round(dayAvg);
     var plan = [];
-    if (now - wake <= RULES.morningWithin && dayAvg !== null && peak && valley) {
-      plan.push({ t: now, kind: 'morning', text: textMorning(avgInt, peak, valley, debt) });
+    if (now - anchor <= RULES.morningWithin && dayAvg !== null && peak && valley) {
+      plan.push({ t: now, kind: 'morning', text: textMorning(avgInt, peak, valley, debt, caution) });
     }
     if (valley) {
       var vt = valley.t - RULES.valleyLead;
-      plan.push({ t: vt, kind: 'valley', text: textValley(vt < cutoff, cutoff) });
+      plan.push({ t: vt, kind: 'valley', text: textValley(vt < cutoff, cutoff, caution, overeat) });
     }
     if (shortSleep) plan.push({ t: day0 + RULES.napAt, kind: 'nap', text: TEXT_NAP });
     if (gymOn) plan.push({ t: day0 + cfg.gym - RULES.gymLead, kind: 'gym', text: TEXT_GYM });
     plan.push({ t: bath, kind: 'night', text: textNight(compare) });
 
     function priority(item) { return KIND_PRIORITY.indexOf(item.kind); }
+    var offsetText = formatOffset(cfg.tz);
     plan = plan.filter(function (item) { return item.t >= now; })
       .sort(function (a, b) { return priority(a) - priority(b); })
       .slice(0, cfg.max)
-      .sort(function (a, b) { return a.t - b.t || priority(a) - priority(b); });
+      .sort(function (a, b) { return a.t - b.t || priority(a) - priority(b); })
+      .map(function (item) {
+        return { at: formatDateTime(item.t) + offsetText, time: formatClock(item.t), kind: item.kind, text: item.text };
+      });
 
     // 今日のカーブ（起床から就寝目標まで5分刻み。now が就寝目標を過ぎていれば now まで）
     var chartEnd = Math.max(bedTarget, now);
     var curve = [];
-    for (var t = wake; t < chartEnd; t = t === wake ? ceilGrid(wake + 1) : t + RULES.grid) {
+    for (var t = anchor; t < chartEnd; t = t === anchor ? ceilGrid(anchor + 1) : t + RULES.grid) {
       curve.push({ t: t, e: valueAt(sim, t) });
     }
     curve.push({ t: chartEnd, e: valueAt(sim, chartEnd) });
@@ -784,58 +1046,70 @@ var ConditionForecast = (function () {
       status: 'ok',
       error: null,
       demo: false,
+      tz: offsetText,
       now: formatDateTime(now),
-      wake_time: formatClock(wake),
+      wake_time: woke ? formatClock(anchor) : null,
+      last_night_sleep_min: lastNightMin,
+      imputed_nights: filled.imputed.map(formatDate),
       attention_now: Math.round(valueAt(sim, now)),
       attention_day_avg: avgInt,
       peak: peak ? { start: formatClock(peak.start), end: formatClock(peak.end), avg: Math.round(peak.avg) } : null,
       valley: valley ? { time: formatClock(valley.t), value: Math.round(valley.value), at_edge: valley.atEdge } : null,
+      clock_peak: formatClock(Math.floor(sim.cp[day0 + 720 - sim.t0] * 60 + 1e-6)),
       sleep_debt_min: debt,
       short_sleep: shortSleep,
+      caution: caution,
+      overeat_note: overeat,
       caffeine_cutoff: formatClock(cutoff),
       bath_time: formatClock(bath),
       bedtime_compare: compare,
       physical: physical,
       nap_advice: napAdvice,
       focus_window: focus,
-      notifications: plan.map(function (item) { return { time: formatClock(item.t), kind: item.kind, text: item.text }; })
+      notifications: plan
     };
 
     var view = {
-      now: now, wake: wake, bedTarget: bedTarget, chartEnd: chartEnd, curve: curve,
+      now: now, start: anchor, woke: woke, bedTarget: bedTarget, chartEnd: chartEnd, curve: curve,
       nowValue: valueAt(sim, now),
       peak: peak, valley: valley, cutoff: cutoff, bath: bath,
       nextWake: nextWake,
       gym: cfg.gym === null ? null : day0 + cfg.gym,
-      plan: result.notifications
+      plan: plan
     };
     return { result: result, view: view };
   }
 
-  function errorOutput(message, nowText) {
+  /* 計算しなかったときの結果（status は error か need_last_night） */
+  function blankOutput(status, message, cfg) {
     return {
       result: {
-        status: 'error', error: message, demo: false, now: nowText || null,
-        wake_time: null, attention_now: null, attention_day_avg: null, peak: null, valley: null,
-        sleep_debt_min: null, short_sleep: null, caffeine_cutoff: null, bath_time: null,
-        bedtime_compare: [], physical: null, nap_advice: null, focus_window: null, notifications: []
+        status: status, error: message, demo: false,
+        tz: cfg && cfg.tzText ? cfg.tzText : null, now: cfg && cfg.nowText ? cfg.nowText : null,
+        wake_time: null, last_night_sleep_min: null, imputed_nights: [],
+        attention_now: null, attention_day_avg: null, peak: null, valley: null, clock_peak: null,
+        sleep_debt_min: null, short_sleep: null, caution: null, overeat_note: null,
+        caffeine_cutoff: null, bath_time: null, bedtime_compare: [],
+        physical: null, nap_advice: null, focus_window: null, notifications: []
       },
       view: null
     };
   }
 
   /*
-   * 入口。search はクエリ文字列、hash はフラグメント、clockNow は now が無いときに使う
-   * 現在時刻（YYYY-MM-DDTHH:MM）。{ result, view } を返す。result が結果ブロックの中身。
+   * 入口。search はクエリ文字列、hash はフラグメント、clockMs は now が無いときに使う
+   * 絶対時刻（ミリ秒）。{ result, view } を返す。result が結果ブロックの中身。
    */
-  function run(search, hash, clockNow) {
+  function run(search, hash, clockMs) {
+    var cfg = null;
     try {
       var params = readParams(search, hash);
       var demo = !params.any;
-      var cfg = normalize(demo ? { s: SAMPLE.s, now: SAMPLE.now } : params.values, clockNow);
-      if (cfg.error) return errorOutput(cfg.error, cfg.nowText);
+      cfg = normalize(demo ? { s: SAMPLE.s, now: SAMPLE.now } : params.values, clockMs);
+      if (cfg.error) return blankOutput('error', cfg.error, cfg);
+      cfg.tzText = formatOffset(cfg.tz);
       var out = forecast(cfg);
-      if (out.error) return errorOutput(out.error, cfg.nowText);
+      if (out.error) return blankOutput(out.status || 'error', out.error, cfg);
       if (demo) {
         // サンプル表示：結果ブロックには通知を出さない（画面には見本として残す）
         out.result.demo = true;
@@ -844,7 +1118,7 @@ var ConditionForecast = (function () {
       return out;
     } catch (problem) {
       // 想定外の入力でも、結果ブロックは必ず読める形で返す
-      return errorOutput('計算できませんでした：' + (problem && problem.message ? problem.message : problem), null);
+      return blankOutput('error', '計算できませんでした：' + (problem && problem.message ? problem.message : problem), cfg);
     }
   }
 
@@ -868,11 +1142,11 @@ var ConditionForecast = (function () {
 
   return {
     MODEL: MODEL, RULES: RULES, SAMPLE: SAMPLE,
-    parseDateTime: parseDateTime, parseClock: parseClock,
-    formatClock: formatClock, formatDateTime: formatDateTime,
-    readParams: readParams, mergeIntervals: mergeIntervals,
+    parseDateTime: parseDateTime, parseClock: parseClock, parseOffset: parseOffset,
+    formatClock: formatClock, formatDateTime: formatDateTime, formatOffset: formatOffset,
+    readParams: readParams, joinIntervals: joinIntervals,
     circadian: circadian, simulate: simulate, clampE: clampE,
-    caffeineLeadMinutes: caffeineLeadMinutes, findWake: findWake,
+    caffeineLeadMinutes: caffeineLeadMinutes,
     run: run, formatResult: formatResult
   };
 })();
@@ -909,23 +1183,13 @@ var ConditionForecast = (function () {
 
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
-  /*
-   * now が渡されないときの既定値（仕様書 3 章）。ブラウザの時計を現地時刻として読む。
-   * 時計に頼るのはここだけで、now が渡されていればこの値は使われない。
-   */
-  function clockNow() {
-    var d = new Date();
-    function p(n) { return (n < 10 ? '0' : '') + n; }
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-      + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
-  }
-
   function duration(min) { return Math.floor(min / 60) + '時間' + (min % 60) + '分'; }
 
   /* ---------- 2. 現在値 ---------- */
 
   function renderNow(r, v) {
-    $('now-label').textContent = '注意・反応（' + CF.formatClock(v.now) + ' 時点・起床 ' + r.wake_time + '）';
+    $('now-label').textContent = '注意・反応（' + CF.formatClock(v.now) + ' 時点・'
+      + (r.wake_time ? '起床 ' + r.wake_time : '起床の記録なし') + '）';
     $('now-value').textContent = r.attention_now;
     var facts = $('facts');
     clear(facts);
@@ -939,6 +1203,9 @@ var ConditionForecast = (function () {
     fact('谷', r.valley
       ? r.valley.time + '（' + r.valley.value + '%）' + (r.valley.at_edge ? '※活動時間帯の端' : '') : '—');
     fact('睡眠負債', r.sleep_debt_min > 0 ? duration(r.sleep_debt_min) + '（直近7日）' : 'なし（直近7日）');
+    fact('見落とし予告', r.caution.type === 'drop' ? 'あり（日中平均が普段より' + r.caution.drop + 'ポイント低い）'
+      : r.caution.type === 'accumulated' ? 'あり（直近7日の睡眠が平均' + duration(r.caution.avg7_sleep_min) + '）'
+        : 'なし');
   }
 
   /* ---------- 3. 今日のグラフ ---------- */
@@ -955,7 +1222,7 @@ var ConditionForecast = (function () {
     var W = Math.max(280, Math.min(host.clientWidth || 320, 760));
     var H = 244, L = 38, R = 14, T = 48, B = 26, FS = 11;
     var plotW = W - L - R, plotH = H - T - B, bottom = T + plotH;
-    var x0 = v.wake, x1 = v.chartEnd;
+    var x0 = v.start, x1 = v.chartEnd;
     function X(t) { return L + (t - x0) / (x1 - x0) * plotW; }
     function Y(e) { return T + (100 - Math.max(50, Math.min(100, e))) / 50 * plotH; }
     function inside(t) { return t >= x0 && t <= x1; }
@@ -1158,24 +1425,37 @@ var ConditionForecast = (function () {
   /* ---------- 全体 ---------- */
 
   function render() {
-    var out = CF.run(location.search, location.hash, clockNow());
+    // now が省略されたときだけ、時計の絶対時刻を使う（tz への換算は計算部が行う。
+    // ブラウザのタイムゾーン設定は使わない）
+    var out = CF.run(location.search, location.hash, Date.now());
     var r = out.result, v = out.view;
     current = out;
 
     $('muse-result').textContent = CF.formatResult(r);
 
-    var status = $('status');
-    status.hidden = r.status === 'ok' && !r.demo;
-    status.className = r.status === 'ok' ? 'status' : 'status error';
-    status.textContent = r.status !== 'ok' ? '⚠ エラー：' + r.error
-      : r.demo ? 'ⓘ サンプル表示中：URLに睡眠記録（s）がないため、サンプルの記録で計算しています。' : '';
-
     var ok = r.status === 'ok';
+    var message = '';
+    if (r.status === 'error') {
+      message = '⚠ エラー：' + r.error;
+    } else if (r.status === 'need_last_night') {
+      message = 'ⓘ 昨夜の記録待ち：' + r.error + '。就寝と起床の時刻を s に加えるか、寝ていなければ none=今日の日付 を付けて開き直してください。';
+    } else if (r.demo) {
+      message = 'ⓘ サンプル表示中：URLに睡眠記録（s）がないため、サンプルの記録で計算しています。';
+    } else if (r.imputed_nights.length) {
+      message = 'ⓘ 記録が欠けた晩を、普段の睡眠で補って計算しています（'
+        + r.imputed_nights.map(function (d) { return Number(d.slice(5, 7)) + '/' + Number(d.slice(8, 10)); }).join('、')
+        + ' の朝までの晩）。';
+    }
+    var status = $('status');
+    status.hidden = !message;
+    status.className = r.status === 'error' ? 'status error' : 'status';
+    status.textContent = message;
+
     ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare'].forEach(function (id) { $(id).hidden = !ok; });
     $('sec-cond').hidden = !(ok && (r.physical || r.nap_advice || r.focus_window));
 
     if (!ok) {
-      document.title = 'エラー ｜ コンディション予報';
+      document.title = (r.status === 'need_last_night' ? '昨夜の記録待ち' : 'エラー') + ' ｜ コンディション予報';
       return;
     }
     document.title = (r.demo ? '［サンプル］' : '') + '注意・反応 ' + r.attention_now + '%'
