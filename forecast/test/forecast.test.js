@@ -525,7 +525,9 @@ test('通常の日：morning・valley・night の3件を時刻順に返す。at 
     { at: `${date(15)}T14:10+09:00`, time: '14:10', kind: 'valley',
       text: 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。カフェインを摂るなら14:12までです。' },
     { at: `${date(15)}T21:30+09:00`, time: '21:30', kind: 'night',
-      text: '入浴の時間です（40〜42.5℃で10分以上）。23:00に寝ると明日の日中は平均95%、00:00なら94%、00:30なら93%の見込みです。' }
+      text: '入浴の時間です（40〜42.5℃で10分以上）。明日07:00に起きるなら、遅くとも23:25までに寝てください（7時間35分眠れて、明日の日中は平均94%の見込み）。'
+        + '23:00に寝ると明日の日中は平均95%、00:00なら94%、00:30なら93%の見込みです。'
+        + '01:03を過ぎても起きていると、注意・反応が18.5時間起き続けたのと同じ水準（77%）を下回ります。' }
   ]);
 });
 
@@ -596,12 +598,146 @@ test('now より前の時刻になる通知は入れない。morning は起床�
   assert.deepEqual(kinds('21:31'), []);
 });
 
+/* ---------- 今夜のおすすめ就寝時刻（追加機能） ---------- */
+
+const ADVICE_TOLERANCE = 0.5;
+
+/* 就寝時刻 bed（通し番号）から nextWake まで眠ったときの、翌日 08:00〜17:00 の起きている分の平均 */
+function nextDayAverage(list, now, bed, nextWake) {
+  const nowT = CF.parseDateTime(now);
+  const sim = CF.simulate(CF.joinIntervals(intervals(list).concat([{ start: bed, end: nextWake }]), 9),
+    Math.floor(nextWake / 1440) * 1440 + 1020, 0);
+  const day = Math.floor(nextWake / 1440) * 1440;
+  let sum = 0, n = 0;
+  for (let t = Math.max(day + 480, nextWake); t <= day + 1020; t++) { sum += CF.clampE(sim.e[t - sim.t0]); n++; }
+  assert.ok(nowT <= bed);
+  return sum / n;
+}
+
+test('おすすめ就寝：普段どおりに寝ている人には、起床予定から必要睡眠時間をさかのぼった時刻', () => {
+  const r = run({ s: BASE, now: BASE_NOW });
+  assert.deepEqual(r.bedtime_advice, {
+    by: '23:00', wake: '06:30', sleep_min: 450, next_day_avg: 94, usual_avg: 94,
+    text: '明日06:30に起きるなら、遅くとも23:00までに寝てください（7時間30分眠れて、明日の日中は平均94%の見込み）。'
+  });
+  // need を増やせば、その分だけ早まる
+  assert.equal(run({ s: BASE, now: BASE_NOW, need: '480' }).bedtime_advice.by, '22:30');
+  // 起床予定は wake で変えられる
+  assert.deepEqual(run({ s: BASE, now: BASE_NOW, wake: '07:30' }).bedtime_advice.by, '00:00');
+});
+
+test('おすすめ就寝：寝不足の翌日は、明日を普段どおりに戻せる、いちばん遅い時刻まで早める', () => {
+  const short = nights(14, '23:00', '06:30', { 14: { bed: '01:30' } });   // 最後の晩だけ5時間
+  const r = run({ s: short, now: BASE_NOW });
+  const a = r.bedtime_advice;
+  assert.equal(a.by, '21:55');
+  assert.equal(a.sleep_min, 515);
+  assert.equal(a.usual_avg, 94);
+  // その時刻なら普段を 0.5 ポイント以上は下回らず、5分遅らせると下回る
+  const nextWake = CF.parseDateTime(`${date(16)}T06:30`);
+  const by = CF.parseDateTime(`${date(15)}T21:55`);
+  const usual = nextDayAverage(short, BASE_NOW, by, nextWake);
+  assert.ok(nextDayAverage(short, BASE_NOW, by + 5, nextWake) < nextDayAverage(short, BASE_NOW, by, nextWake));
+  assert.ok(usual >= 93.5 - ADVICE_TOLERANCE);
+  // 就寝目標どおり（23:00）に寝ると、普段より低い
+  assert.ok(r.bedtime_compare[0].next_day_avg < a.usual_avg);
+});
+
+test('おすすめ就寝：普段の水準に届かない日は、就寝目標の3時間前（無理のない範囲でいちばん早い時刻）', () => {
+  const a = run({ s: BASE.slice(0, 13), now: BASE_NOW, none: date(15) }).bedtime_advice;   // 寝ていない日
+  assert.equal(a.by, '20:00');
+  assert.equal(a.sleep_min, 630);
+  assert.ok(a.next_day_avg < a.usual_avg);
+  assert.equal(run({ s: BASE.slice(0, 13), now: BASE_NOW, none: date(15), bed: '00:00' }).bedtime_advice.by, '21:00');
+});
+
+test('おすすめ就寝：不足が続いている人には、普段の水準ではなく必要睡眠時間で決める', () => {
+  const a = run({ s: nights(14, '00:30', '06:30'), now: BASE_NOW }).bedtime_advice;
+  assert.equal(a.by, '23:00');
+  assert.equal(a.sleep_min, 450);
+  assert.ok(a.next_day_avg > a.usual_avg);
+});
+
+test('おすすめ就寝：時刻を過ぎていれば「すぐに」。起床予定まで1時間を切ったら出さない', () => {
+  const late = run({ s: BASE, now: `${date(16)}T00:10` }).bedtime_advice;
+  assert.equal(late.by, '00:10');
+  assert.equal(late.sleep_min, 380);
+  assert.equal(late.text, '明日06:30に起きるなら、すぐに寝てください（今寝ると6時間20分眠れます）。');
+  assert.equal(run({ s: BASE, now: `${date(15)}T23:45`, wake: '00:30' }).bedtime_advice, null);
+});
+
+test('おすすめ就寝：night の文面で、通知の時刻にもう過ぎているときは「すぐに」', () => {
+  const short = nights(14, '23:00', '06:30', { 14: { bed: '03:30' } });   // 最後の晩だけ3時間
+  const r = run({ s: short, now: BASE_NOW });
+  assert.equal(r.bedtime_advice.by, '20:20');
+  const night = r.notifications.find((n) => n.kind === 'night');
+  assert.ok(night.text.startsWith('入浴の時間です（40〜42.5℃で10分以上）。明日06:30に起きるなら、すぐに寝てください（今寝ると9時間0分眠れます）。'));
+});
+
+test('おすすめ就寝：翌日の活動時間帯が起床予定より前に終わるときは、平均を出さずに必要睡眠時間で決める', () => {
+  const a = run({ s: BASE, now: BASE_NOW, wake: '18:00' }).bedtime_advice;
+  assert.equal(a.next_day_avg, null);
+  assert.equal(a.sleep_min, 450);
+  assert.equal(a.text, '明日18:00に起きるなら、遅くとも10:30までに寝てください（7時間30分眠れます）。');
+});
+
+/* ---------- 夜のピークと 77% を下回る時刻（追加機能） ---------- */
+
+test('夜の下がり方：夜のピークと、起き続けたときに77%を下回る時刻（1分刻み）', () => {
+  const r = run({ s: GOOD, now: GOOD_NOW });
+  assert.deepEqual(r.evening, {
+    top: '19:13', limit: '01:03', limit_reached: false,
+    text: '注意・反応は19:13ごろが夜のピークで、その後は下がり続けます。'
+      + '01:03を過ぎても起きていると、注意・反応が18.5時間起き続けたのと同じ水準（77%）を下回ります。'
+  });
+  const d = daytime(GOOD);
+  const limit = CF.parseDateTime(`${date(16)}T01:03`);
+  assert.ok(d.sim.e[limit - d.sim.t0] < 77);
+  assert.ok(d.sim.e[limit - 1 - d.sim.t0] >= 77);
+  // 夜のピークは、谷から翌03:00までで E が最大の時刻
+  let best = -Infinity, at = null;
+  for (let t = CF.parseDateTime(`${date(15)}T14:30`); t <= CF.parseDateTime(`${date(16)}T03:00`); t++) {
+    if (d.sim.e[t - d.sim.t0] > best + 1e-9) { best = d.sim.e[t - d.sim.t0]; at = t; }
+  }
+  assert.equal(CF.formatClock(at), '19:13');
+  // 体内時計が遅い人ほど、夜のピークも遅い
+  const lateTop = run({ s: nights(14, '01:30', '06:45'), now: `${date(15)}T07:00` }).evening.top;
+  assert.ok(CF.parseClock(lateTop) - CF.parseClock('19:13') >= 60, lateTop);
+});
+
+test('夜の下がり方：就寝目標より前に77%を下回る日は、朝の通知でも運転や危険な作業を控えるよう伝える', () => {
+  const r = run({ s: nights(14, '23:00', '06:30', { 14: { bed: '03:30' } }), now: BASE_NOW });
+  assert.equal(r.evening.limit, '22:47');
+  assert.equal(r.evening.limit_reached, false);
+  const warning = '22:47ごろから、注意・反応が18.5時間起き続けたのと同じ水準（77%）を下回る見込みです。それ以降は車の運転や危険を伴う作業を控えてください。';
+  assert.ok(r.notifications.find((n) => n.kind === 'morning').text.endsWith(warning));
+  assert.ok(r.notifications.find((n) => n.kind === 'night').text.endsWith(warning));
+  // 就寝目標より後なら、朝の通知には入れない
+  assert.ok(!run({ s: GOOD, now: GOOD_NOW }).notifications[0].text.includes('77%'));
+});
+
+test('夜の下がり方：すでに77%を下回っていれば limit_reached が true', () => {
+  const r = run({ s: BASE.slice(0, 13), now: BASE_NOW, none: date(15) });
+  assert.equal(r.evening.limit, '06:40');
+  assert.equal(r.evening.limit_reached, true);
+  const reached = '注意・反応はすでに18.5時間起き続けたのと同じ水準（77%）を下回っています。車の運転や危険を伴う作業は控えてください。';
+  assert.ok(r.evening.text.endsWith(reached));
+  assert.ok(r.notifications.find((n) => n.kind === 'morning').text.endsWith(reached));
+});
+
+test('夜の下がり方：起床予定までに77%を下回らなければ limit は null', () => {
+  const r = run({ s: BASE, now: `${date(15)}T23:45`, wake: '00:30' });
+  assert.equal(r.evening.limit, null);
+  assert.equal(r.evening.limit_reached, false);
+  assert.equal(r.evening.text, '注意・反応は18:59ごろが夜のピークで、その後は下がり続けます。');
+});
+
 /* ---------- 出力仕様（5 章） ---------- */
 
 const KEY_ORDER = ['status', 'error', 'demo', 'tz', 'now', 'wake_time', 'last_night_sleep_min', 'imputed_nights',
   'attention_now', 'attention_day_avg', 'peak', 'valley', 'clock_peak', 'sleep_debt_min', 'short_sleep', 'caution',
-  'overeat_note', 'caffeine_cutoff', 'bath_time', 'bedtime_compare', 'physical', 'nap_advice', 'focus_window',
-  'notifications'];
+  'overeat_note', 'caffeine_cutoff', 'bath_time', 'bedtime_compare', 'bedtime_advice', 'evening', 'physical',
+  'nap_advice', 'focus_window', 'notifications'];
 
 test('結果ブロック：キー名と順序は、正常・サンプル・記録待ち・エラーのどれでも同じ', () => {
   const outputs = [CF.run('', hashOf({ s: GOOD, now: GOOD_NOW }), null), CF.run('', '', null),
@@ -615,18 +751,22 @@ test('結果ブロック：キー名と順序は、正常・サンプル・記�
   const ok = plain(outputs[0].result);
   assert.deepEqual(Object.keys(ok.caution), ['flag', 'type', 'drop', 'avg7_sleep_min']);
   assert.deepEqual(Object.keys(ok.notifications[0]), ['at', 'time', 'kind', 'text']);
+  assert.deepEqual(Object.keys(ok.bedtime_advice), ['by', 'wake', 'sleep_min', 'next_day_avg', 'usual_avg', 'text']);
+  assert.deepEqual(Object.keys(ok.evening), ['top', 'limit', 'limit_reached', 'text']);
 });
 
 test('結果ブロック：時刻は HH:MM、％は整数', () => {
   const r = run({ s: SHORT, now: GOOD_NOW, gym: '18:30', win: '19:00-22:00' });
   const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
   for (const value of [r.wake_time, r.peak.start, r.peak.end, r.valley.time, r.clock_peak, r.caffeine_cutoff, r.bath_time,
-    r.nap_advice.before, r.focus_window.start, r.focus_window.end,
+    r.nap_advice.before, r.focus_window.start, r.focus_window.end, r.bedtime_advice.by, r.bedtime_advice.wake,
+    r.evening.top, r.evening.limit,
     ...r.bedtime_compare.map((row) => row.bed), ...r.notifications.map((n) => n.time)]) {
     assert.match(value, clock);
   }
   for (const value of [r.attention_now, r.attention_day_avg, r.peak.avg, r.valley.value, r.sleep_debt_min,
-    r.last_night_sleep_min, r.caution.avg7_sleep_min, r.focus_window.avg,
+    r.last_night_sleep_min, r.caution.avg7_sleep_min, r.focus_window.avg, r.bedtime_advice.sleep_min,
+    r.bedtime_advice.next_day_avg, r.bedtime_advice.usual_avg,
     ...r.bedtime_compare.flatMap((row) => [row.next_day_avg, row.next_day_min])]) {
     assert.ok(Number.isInteger(value), String(value));
   }

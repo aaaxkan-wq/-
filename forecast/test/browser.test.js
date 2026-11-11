@@ -105,9 +105,15 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   assert.equal(await page.title(), '注意・反応 93% ｜ 谷 14:30');
   assert.equal(await page.locator('#now-value').textContent(), '93');
   assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床 07:00）');
-  assert.deepEqual(await page.locator('#facts .k').allTextContents(), ['ピーク時間帯', '谷', '睡眠負債', '見落とし予告']);
+  assert.deepEqual(await page.locator('#facts .k').allTextContents(),
+    ['ピーク時間帯', '谷', '今夜の就寝', '限界の目安', '睡眠負債', '見落とし予告']);
   assert.deepEqual(await page.locator('#facts .v').allTextContents(),
-    ['08:40〜10:10（平均96%）', '14:30（93%）', 'なし（直近7日）', 'なし']);
+    ['08:40〜10:10（平均96%）', '14:30（93%）', '遅くとも23:25まで（明日07:00起床）', '01:03から77%を下回る（起き続けた場合）',
+      'なし（直近7日）', 'なし']);
+  assert.equal(await page.locator('#compare .advice').textContent(), '明日07:00に起きるなら、遅くとも23:25までに寝てください。');
+  assert.equal(await page.locator('#compare .advice + .note').textContent(), '7時間35分眠れて、明日の日中は平均94%の見込みです（普段は95%）。');
+  assert.match(await page.locator('#compare .evening').textContent(), /^注意・反応は19:13ごろが夜のピークで/);
+  assert.equal(await page.locator('#chart line.limit').count(), 1);
   assert.equal(await page.locator('#plan tbody tr').count(), 3);
   assert.equal(await page.locator('#compare tbody tr').count(), 3);
   assert.equal(await page.locator('#chart svg path.curve').count(), 1);
@@ -140,7 +146,10 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   ({ context, page } = await open(HASH.sleepless));
   assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
   assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床の記録なし）');
-  assert.match((await page.locator('#facts .v').allTextContents())[3], /^あり（日中平均が普段より[\d.]+ポイント低い）$/);
+  const sleeplessFacts = await page.locator('#facts .v').allTextContents();
+  assert.match(sleeplessFacts[5], /^あり（日中平均が普段より[\d.]+ポイント低い）$/);
+  assert.equal(sleeplessFacts[3], 'すでに77%を下回っています');
+  assert.equal(sleeplessFacts[2], '遅くとも20:00まで（明日07:00起床）');
   await context.close();
 
   ({ context, page } = await open(HASH.error));
