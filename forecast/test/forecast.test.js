@@ -521,9 +521,10 @@ test('活動時間帯の端に最小があるときは、端の時刻と at_edge
 test('通常の日：morning・valley・night の3件を時刻順に返す。at はオフセット付きの日時', () => {
   assert.deepEqual(run({ s: GOOD, now: GOOD_NOW }).notifications, [
     { at: `${date(15)}T07:10+09:00`, time: '07:10', kind: 'morning',
-      text: '今日の注意・反応は日中平均95%です。08:40〜10:10が最も高く、14:30ごろに谷が来ます。重い作業は08:40〜10:10に回してください。' },
+      text: '今日の注意・反応は日中平均95%で、よく眠った日の日中と同じくらいです。08:40〜10:10が最も高く、14:30ごろに谷が来ます。'
+        + '重い作業は08:40〜10:10に回してください。18:25〜19:55にも、もう一度集中できます。' },
     { at: `${date(15)}T14:10+09:00`, time: '14:10', kind: 'valley',
-      text: 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。カフェインを摂るなら14:12までです。' },
+      text: 'あと20分ほどで集中が落ちます。16:45ごろから持ち直します。単純作業に切り替えてください。カフェインを摂るなら14:12までです。' },
     { at: `${date(15)}T21:30+09:00`, time: '21:30', kind: 'night',
       text: '入浴の時間です（40〜42.5℃で10分以上）。明日07:00に起きるなら、遅くとも23:25までに寝てください（7時間35分眠れて、明日の日中は平均94%の見込み）。'
         + '23:00に寝ると明日の日中は平均95%、00:00なら94%、00:30なら93%の見込みです。'
@@ -541,11 +542,11 @@ test('at の日付は通知ごとに決まる（就寝目標が深夜なら、ni
 
 test('morning の追加文：睡眠負債、見落とし予告（drop / accumulated）の順に付く', () => {
   const debt = run({ s: GOOD, now: GOOD_NOW, need: '500' }).notifications[0].text;
-  assert.ok(debt.endsWith('に回してください。睡眠負債は2時間20分です。'));
+  assert.ok(debt.endsWith('もう一度集中できます。睡眠負債は2時間20分です。'));
   assert.ok(!run({ s: GOOD, now: GOOD_NOW }).notifications[0].text.includes('睡眠負債'));
 
   const drop = run({ s: nights(14, '23:00', '06:30', { 14: { bed: '01:30' } }), now: BASE_NOW });
-  assert.ok(drop.notifications[0].text.endsWith('に回してください。睡眠負債は2時間30分です。'
+  assert.ok(drop.notifications[0].text.endsWith('もう一度集中できます。睡眠負債は2時間30分です。'
     + `今日は普段より見落としが増えやすい日です（日中平均が普段より${drop.caution.drop}ポイント低い見込み）。提出・入力・送信の前に見直しを1回足してください。`));
 
   const accumulated = run({ s: nights(14, '00:30', '06:30'), now: BASE_NOW });
@@ -554,17 +555,17 @@ test('morning の追加文：睡眠負債、見落とし予告（drop / accumula
 });
 
 test('valley の文面：締切の前後で変わり、見落とし予告と食べすぎ注意は1行ずつ添える', () => {
-  const head = 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。';
+  const head = (end) => `あと20分ほどで集中が落ちます。${end}ごろから持ち直します。単純作業に切り替えてください。`;
   const caution = '見落としが増えやすい日です。提出の前に見直しを。';
   const overeat = '睡眠が5.5時間以下の翌日は、食べる量が増えやすくなります（研究では平均385kcal増）。間食の量に気をつけてください。';
   const valleyText = (params) => run(params).notifications.find((n) => n.kind === 'valley').text;
 
   assert.equal(valleyText({ s: GOOD, now: GOOD_NOW, cafmg: '217.5' }),
-    head + 'カフェインは締切（09:48）を過ぎているため、控えてください。');
+    head('16:45') + 'カフェインは締切（09:48）を過ぎているため、控えてください。');
   assert.equal(valleyText({ s: nights(14, '23:00', '06:30', { 14: { bed: '01:30' } }), now: BASE_NOW }),
-    head + 'カフェインを摂るなら14:12までです。' + caution + overeat);
+    head('16:40') + 'カフェインを摂るなら14:12までです。' + caution + overeat);
   assert.equal(valleyText({ s: nights(14, '00:30', '06:30'), now: BASE_NOW }),
-    head + 'カフェインは締切（14:12）を過ぎているため、控えてください。' + caution);
+    head('17:00') + 'カフェインは締切（14:12）を過ぎているため、控えてください。' + caution);
   // 見落とし予告と食べすぎ注意は、新しい通知を作らない
   assert.deepEqual(run({ s: nights(14, '23:00', '06:30', { 14: { bed: '01:30' } }), now: BASE_NOW }).notifications.map((n) => n.kind),
     ['morning', 'nap', 'valley', 'night']);
@@ -732,10 +733,116 @@ test('夜の下がり方：起床予定までに77%を下回らなければ limi
   assert.equal(r.evening.text, '注意・反応は18:59ごろが夜のピークで、その後は下がり続けます。');
 });
 
+/* ---------- 今の状態の言い換え（追加機能） ---------- */
+
+test('ものさし：よく眠った人（23:00〜07:00）が07:00に起きて起き続けた場合の値', () => {
+  const scale = CF.run('', hashOf({ s: GOOD, now: GOOD_NOW }), null).view.scale;
+  near(scale.dayMin, 93.1, 0.05, '日中の最低（8章「十分な睡眠」の最小）');
+  near(scale.dayMax, 96.5, 0.05, '日中の最高（8章「十分な睡眠」の最大）');
+  near(scale.night, 87.3, 0.05, '夜11時（起きてから16時間）');
+  near(scale.dawn, 67.2, 0.05, '徹夜の明け方（最低）');
+  assert.deepEqual([scale.nightLabel, scale.limitLabel, scale.dawnLabel], ['夜11時', '深夜1時', '明け方5時']);
+});
+
+test('今の状態：段階、よく眠った人との比較、いつもの今ごろとの差、時間帯、今に合った一言', () => {
+  const good = run({ s: BASE, now: `${date(15)}T09:00` }).now_state;
+  assert.deepEqual(good, {
+    level: 'good', label: '良好', like: 'よく眠った日の日中', vs_usual: 0,
+    text: '今の注意・反応は95%（良好）で、よく眠った日の日中と同じくらいです。いつもの今ごろとほぼ同じです。'
+      + '今日いちばん冴える時間帯です（09:55まで）。考える作業も、確認のように注意を保ち続ける作業も、普段どおりにこなせます。'
+  });
+
+  const short = run({ s: nights(14, '23:00', '06:30', { 14: { bed: '01:30' } }), now: BASE_NOW }).now_state;
+  assert.equal(short.level, 'low');
+  assert.equal(short.like, 'よく眠った人の夜11時ごろ（起きてから16時間）');
+  assert.equal(short.vs_usual, -5);
+  assert.ok(short.text.includes('いつもの今ごろより5ポイント低い状態です。起きてすぐの鈍さが残っています。07:00ごろには抜けます。'));
+  assert.ok(short.text.endsWith('提出や送信の前に見直しを1回足してください。'));
+
+  const fair = run({ s: BASE, now: `${date(15)}T14:00` }).now_state;
+  assert.equal(fair.level, 'fair');
+  assert.ok(fair.text.includes('下がり気味の時間帯です（いちばん低いのは14:14ごろ）。16:30ごろから持ち直します。'));
+
+  const late = run({ s: BASE, now: `${date(15)}T23:30` }).now_state;
+  assert.equal(late.like, 'よく眠った人の深夜0時ごろ（起きてから17時間）');
+  assert.ok(late.text.includes('ここからは寝るまで下がり続けます。'));
+
+  const sleepless = run({ s: BASE.slice(0, 13), now: `${date(15)}T08:00`, none: date(15) }).now_state;
+  assert.equal(sleepless.level, 'danger');
+  assert.equal(sleepless.label, '大きく低下');
+  assert.equal(sleepless.like, 'よく眠った人の深夜3時ごろ（起きてから20時間）');
+  assert.ok(sleepless.text.includes('車の運転や危険を伴う作業は控えてください。'));
+});
+
+test('今の状態：段階の境目は、よく眠った人の日中の最低・夜11時の値と、77%', () => {
+  const level = (s, now) => run({ s, now }).now_state.level;
+  // 同じ人の、同じ日の時刻ちがい（23:00〜06:30 が続く人。夜は下がり続ける）
+  assert.equal(level(BASE, `${date(15)}T19:00`), 'good');
+  assert.equal(level(BASE, `${date(15)}T22:00`), 'fair');
+  assert.equal(level(BASE, `${date(15)}T23:30`), 'low');
+  assert.equal(level(BASE, `${date(16)}T00:40`), 'danger');   // 77% を下回るのは 00:35（evening.limit）
+  assert.equal(run({ s: BASE, now: `${date(16)}T00:40` }).evening.limit_reached, true);
+});
+
+test('今の状態：いつもの今ごろと比べられる日が3日に満たなければ vs_usual は null', () => {
+  // 普段は07:00起床。06:30の時点で起きていた日がないので比べない
+  const r = run({ s: nights(14, '23:00', '07:00', { 14: { bed: '22:30', wake: '06:00' } }), now: `${date(15)}T06:30` });
+  assert.equal(r.now_state.vs_usual, null);
+  assert.ok(!r.now_state.text.includes('いつもの今ごろ'));
+});
+
+/* ---------- 今日の過ごし方（追加機能） ---------- */
+
+test('今日の過ごし方：起きてすぐ・冴える・下がり気味・もう一度上がる・入浴・就寝を、時刻順に並べる', () => {
+  const plan = run({ s: GOOD, now: GOOD_NOW }).day_plan;
+  assert.deepEqual(plan.items, [
+    { start: '07:00', end: '07:30', kind: 'wake', text: '起きてすぐの鈍さが残る。大事な判断は避ける' },
+    { start: '08:40', end: '10:10', kind: 'focus', text: '今日いちばん冴える。考える作業や大事な判断に' },
+    { start: '12:05', end: '16:45', kind: 'dip', text: '下がり気味（いちばん低いのは14:30ごろ）。単純作業や休憩に。カフェインは14:12まで' },
+    { start: '18:25', end: '19:55', kind: 'second', text: 'もう一度上がる。勉強や細かい作業に' },
+    { start: '21:30', end: '21:30', kind: 'bath', text: '入浴（40〜42.5℃で10分以上）' },
+    { start: '23:25', end: '23:25', kind: 'bed', text: 'おすすめの就寝時刻（遅くともこの時刻までに）' }
+  ]);
+  assert.ok(plan.text.startsWith('07:00〜07:30：起きてすぐの鈍さが残る。大事な判断は避ける。08:40〜10:10：'));
+  assert.ok(plan.text.endsWith('21:30：入浴（40〜42.5℃で10分以上）。23:25：おすすめの就寝時刻（遅くともこの時刻までに）。'));
+});
+
+test('今日の過ごし方：下がり気味の時間帯は、谷を含み日中平均を下回り続ける範囲', () => {
+  const d = daytime(GOOD);
+  const plan = run({ s: GOOD, now: GOOD_NOW }).day_plan.items.find((item) => item.kind === 'dip');
+  const day = Math.floor(d.wake / 1440) * 1440;
+  const at = (clock) => d.sim.e[day + CF.parseClock(clock) - d.sim.t0];
+  assert.ok(at(plan.start) < d.avg && at(plan.end) < d.avg);
+  assert.ok(at('12:00') >= d.avg && at('16:50') >= d.avg);
+});
+
+test('今日の過ごし方：終わった時間帯は載せない。就寝時刻を過ぎていれば「今すぐ寝る」', () => {
+  const kinds = (now) => run({ s: BASE, now: `${date(15)}T${now}` }).day_plan.items.map((item) => item.kind);
+  assert.deepEqual(kinds('14:00'), ['dip', 'second', 'bath', 'bed']);
+  assert.deepEqual(kinds('20:00'), ['bath', 'bed']);
+  const late = run({ s: BASE, now: `${date(15)}T23:30` }).day_plan;
+  assert.deepEqual(late.items, [{ start: '23:30', end: '23:30', kind: 'bed', text: '今すぐ寝る' }]);
+});
+
+test('今日の過ごし方：早く寝る日は入浴を就寝の行にまとめ、もう一度上がる時間帯は寝る90分前までに終える', () => {
+  const plan = run({ s: nights(14, '23:00', '06:30', { 14: { bed: '01:30' } }), now: BASE_NOW }).day_plan.items;
+  assert.ok(!plan.some((item) => item.kind === 'bath'));
+  const bed = plan.find((item) => item.kind === 'bed');
+  assert.deepEqual(bed, { start: '21:55', end: '21:55', kind: 'bed', text: 'おすすめの就寝時刻。今日は早めに（入浴は寝る1〜2時間前に）' });
+  const second = plan.find((item) => item.kind === 'second');
+  assert.ok(CF.parseClock(second.end) <= CF.parseClock(bed.start) - 90);
+});
+
+test('今日の過ごし方：77%に届かない日は「冴える」と言わない', () => {
+  const plan = run({ s: BASE.slice(0, 13), now: `${date(15)}T08:00`, none: date(15) }).day_plan.items;
+  assert.equal(plan.find((item) => item.kind === 'focus').text, '今日の中ではいちばんまし。大事な作業はできるだけここに');
+  assert.equal(plan.find((item) => item.kind === 'second').text, '少し持ち直す。急ぎの作業はここに');
+});
+
 /* ---------- 出力仕様（5 章） ---------- */
 
 const KEY_ORDER = ['status', 'error', 'demo', 'tz', 'now', 'wake_time', 'last_night_sleep_min', 'imputed_nights',
-  'attention_now', 'attention_day_avg', 'peak', 'valley', 'clock_peak', 'sleep_debt_min', 'short_sleep', 'caution',
+  'attention_now', 'now_state', 'attention_day_avg', 'peak', 'valley', 'day_plan', 'clock_peak', 'sleep_debt_min', 'short_sleep', 'caution',
   'overeat_note', 'caffeine_cutoff', 'bath_time', 'bedtime_compare', 'bedtime_advice', 'evening', 'physical',
   'nap_advice', 'focus_window', 'notifications'];
 
@@ -753,6 +860,9 @@ test('結果ブロック：キー名と順序は、正常・サンプル・記�
   assert.deepEqual(Object.keys(ok.notifications[0]), ['at', 'time', 'kind', 'text']);
   assert.deepEqual(Object.keys(ok.bedtime_advice), ['by', 'wake', 'sleep_min', 'next_day_avg', 'usual_avg', 'text']);
   assert.deepEqual(Object.keys(ok.evening), ['top', 'limit', 'limit_reached', 'text']);
+  assert.deepEqual(Object.keys(ok.now_state), ['level', 'label', 'like', 'vs_usual', 'text']);
+  assert.deepEqual(Object.keys(ok.day_plan), ['items', 'text']);
+  assert.deepEqual(Object.keys(ok.day_plan.items[0]), ['start', 'end', 'kind', 'text']);
 });
 
 test('結果ブロック：時刻は HH:MM、％は整数', () => {
@@ -760,7 +870,7 @@ test('結果ブロック：時刻は HH:MM、％は整数', () => {
   const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
   for (const value of [r.wake_time, r.peak.start, r.peak.end, r.valley.time, r.clock_peak, r.caffeine_cutoff, r.bath_time,
     r.nap_advice.before, r.focus_window.start, r.focus_window.end, r.bedtime_advice.by, r.bedtime_advice.wake,
-    r.evening.top, r.evening.limit,
+    r.evening.top, r.evening.limit, ...r.day_plan.items.flatMap((item) => [item.start, item.end]),
     ...r.bedtime_compare.map((row) => row.bed), ...r.notifications.map((n) => n.time)]) {
     assert.match(value, clock);
   }
@@ -839,7 +949,7 @@ test('index.html は外部の資源を読み込まず、保存も送信もしな
   }
   // http(s) の文字列は、出典リンクの href と SVG の名前空間だけ
   const allowed = [...html.matchAll(/<a rel="noopener noreferrer" href="(https:\/\/[^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allowed.length, 18);
+  assert.equal(allowed.length, 19);
   const found = [...html.matchAll(/https?:\/\/[^\s"'<>]+/g)].map((m) => m[0]);
   for (const url of found) {
     assert.ok(url === 'http://www.w3.org/2000/svg' || allowed.includes(url), url);

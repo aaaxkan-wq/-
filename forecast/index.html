@@ -77,6 +77,19 @@
   .now-label { font-size: 13px; color: var(--ink-2); }
   .hero { font-size: 60px; font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
   .hero span { font-size: 26px; font-weight: 600; margin-left: 2px; }
+  .hero .chip { font-size: 14px; font-weight: 700; margin-left: 12px; vertical-align: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border: 1px solid var(--axis); border-radius: 999px; }
+  .chip::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--lvl); }
+  .lvl-good { --lvl: #0ca30c; } .lvl-fair { --lvl: #fab219; } .lvl-low { --lvl: #ec835a; } .lvl-danger { --lvl: #d03b3b; }
+  .like { margin-top: 6px; font-size: 16px; font-weight: 700; line-height: 1.55; }
+  .ladder { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--ink-2); }
+  .ladder li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0 3px 18px; position: relative; }
+  .ladder li::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; border-left: 2px solid var(--grid); }
+  .ladder .v { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ladder li.now { color: var(--ink); font-weight: 700; font-size: 14px; }
+  .ladder li.now::after { content: ""; position: absolute; left: 0; top: 50%; width: 10px; height: 10px; margin-top: -5px;
+    border-radius: 50%; background: var(--lvl); border: 2px solid var(--surface); }
+  .detail { margin-top: 10px; font-size: 14px; }
   .facts { margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; }
   .facts li { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--grid); }
   .facts .k { flex: none; width: 6.5em; color: var(--ink-2); }
@@ -145,8 +158,17 @@
   <!-- 2. 現在値 -->
   <section id="sec-now" class="card" hidden>
     <p id="now-label" class="now-label"></p>
-    <p class="hero"><b id="now-value"></b><span>%</span></p>
+    <p class="hero"><b id="now-value"></b><span>%</span><span id="now-chip" class="chip"></span></p>
+    <p id="now-like" class="like"></p>
+    <ul id="ladder" class="ladder" aria-label="よく眠った人の値との比較"></ul>
+    <p id="now-detail" class="detail"></p>
     <ul id="facts" class="facts"></ul>
+  </section>
+
+  <!-- 今日の過ごし方（仕様書にない追加） -->
+  <section id="sec-day" class="card" hidden>
+    <h2>今日の過ごし方</h2>
+    <div id="day"></div>
   </section>
 
   <!-- 3. 今日のグラフ -->
@@ -188,6 +210,7 @@
       <li>谷やピークの時刻を決める体内時計の位置は、起きている時間帯から推定しています。光の浴び方は考慮しません。時差や夜勤には対応しません。同じ寝起きの時間帯でも個人差があるため、実感とずれるときは <code>shift</code> で補正します。</li>
       <li>睡眠記録は、間が10分未満の中断をつないで計算します。記録が実際の睡眠より短い夜は、寝不足として計算されます。記録が欠けた晩は普段の睡眠で補うため、その晩の実際とは異なります。</li>
       <li>見落とし予告は、日中平均が直前7日の中央値より2ポイント以上低い日と、直近7晩の睡眠が平均6時間以下の日に出します。</li>
+      <li>「よく眠った人の何時ごろと同じくらい」という言い換えは、23:00〜07:00 の睡眠を続けた人が 07:00 に起きて起き続けた場合の値（同じ式による試算）と比べたものです。睡眠不足で落ちるのは、考える作業より、確認や運転のように注意を保ち続ける作業です（Lim &amp; Dinges 2010）。</li>
       <li>今夜のおすすめ就寝時刻は、起床予定から必要睡眠時間をさかのぼった時刻と、明日の日中平均が普段（直前7日の中央値）を下回らないいちばん遅い時刻のうち、早いほうです。77%を下回る時刻は、起き続けた場合の計算です。注意・反応の速さの目安で、眠気の感じ方そのものではありません。</li>
       <li>筋力・筋持久力、カフェイン締切、入浴、仮眠、食べすぎ注意は、モデルとは別の研究の平均値です。カフェイン締切の中間量は線形補間による近似です。</li>
       <li>睡眠記録はURLの <code>#</code> 以降で受け取り、このページの中だけで計算します。保存も外部への送信もしません。</li>
@@ -200,6 +223,7 @@
       <li>週末の寝坊：<a rel="noopener noreferrer" href="https://www.patientcareonline.com/view/sleep-sleeping-late-weekends-induces-monday-fatigue">Taylor ら 2008の紹介記事</a></li>
       <li>寝る時刻と体内時計：<a rel="noopener noreferrer" href="https://epub.ub.uni-muenchen.de/58750/1/Kantermann_Comparing_the_morningness-eveningness_questionnaire.pdf">Kantermann ら 2015</a></li>
       <li>77%の目安：<a rel="noopener noreferrer" href="https://www.leonsoftware.com/blog/real-time-fatigue-analysis-with-safte-fast-in-leon.html">SAFTE-FASTの説明（Leon Software）</a></li>
+      <li>起き続けた時間と飲酒の比較：<a rel="noopener noreferrer" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1739867/">Williamson &amp; Feyer 2000</a></li>
       <li>注意と推論の差：<a rel="noopener noreferrer" href="https://www.med.upenn.edu/uep/assets/user-content/documents/LimDinges2010MetaAnalysis.pdf">Lim &amp; Dinges 2010</a></li>
       <li>睡眠不足の蓄積：<a rel="noopener noreferrer" href="https://ntrs.nasa.gov/citations/20040087752">Van Dongen ら 2003（概要）</a>、<a rel="noopener noreferrer" href="https://www.gwern.net/doc/melatonin/2003-vandongen.pdf">論文PDF</a></li>
       <li>寝不足と運動成績：<a rel="noopener noreferrer" href="https://www.pubmed.gov/35708888/">Craven ら 2022</a></li>
@@ -278,6 +302,8 @@ var ConditionForecast = (function () {
     adviceMinSleep: 60,    // 起床予定までこの分数を切ったら、おすすめ就寝は出さない
     adviceEarliest: 180,   // おすすめ就寝は、就寝目標よりこの分数を超えて早めない
     eveningTo: 3 * 60,     // 夜のピークを探す範囲の終わり（翌日のこの時刻まで）
+    inertiaNote: 30,       // 起床からこの分数は「起きてすぐの鈍さ」として伝える（仕様書の仮眠の文面と同じ30分）
+    minBlock: 30,          // 「今日の過ごし方」に載せる時間帯の最短（分）
     strength: 97,
     endurance: 90,
     maxHistoryDays: 400    // これより古い記録が混じる入力は誤りとみなす（計算量の保護）
@@ -816,6 +842,72 @@ var ConditionForecast = (function () {
     return best;
   }
 
+  /*
+   * ものさし：よく眠った人（23:00〜07:00 を14日）が 07:00 に起き、そのまま起き続けた場合の値。
+   * 今の値を「よく眠った人の何時ごろと同じか」に言い換えるのに使う。値は一定なので、一度だけ計算する
+   */
+  var referenceCache = null;
+  function reference() {
+    if (referenceCache) return referenceCache;
+    var iv = [];
+    for (var k = 0; k < 14; k++) iv.push({ start: k * DAY + 23 * 60, end: (k + 1) * DAY + 7 * 60 });
+    var wake = iv[13].end;
+    var sim = simulate(iv, wake + DAY, 0);
+    var dayMin = Infinity;
+    var dayMax = -Infinity;
+    for (var t = wake + 60; t <= wake + 10 * 60; t++) {   // 08:00〜17:00
+      dayMin = Math.min(dayMin, sim.e[t - sim.t0]);
+      dayMax = Math.max(dayMax, sim.e[t - sim.t0]);
+    }
+    var top = highestPoint(sim, wake + 9 * 60, wake + 16 * 60);                                          // 夜のピーク
+    var dawn = { t: top.t, value: Infinity };                                                           // 徹夜の明け方（最低）
+    for (t = top.t; t <= wake + DAY; t++) if (sim.e[t - sim.t0] < dawn.value) dawn = { t: t, value: sim.e[t - sim.t0] };
+    referenceCache = { wake: wake, sim: sim, dayMin: dayMin, dayMax: dayMax, top: top, dawn: dawn, night: sim.e[wake + 16 * 60 - sim.t0] };
+    return referenceCache;
+  }
+
+  /* よく眠った人が、夜のピークの後に初めて e を下回る時刻 */
+  function firstBelow(e) {
+    var ref = reference(), t = ref.top.t;
+    while (t < ref.dawn.t && ref.sim.e[t - ref.sim.t0] >= e) t++;
+    return t;
+  }
+
+  /* 夜の時刻の言い方（30分単位）：夜11時半、深夜1時、明け方5時 */
+  function nightClock(t) {
+    var c = mod(Math.round(t / 30) * 30, DAY), h = Math.floor(c / 60), half = c % 60 ? '半' : '';
+    if (h >= 18) return '夜' + (h - 12) + '時' + half;
+    if (h < 4) return '深夜' + h + '時' + half;
+    if (h < 7) return '明け方' + h + '時' + half;
+    return h < 12 ? '朝' + h + '時' + half : '午後' + (h - 12) + '時' + half;
+  }
+
+  /* 値 e が、よく眠った人のいつごろと同じか（「〜と同じくらい」の「〜」） */
+  function likeText(e) {
+    var ref = reference();
+    if (e >= ref.dayMin) return 'よく眠った日の日中';
+    if (e < ref.dawn.value) return '徹夜して明け方を迎えたとき以下';
+    var t = ref.top.t;
+    while (t < ref.dawn.t && ref.sim.e[t - ref.sim.t0] > e) t++;
+    var rounded = Math.round(t / 30) * 30, hours = (rounded - ref.wake) / 60;
+    return 'よく眠った人の' + nightClock(rounded) + 'ごろ（起きてから' + Math.floor(hours) + '時間' + (hours % 1 ? '半' : '') + '）';
+  }
+
+  /*
+   * 今の状態の段階。境目は、よく眠った人の値（日中の最低・夜11時）と、77%（18.5時間起き続けた状態・
+   * 血中アルコール濃度0.05%と同水準）
+   */
+  var LEVELS = {
+    good: { label: '良好', tip: '考える作業も、確認のように注意を保ち続ける作業も、普段どおりにこなせます。' },
+    fair: { label: 'やや低下', tip: '考える作業への影響は小さいものの、確認や入力のように注意を保ち続ける作業で、見落としが出始めます。' },
+    low: { label: '低下', tip: '確認・入力・運転のように注意を保ち続ける作業で、見落としや反応の遅れが増えています。提出や送信の前に見直しを1回足してください。' },
+    danger: { label: '大きく低下', tip: '車の運転や危険を伴う作業は控えてください。考える作業より、注意を保ち続ける作業のほうが大きく落ちています。' }
+  };
+  function levelOf(e) {
+    var ref = reference();
+    return e >= ref.dayMin ? 'good' : e >= ref.night ? 'fair' : e >= RULES.limit ? 'low' : 'danger';
+  }
+
   /* ---------- モデルとは独立した単純な計算 ---------- */
 
   /* カフェイン締切：就寝目標の何分前か（仕様書 4.5 節） */
@@ -839,10 +931,11 @@ var ConditionForecast = (function () {
 
   function hoursMinutes(min) { return Math.floor(min / 60) + '時間' + (min % 60) + '分'; }
 
-  function textMorning(avg, peak, valley, debtMin, caution, limitText) {
+  function textMorning(avg, like, peak, valley, second, debtMin, caution, limitText) {
     var range = formatClock(peak.start) + '〜' + formatClock(peak.end);
-    var text = '今日の注意・反応は日中平均' + avg + '%です。' + range + 'が最も高く、'
+    var text = '今日の注意・反応は日中平均' + avg + '%で、' + like + 'と同じくらいです。' + range + 'が最も高く、'
       + formatClock(valley.t) + 'ごろに谷が来ます。重い作業は' + range + 'に回してください。';
+    if (second) text += formatClock(second.start) + '〜' + formatClock(second.end) + 'にも、もう一度集中できます。';
     if (debtMin > 0) text += '睡眠負債は' + hoursMinutes(debtMin) + 'です。';
     if (caution.type === 'drop') {
       text += '今日は普段より見落としが増えやすい日です（日中平均が普段より' + caution.drop
@@ -875,8 +968,8 @@ var ConditionForecast = (function () {
       + (advice.avg === null ? '眠れます）。' : '眠れて、明日の日中は平均' + advice.avg + '%の見込み）。');
   }
 
-  function textValley(beforeCutoff, cutoff, caution, overeat) {
-    var text = 'あと20分ほどで集中が落ちます。単純作業に切り替えてください。';
+  function textValley(beforeCutoff, cutoff, caution, overeat, dip) {
+    var text = 'あと20分ほどで集中が落ちます。' + (dip ? formatClock(dip.end) + 'ごろから持ち直します。' : '') + '単純作業に切り替えてください。';
     text += beforeCutoff
       ? 'カフェインを摂るなら' + formatClock(cutoff) + 'までです。'
       : 'カフェインは締切（' + formatClock(cutoff) + '）を過ぎているため、控えてください。';
@@ -1096,6 +1189,87 @@ var ConditionForecast = (function () {
     var eveningText = (top ? '注意・反応は' + formatClock(top.t) + 'ごろが夜のピークで、その後は下がり続けます。' : '')
       + textLimit(limit, now, bedTarget);
 
+    // 下がり気味の時間帯：谷を含み、E が今日の日中平均を下回り続ける時間帯（5分刻みで内側に丸める）
+    var dip = null;
+    if (valley && dayAvg !== null) {
+      var d0 = valley.t, d1 = valley.t;
+      while (d0 > from0 && valueAt(sim, d0 - 1) < dayAvg) d0--;
+      while (d1 < to0 && valueAt(sim, d1 + 1) < dayAvg) d1++;
+      if (floorGrid(d1) - ceilGrid(d0) >= RULES.minBlock) dip = { start: ceilGrid(d0), end: floorGrid(d1) };
+    }
+    // 2つ目の山：下がり気味の時間帯の後から入浴までで、90分の平均が最大の区間（日中平均より高いときだけ）
+    var second = null;
+    if (dip && dayAvg !== null) {
+      var secondEnd = advice ? Math.min(bath, advice.by - RULES.bathLead) : bath;   // 寝る90分前までに終える
+      var w2 = bestWindow(sim, dip.end, secondEnd, RULES.peakLen);
+      if (w2 && w2.avg > dayAvg) second = w2;
+    }
+
+    // 今の状態を、ことばで伝える
+    var nowValue = valueAt(sim, now);
+    var level = levelOf(nowValue);
+    var same = [];
+    for (var back2 = 1; back2 <= RULES.days; back2++) {
+      var then = now - back2 * DAY;
+      if (then >= sim.t0 && !sim.asleep[then - sim.t0]) same.push(valueAt(sim, then));
+    }
+    var vsUsual = same.length >= 3 ? Math.round(nowValue - median(same)) : null;
+    var stateText = '今の注意・反応は' + Math.round(nowValue) + '%（' + LEVELS[level].label + '）で、'
+      + likeText(nowValue) + 'と同じくらいです。';
+    if (vsUsual !== null) {
+      stateText += vsUsual === 0 ? 'いつもの今ごろとほぼ同じです。'
+        : 'いつもの今ごろより' + Math.abs(vsUsual) + 'ポイント' + (vsUsual < 0 ? '低い' : '高い') + '状態です。';
+    }
+    if (woke && now - anchor < RULES.inertiaNote) {
+      stateText += '起きてすぐの鈍さが残っています。' + formatClock(anchor + RULES.inertiaNote) + 'ごろには抜けます。';
+    } else if (peak && now >= peak.start && now <= peak.end) {
+      stateText += '今日いちばん冴える時間帯です（' + formatClock(peak.end) + 'まで）。';
+    } else if (peak && now < peak.start) {
+      stateText += formatClock(peak.start) + '〜' + formatClock(peak.end) + 'に向けて上がっていきます。';
+    } else if (dip && now >= dip.start && now <= dip.end) {
+      stateText += '下がり気味の時間帯です（いちばん低いのは' + formatClock(valley.t) + 'ごろ）。' + formatClock(dip.end) + 'ごろから持ち直します。';
+    } else if (second && now >= second.start && now <= second.end) {
+      stateText += 'もう一度上がる時間帯です（' + formatClock(second.end) + 'まで）。';
+    } else if (top && now > top.t) {
+      stateText += 'ここからは寝るまで下がり続けます。';
+    }
+    stateText += LEVELS[level].tip;
+
+    // 今日の過ごし方（終わっていない時間帯だけ、時刻順）
+    var blocks = [];
+    if (woke) blocks.push({ start: anchor, end: anchor + RULES.inertiaNote, kind: 'wake', text: '起きてすぐの鈍さが残る。大事な判断は避ける' });
+    if (peak) {
+      blocks.push({ start: peak.start, end: peak.end, kind: 'focus', text: peak.avg >= RULES.limit
+        ? '今日いちばん冴える。考える作業や大事な判断に' : '今日の中ではいちばんまし。大事な作業はできるだけここに' });
+    }
+    if (dip) {
+      blocks.push({ start: dip.start, end: dip.end, kind: 'dip',
+        text: '下がり気味（いちばん低いのは' + formatClock(valley.t) + 'ごろ）。単純作業や休憩に'
+          + (cutoff > dip.start ? '。カフェインは' + formatClock(cutoff) + 'まで' : '') });
+    }
+    if (second) {
+      blocks.push({ start: second.start, end: second.end, kind: 'second', text: second.avg >= RULES.limit
+        ? 'もう一度上がる。勉強や細かい作業に' : '少し持ち直す。急ぎの作業はここに' });
+    }
+    var earlyBed = advice && advice.by - bath < 60;   // 入浴は寝る1〜2時間前（Haghayegh ら 2019）
+    if (!earlyBed) blocks.push({ start: bath, end: bath, kind: 'bath', text: '入浴（40〜42.5℃で10分以上）' });
+    if (advice) {
+      blocks.push({ start: advice.by, end: advice.by, kind: 'bed',
+        text: advice.by <= now ? '今すぐ寝る'
+          : earlyBed ? 'おすすめの就寝時刻。今日は早めに（入浴は寝る1〜2時間前に）'
+            : 'おすすめの就寝時刻（遅くともこの時刻までに）' });
+    }
+    blocks = blocks.filter(function (b) { return b.end > now || (b.start === b.end && b.start >= now); })
+      .sort(function (a, b) { return a.start - b.start; });
+    var dayPlan = {
+      items: blocks.map(function (b) {
+        return { start: formatClock(b.start), end: formatClock(b.end), kind: b.kind, text: b.text };
+      }),
+      text: blocks.map(function (b) {
+        return (b.start === b.end ? formatClock(b.start) : formatClock(b.start) + '〜' + formatClock(b.end)) + '：' + b.text + '。';
+      }).join('')
+    };
+
     // 条件付きの項目
     var gymOn = cfg.gym !== null && shortSleep && cfg.gym >= RULES.gymFrom;
     var physical = gymOn ? { strength: RULES.strength, endurance: RULES.endurance, advice: TEXT_GYM_ADVICE } : null;
@@ -1112,11 +1286,11 @@ var ConditionForecast = (function () {
     var plan = [];
     if (now - anchor <= RULES.morningWithin && dayAvg !== null && peak && valley) {
       var morningLimit = limit !== null && limit < bedTarget ? textLimit(limit, now, bedTarget) : '';
-      plan.push({ t: now, kind: 'morning', text: textMorning(avgInt, peak, valley, debt, caution, morningLimit) });
+      plan.push({ t: now, kind: 'morning', text: textMorning(avgInt, likeText(dayAvg), peak, valley, second, debt, caution, morningLimit) });
     }
     if (valley) {
       var vt = valley.t - RULES.valleyLead;
-      plan.push({ t: vt, kind: 'valley', text: textValley(vt < cutoff, cutoff, caution, overeat) });
+      plan.push({ t: vt, kind: 'valley', text: textValley(vt < cutoff, cutoff, caution, overeat, dip && dip.end > vt ? dip : null) });
     }
     if (shortSleep) plan.push({ t: day0 + RULES.napAt, kind: 'nap', text: TEXT_NAP });
     if (gymOn) plan.push({ t: day0 + cfg.gym - RULES.gymLead, kind: 'gym', text: TEXT_GYM });
@@ -1150,9 +1324,17 @@ var ConditionForecast = (function () {
       last_night_sleep_min: lastNightMin,
       imputed_nights: filled.imputed.map(formatDate),
       attention_now: Math.round(valueAt(sim, now)),
+      now_state: {
+        level: level,
+        label: LEVELS[level].label,
+        like: likeText(nowValue),
+        vs_usual: vsUsual,
+        text: stateText
+      },
       attention_day_avg: avgInt,
       peak: peak ? { start: formatClock(peak.start), end: formatClock(peak.end), avg: Math.round(peak.avg) } : null,
       valley: valley ? { time: formatClock(valley.t), value: Math.round(valley.value), at_edge: valley.atEdge } : null,
+      day_plan: dayPlan,
       clock_peak: formatClock(Math.floor(sim.cp[day0 + 720 - sim.t0] * 60 + 1e-6)),
       sleep_debt_min: debt,
       short_sleep: shortSleep,
@@ -1184,7 +1366,10 @@ var ConditionForecast = (function () {
     var view = {
       now: now, start: anchor, woke: woke, bedTarget: bedTarget, chartEnd: chartEnd, curve: curve,
       nowValue: valueAt(sim, now),
-      peak: peak, valley: valley, cutoff: cutoff, bath: bath, limit: limit,
+      peak: peak, valley: valley, cutoff: cutoff, bath: bath, limit: limit, level: level, dip: dip, second: second,
+      scale: { dayMin: reference().dayMin, dayMax: reference().dayMax, night: reference().night, dawn: reference().dawn.value,
+        limitLabel: nightClock(firstBelow(RULES.limit)), nightLabel: nightClock(reference().wake + 16 * 60),
+        dawnLabel: nightClock(reference().dawn.t) },
       nextWake: nextWake,
       gym: cfg.gym === null ? null : day0 + cfg.gym,
       plan: plan
@@ -1199,7 +1384,7 @@ var ConditionForecast = (function () {
         status: status, error: message, demo: false,
         tz: cfg && cfg.tzText ? cfg.tzText : null, now: cfg && cfg.nowText ? cfg.nowText : null,
         wake_time: null, last_night_sleep_min: null, imputed_nights: [],
-        attention_now: null, attention_day_avg: null, peak: null, valley: null, clock_peak: null,
+        attention_now: null, now_state: null, attention_day_avg: null, peak: null, valley: null, day_plan: null, clock_peak: null,
         sleep_debt_min: null, short_sleep: null, caution: null, overeat_note: null,
         caffeine_cutoff: null, bath_time: null, bedtime_compare: [], bedtime_advice: null, evening: null,
         physical: null, nap_advice: null, focus_window: null, notifications: []
@@ -1303,6 +1488,34 @@ var ConditionForecast = (function () {
     $('now-label').textContent = '注意・反応（' + CF.formatClock(v.now) + ' 時点・'
       + (r.wake_time ? '起床 ' + r.wake_time : '起床の記録なし') + '）';
     $('now-value').textContent = r.attention_now;
+    var state = r.now_state;
+    $('now-chip').textContent = state.label;
+    $('now-chip').className = 'chip lvl-' + state.level;
+    $('now-like').textContent = state.like + 'と同じくらいです。';
+    var cut = state.text.indexOf('。');
+    $('now-detail').textContent = state.text.slice(cut + 1);
+
+    // はしご：よく眠った人の値と並べて、今の位置を示す
+    var sc = v.scale, rows = [
+      { value: sc.dayMin, text: 'よく眠った日の日中', v: Math.round(sc.dayMin) + '〜' + Math.round(sc.dayMax) + '%' },
+      { value: sc.night, text: 'よく眠った人の' + sc.nightLabel + 'ごろ', v: Math.round(sc.night) + '%' },
+      { value: 77, text: sc.limitLabel + 'ごろ。酒気帯び（血中アルコール0.05%）と同じ水準', v: '77%' },
+      { value: sc.dawn, text: '徹夜した' + sc.dawnLabel + 'ごろ', v: Math.round(sc.dawn) + '%' }
+    ];
+    var ladder = $('ladder');
+    clear(ladder);
+    var placed = false;
+    function rung(text, value, cls) {
+      var li = el('li', cls);
+      li.appendChild(el('span', '', text));
+      li.appendChild(el('span', 'v', value));
+      ladder.appendChild(li);
+    }
+    rows.forEach(function (row) {
+      if (!placed && v.nowValue >= row.value) { rung('今', r.attention_now + '%', 'now lvl-' + state.level); placed = true; }
+      rung(row.text, row.v);
+    });
+    if (!placed) rung('今', r.attention_now + '%', 'now lvl-' + state.level);
     var facts = $('facts');
     clear(facts);
     function fact(key, value) {
@@ -1535,6 +1748,23 @@ var ConditionForecast = (function () {
     host.appendChild(el('p', 'note', CF.formatClock(v.nextWake) + ' に起きる想定で、翌日の活動時間帯を計算しています。'));
   }
 
+  function renderDay(r) {
+    var host = $('day');
+    clear(host);
+    var items = r.day_plan.items;
+    if (!items.length) {
+      host.appendChild(el('p', 'note', '今日の残りの予定はありません。'));
+      return;
+    }
+    host.appendChild(table(
+      [{ text: '時刻', cls: 'time' }, { text: '過ごし方' }],
+      items.map(function (item) {
+        return [{ text: item.start === item.end ? item.start : item.start + '〜', small: item.start === item.end ? undefined : item.end + 'まで' },
+          { text: item.text }];
+      })
+    ));
+  }
+
   function renderCond(r, v) {
     var host = $('cond');
     clear(host);
@@ -1581,7 +1811,7 @@ var ConditionForecast = (function () {
     status.className = r.status === 'error' ? 'status error' : 'status';
     status.textContent = message;
 
-    ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare'].forEach(function (id) { $(id).hidden = !ok; });
+    ['sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare'].forEach(function (id) { $(id).hidden = !ok; });
     $('sec-cond').hidden = !(ok && (r.physical || r.nap_advice || r.focus_window));
 
     if (!ok) {
@@ -1591,6 +1821,7 @@ var ConditionForecast = (function () {
     document.title = (r.demo ? '［サンプル］' : '') + '注意・反応 ' + r.attention_now + '%'
       + (r.valley ? ' ｜ 谷 ' + r.valley.time : '');
     renderNow(r, v);
+    renderDay(r);
     renderChart(v);
     renderLegend(r, v);
     renderPlan(r, v);

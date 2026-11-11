@@ -98,10 +98,10 @@ test('外部通信をしない。保存もしない', { skip }, async () => {
 
 test('画面：状態表示・見出し・条件付きの項目・タイトル', { skip }, async () => {
   const visible = (page) => page.evaluate(() =>
-    ['status', 'sec-now', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond'].filter((id) => !document.getElementById(id).hidden));
+    ['status', 'sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond'].filter((id) => !document.getElementById(id).hidden));
 
   let { context, page } = await open(HASH.normal);
-  assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare']);
+  assert.deepEqual(await visible(page), ['sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare']);
   assert.equal(await page.title(), '注意・反応 93% ｜ 谷 14:30');
   assert.equal(await page.locator('#now-value').textContent(), '93');
   assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床 07:00）');
@@ -114,25 +114,31 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   assert.equal(await page.locator('#compare .advice + .note').textContent(), '7時間35分眠れて、明日の日中は平均94%の見込みです（普段は95%）。');
   assert.match(await page.locator('#compare .evening').textContent(), /^注意・反応は19:13ごろが夜のピークで/);
   assert.equal(await page.locator('#chart line.limit').count(), 1);
+  assert.equal(await page.locator('#now-chip').textContent(), '良好');
+  assert.equal(await page.locator('#now-like').textContent(), 'よく眠った日の日中と同じくらいです。');
+  assert.deepEqual(await page.locator('#ladder li > span:first-child').allTextContents(),
+    ['今', 'よく眠った日の日中', 'よく眠った人の夜11時ごろ', '深夜1時ごろ。酒気帯び（血中アルコール0.05%）と同じ水準', '徹夜した明け方5時ごろ']);
+  assert.match(await page.locator('#now-detail').textContent(), /^いつもの今ごろとほぼ同じです。/);
+  assert.equal(await page.locator('#day tbody tr').count(), 6);
   assert.equal(await page.locator('#plan tbody tr').count(), 3);
   assert.equal(await page.locator('#compare tbody tr').count(), 3);
   assert.equal(await page.locator('#chart svg path.curve').count(), 1);
   await context.close();
 
   ({ context, page } = await open(HASH.short));
-  assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
+  assert.deepEqual(await visible(page), ['sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
   assert.deepEqual(await page.locator('#cond h3').allTextContents(), ['運動の助言（18:30）', '仮眠の助言', '集中に向く時間帯']);
   assert.equal(await page.locator('#plan tbody tr').count(), 5);
   await context.close();
 
   ({ context, page } = await open(HASH.sample));
-  assert.deepEqual(await visible(page), ['status', 'sec-now', 'sec-chart', 'sec-plan', 'sec-compare']);
+  assert.deepEqual(await visible(page), ['status', 'sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare']);
   assert.match(await page.locator('#status').textContent(), /サンプル表示中/);
   assert.match(await page.title(), /^［サンプル］注意・反応 \d+% ｜ 谷 \d\d:\d\d$/);
   await context.close();
 
   ({ context, page } = await open(HASH.imputed));
-  assert.deepEqual(await visible(page), ['status', 'sec-now', 'sec-chart', 'sec-plan', 'sec-compare']);
+  assert.deepEqual(await visible(page), ['status', 'sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare']);
   assert.match(await page.locator('#status').textContent(), /記録が欠けた晩を、普段の睡眠で補って計算しています（3\/6、3\/13 の朝までの晩）/);
   await context.close();
 
@@ -144,12 +150,15 @@ test('画面：状態表示・見出し・条件付きの項目・タイトル',
   await context.close();
 
   ({ context, page } = await open(HASH.sleepless));
-  assert.deepEqual(await visible(page), ['sec-now', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
+  assert.deepEqual(await visible(page), ['sec-now', 'sec-day', 'sec-chart', 'sec-plan', 'sec-compare', 'sec-cond']);
   assert.equal(await page.locator('#now-label').textContent(), '注意・反応（07:10 時点・起床の記録なし）');
   const sleeplessFacts = await page.locator('#facts .v').allTextContents();
   assert.match(sleeplessFacts[5], /^あり（日中平均が普段より[\d.]+ポイント低い）$/);
   assert.equal(sleeplessFacts[3], 'すでに77%を下回っています');
   assert.equal(sleeplessFacts[2], '遅くとも20:00まで（明日07:00起床）');
+  assert.equal(await page.locator('#now-chip').textContent(), '大きく低下');
+  assert.deepEqual(await page.locator('#ladder li > span:first-child').allTextContents(),
+    ['よく眠った日の日中', 'よく眠った人の夜11時ごろ', '深夜1時ごろ。酒気帯び（血中アルコール0.05%）と同じ水準', '今', '徹夜した明け方5時ごろ']);
   await context.close();
 
   ({ context, page } = await open(HASH.error));
